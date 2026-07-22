@@ -35,36 +35,60 @@ const faqs = [
 
 export function FaqSection() {
   return (
-    <section id="faq" className="py-20 md:py-28 bg-secondary/20 relative z-10 border-t border-white/5">
+    <section id="faq" className="py-20 md:py-28 bg-background relative z-10 border-t border-white/5">
       <div className="container mx-auto px-6">
-        <div className="max-w-3xl mx-auto">
+        <div className="flex flex-col md:flex-row gap-16 lg:gap-24">
+          
+          {/* Left Column */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            className="md:w-2/5"
           >
-            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Frequently Asked Questions</h2>
-            <p className="text-lg text-muted-foreground">
-              Everything you need to know about investing with Quantum.
+            <div className="inline-block px-3 py-1 mb-6 rounded-full bg-secondary/50 border border-white/10 text-accent text-sm font-semibold tracking-wide uppercase">
+              Got Questions?
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-lg text-muted-foreground mb-12">
+              Find answers to the most common questions about our platform, investment strategies, and security protocols.
             </p>
+
+            {/* Decorative block (desktop only) */}
+            <div className="hidden md:block bg-card border border-white/5 rounded-xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
+                <div className="w-3 h-3 rounded-full bg-green-500/80" />
+              </div>
+              <div className="font-mono text-sm space-y-3 relative z-10">
+                <div className="flex"><span className="text-accent w-24">return:</span><span className="text-green-400">"1.5% daily"</span></div>
+                <div className="flex"><span className="text-accent w-24">security:</span><span className="text-white">"256-bit SSL"</span></div>
+                <div className="flex"><span className="text-accent w-24">support:</span><span className="text-primary-foreground">"24/7"</span></div>
+              </div>
+            </div>
           </motion.div>
 
+          {/* Right Column */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, delay: 0.2 }}
+            className="md:w-3/5"
           >
-            <Accordion type="single" collapsible className="w-full space-y-4">
+            <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`} 
-                  className="bg-card border border-white/10 rounded-xl px-6 data-[state=open]:border-primary/50 data-[state=open]:shadow-[0_0_20px_rgba(21,101,232,0.1)] transition-all"
+                  className="bg-card border border-white/10 rounded-xl px-6 mb-4 data-[state=open]:border-primary/50 data-[state=open]:shadow-[0_0_20px_rgba(21,101,216,0.15)] transition-all"
                 >
-                  <AccordionTrigger className="text-left text-white hover:text-accent font-semibold text-lg py-5 hover:no-underline [&[data-state=open]]:text-primary">
+                  <AccordionTrigger className="text-left text-white hover:text-accent font-semibold text-base py-5 hover:no-underline [&[data-state=open]]:text-primary">
                     {faq.question}
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground leading-relaxed text-base pb-6 pt-2">

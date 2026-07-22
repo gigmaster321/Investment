@@ -1,26 +1,36 @@
 import { motion } from 'framer-motion';
-import { ShieldCheck, TrendingUp, Eye, Zap } from 'lucide-react';
+import { ShieldCheck, Zap, TrendingUp, BarChart2, Headphones, Target } from 'lucide-react';
 
 const features = [
   {
     icon: ShieldCheck,
-    title: "Secure Investment Platform",
-    description: "Bank-grade security, encrypted transactions, insured deposits. Your capital is protected at every level."
-  },
-  {
-    icon: TrendingUp,
-    title: "Professional Asset Management",
-    description: "Expert fund managers with 10+ years in global markets carefully optimizing your portfolio daily."
-  },
-  {
-    icon: Eye,
-    title: "Transparent Operations",
-    description: "Real-time dashboards, full audit trail, zero hidden fees. Know exactly where your money is working."
+    title: "Secure Investments",
+    description: "Bank-grade 256-bit encryption, segregated client accounts, and FDIC-insured deposits protect every dollar."
   },
   {
     icon: Zap,
     title: "Fast Withdrawals",
-    description: "Withdrawal requests processed within 24 hours, guaranteed. Access your profits without the wait."
+    description: "Withdrawal requests are processed and transferred within 24 hours, every time — no delays, no surprises."
+  },
+  {
+    icon: TrendingUp,
+    title: "Expert Management",
+    description: "Our fund managers bring 10+ years of institutional market experience, optimizing your portfolio daily."
+  },
+  {
+    icon: BarChart2,
+    title: "Transparent Reporting",
+    description: "Real-time dashboards, complete audit trails, and zero hidden fees. You always know exactly where your capital is."
+  },
+  {
+    icon: Headphones,
+    title: "24/7 Support",
+    description: "Our dedicated investor support team is available around the clock via live chat, email, and phone."
+  },
+  {
+    icon: Target,
+    title: "Risk Management",
+    description: "Multi-layered risk protocols and diversified asset allocation strategies designed to protect and grow your capital."
   }
 ];
 
@@ -28,13 +38,13 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.15 }
+    transition: { staggerChildren: 0.1 }
   }
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
 };
 
 export function WhyChooseUs() {
@@ -50,13 +60,13 @@ export function WhyChooseUs() {
           >
             <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Why Choose Quantum Investments</h2>
             <p className="text-lg text-muted-foreground">
-              We combine institutional-grade security with unparalleled transparency to deliver a premium investment experience.
+              Six reasons why 18,500+ investors trust us with their financial future
             </p>
           </motion.div>
         </div>
 
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -66,13 +76,13 @@ export function WhyChooseUs() {
             <motion.div 
               key={idx}
               variants={itemVariants}
-              className="bg-card border border-white/10 rounded-2xl p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(21,101,232,0.15)] hover:border-primary/50 group"
+              className="bg-card border border-white/10 rounded-2xl p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_20px_rgba(21,101,216,0.2)] hover:border-primary/50 group"
             >
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary transition-colors duration-300">
                 <feature.icon className="w-7 h-7 text-primary group-hover:text-white transition-colors" />
               </div>
               <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed text-sm">
                 {feature.description}
               </p>
             </motion.div>
