@@ -18,6 +18,17 @@ import Referral from '@/pages/dashboard/Referral';
 import Notifications from '@/pages/dashboard/Notifications';
 import Profile from '@/pages/dashboard/Profile';
 
+// Admin
+import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
+import { AdminLayout } from '@/components/admin/AdminLayout';
+import AdminLogin from '@/pages/admin/Login';
+import AdminDashboard from '@/pages/admin/index';
+import AdminUsers from '@/pages/admin/Users';
+import AdminWithdrawals from '@/pages/admin/Withdrawals';
+import AdminPlans from '@/pages/admin/Plans';
+import AdminAnalytics from '@/pages/admin/Analytics';
+import AdminSettings from '@/pages/admin/Settings';
+
 const queryClient = new QueryClient();
 
 function Router() {
@@ -26,7 +37,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      
+
+      {/* User dashboard */}
       <Route path="/dashboard">
         <DashboardLayout><DashboardOverview /></DashboardLayout>
       </Route>
@@ -54,7 +66,30 @@ function Router() {
       <Route path="/dashboard/profile">
         <DashboardLayout><Profile /></DashboardLayout>
       </Route>
-      
+
+      {/* Admin panel — public login page */}
+      <Route path="/admin/login" component={AdminLogin} />
+
+      {/* Admin panel — protected routes */}
+      <Route path="/admin">
+        <AdminLayout><AdminDashboard /></AdminLayout>
+      </Route>
+      <Route path="/admin/users">
+        <AdminLayout><AdminUsers /></AdminLayout>
+      </Route>
+      <Route path="/admin/withdrawals">
+        <AdminLayout><AdminWithdrawals /></AdminLayout>
+      </Route>
+      <Route path="/admin/plans">
+        <AdminLayout><AdminPlans /></AdminLayout>
+      </Route>
+      <Route path="/admin/analytics">
+        <AdminLayout><AdminAnalytics /></AdminLayout>
+      </Route>
+      <Route path="/admin/settings">
+        <AdminLayout><AdminSettings /></AdminLayout>
+      </Route>
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -63,12 +98,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <AdminAuthProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </AdminAuthProvider>
     </QueryClientProvider>
   );
 }
