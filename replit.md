@@ -1,6 +1,6 @@
-# [Project name]
+# Quantum Investments
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A full-stack investment platform where users can manage deposits, withdrawals, investments, earnings, referrals, and notifications through a personal dashboard.
 
 ## Run & Operate
 
