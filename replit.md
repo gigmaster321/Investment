@@ -4,12 +4,13 @@ A full-stack investment platform where users can manage deposits, withdrawals, i
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- **API Server** workflow: `PORT=8080 pnpm --filter @workspace/api-server run dev` (port 8080, `/api`)
+- **Quantum Investments** workflow: `PORT=5173 BASE_PATH=/ pnpm --filter @workspace/quantum-investments run dev` (port 5173, `/`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `DATABASE_URL` — runtime-managed by Replit (no manual setup needed)
 
 ## Stack
 
