@@ -3,7 +3,7 @@ import { Link } from 'wouter';
 import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 // @ts-ignore
-import logoPath from '@assets/Quantum_Investment_1784716006341.jpeg';
+import logoPath from '@assets/Quantum_Investment_1784716537861.jpeg';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);

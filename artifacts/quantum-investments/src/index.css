@@ -81,35 +81,35 @@
   --foreground: 0 0% 100%;
 
   /* Borders and UI */
-  --border: 225 80% 25%;
-  --input: 225 80% 25%;
-  --ring: 217 83% 49%;
+  --border: 221 60% 28%;
+  --input: 221 60% 28%;
+  --ring: 215 82% 46%;
 
-  /* Card #0D1A45 -> HSL(226, 68%, 16%) */
-  --card: 226 68% 16%;
+  /* Card — slightly lighter navy */
+  --card: 221 70% 16%;
   --card-foreground: 0 0% 100%;
-  --card-border: 225 80% 30%;
+  --card-border: 221 60% 32%;
 
   /* Popover */
-  --popover: 226 68% 16%;
+  --popover: 221 70% 16%;
   --popover-foreground: 0 0% 100%;
-  --popover-border: 225 80% 30%;
+  --popover-border: 221 60% 32%;
 
-  /* Primary #1565E8 -> HSL(217, 83%, 49%) */
-  --primary: 217 83% 49%;
+  /* Primary Blue #1565D8 -> HSL(215, 82%, 46%) */
+  --primary: 215 82% 46%;
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary #0A1F5C -> HSL(225, 80%, 20%) */
-  --secondary: 225 80% 20%;
+  /* Primary Navy #0B2A6F -> HSL(221, 82%, 24%) */
+  --secondary: 221 82% 24%;
   --secondary-foreground: 0 0% 100%;
 
-  /* Accent #00AAFF -> HSL(200, 100%, 50%) */
-  --accent: 200 100% 50%;
-  --accent-foreground: 0 0% 100%;
+  /* Accent Blue #1EA7FF -> HSL(204, 100%, 56%) */
+  --accent: 204 100% 56%;
+  --accent-foreground: 0 0% 5%;
 
   /* Muted */
-  --muted: 224 70% 15%;
-  --muted-foreground: 220 12% 65%; /* Silver */
+  --muted: 221 65% 14%;
+  --muted-foreground: 0 0% 72%; /* Light Gray derived from #EAEAEA */
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
@@ -117,19 +117,19 @@
   /* Sidebar */
   --sidebar: 224 70% 10%;
   --sidebar-foreground: 0 0% 100%;
-  --sidebar-border: 225 80% 25%;
-  --sidebar-primary: 217 83% 49%;
+  --sidebar-border: 221 60% 28%;
+  --sidebar-primary: 215 82% 46%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 224 70% 15%;
+  --sidebar-accent: 221 65% 14%;
   --sidebar-accent-foreground: 0 0% 100%;
-  --sidebar-ring: 217 83% 49%;
+  --sidebar-ring: 215 82% 46%;
 
   /* Charts */
-  --chart-1: 217 83% 49%;
-  --chart-2: 200 100% 50%;
-  --chart-3: 225 80% 30%;
-  --chart-4: 220 12% 65%;
-  --chart-5: 225 80% 40%;
+  --chart-1: 215 82% 46%;
+  --chart-2: 204 100% 56%;
+  --chart-3: 221 82% 34%;
+  --chart-4: 0 0% 72%;
+  --chart-5: 221 82% 44%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;

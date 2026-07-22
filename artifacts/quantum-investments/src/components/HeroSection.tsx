@@ -20,7 +20,7 @@ const pieData = [
   { name: 'Bonds', value: 25 },
 ];
 
-const COLORS = ['#1565E8', '#00AAFF', '#0A1F5C'];
+const COLORS = ['#1565D8', '#1EA7FF', '#0B2A6F'];
 
 export function HeroSection() {
   return (
