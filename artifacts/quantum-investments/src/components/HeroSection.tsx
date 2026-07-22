@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useLocation } from 'wouter';
 import { ShieldCheck, Lock, ArrowRight, TrendingUp, Activity, PieChart } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, Tooltip, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
@@ -23,6 +24,12 @@ const pieData = [
 const COLORS = ['#1565D8', '#1EA7FF', '#0B2A6F'];
 
 export function HeroSection() {
+  const [, setLocation] = useLocation();
+
+  const scrollToPlans = () => {
+    document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <section className="relative min-h-[100dvh] flex items-center pt-24 pb-12 overflow-hidden">
       {/* Background Gradient & Grid */}
@@ -53,11 +60,11 @@ export function HeroSection() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <button className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full text-base font-semibold transition-all hover:shadow-[0_0_30px_rgba(21,101,232,0.4)] flex items-center justify-center gap-2 group">
+            <button onClick={() => setLocation('/register')} className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-full text-base font-semibold transition-all hover:shadow-[0_0_30px_rgba(21,101,232,0.4)] flex items-center justify-center gap-2 group">
               Start Investing Today
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-8 py-4 rounded-full text-base font-semibold transition-all flex items-center justify-center gap-2">
+            <button onClick={scrollToPlans} className="bg-white/5 hover:bg-white/10 text-white border border-white/10 px-8 py-4 rounded-full text-base font-semibold transition-all flex items-center justify-center gap-2">
               View Our Plans
             </button>
           </div>

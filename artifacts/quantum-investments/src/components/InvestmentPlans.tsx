@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useLocation } from 'wouter';
 
 const plans = [
   {
@@ -49,6 +50,8 @@ const itemVariants = {
 };
 
 export function InvestmentPlans() {
+  const [, setLocation] = useLocation();
+
   return (
     <section id="plans" className="py-20 md:py-28 bg-background relative z-10">
       <div className="container mx-auto px-6">
@@ -113,7 +116,7 @@ export function InvestmentPlans() {
                   </div>
                 </div>
                 
-                <button className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all ${
+                <button onClick={() => setLocation('/register')} className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all ${
                   plan.featured 
                     ? 'bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/25' 
                     : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'

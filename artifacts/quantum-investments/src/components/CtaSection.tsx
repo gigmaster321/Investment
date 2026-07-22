@@ -1,7 +1,14 @@
 import { motion } from 'framer-motion';
+import { useLocation } from 'wouter';
 import { Lock, Shield, Star } from 'lucide-react';
 
 export function CtaSection() {
+  const [, setLocation] = useLocation();
+
+  const scrollToPlans = () => {
+    document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <section className="relative py-24 md:py-32 overflow-hidden z-10 border-t border-primary/20">
       {/* Background with rich gradient */}
@@ -37,10 +44,10 @@ export function CtaSection() {
 
           {/* Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <button className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-primary font-bold text-lg hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all duration-300 hover:-translate-y-1">
+            <button onClick={() => setLocation('/register')} className="w-full sm:w-auto px-10 py-4 rounded-full bg-white text-primary font-bold text-lg hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all duration-300 hover:-translate-y-1">
               Start Investing Now
             </button>
-            <button className="w-full sm:w-auto px-10 py-4 rounded-full bg-transparent border border-white/30 text-white font-bold text-lg hover:bg-white/10 transition-all duration-300">
+            <button onClick={scrollToPlans} className="w-full sm:w-auto px-10 py-4 rounded-full bg-transparent border border-white/30 text-white font-bold text-lg hover:bg-white/10 transition-all duration-300">
               View Investment Plans
             </button>
           </div>
