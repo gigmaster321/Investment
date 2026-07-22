@@ -13,6 +13,9 @@ import Investments from '@/pages/dashboard/Investments';
 import Deposits from '@/pages/dashboard/Deposits';
 import Withdrawals from '@/pages/dashboard/Withdrawals';
 import Transactions from '@/pages/dashboard/Transactions';
+import Earnings from '@/pages/dashboard/Earnings';
+import Referral from '@/pages/dashboard/Referral';
+import Notifications from '@/pages/dashboard/Notifications';
 import Profile from '@/pages/dashboard/Profile';
 
 const queryClient = new QueryClient();
@@ -38,6 +41,15 @@ function Router() {
       </Route>
       <Route path="/dashboard/transactions">
         <DashboardLayout><Transactions /></DashboardLayout>
+      </Route>
+      <Route path="/dashboard/earnings">
+        <DashboardLayout><Earnings /></DashboardLayout>
+      </Route>
+      <Route path="/dashboard/referral">
+        <DashboardLayout><Referral /></DashboardLayout>
+      </Route>
+      <Route path="/dashboard/notifications">
+        <DashboardLayout><Notifications /></DashboardLayout>
       </Route>
       <Route path="/dashboard/profile">
         <DashboardLayout><Profile /></DashboardLayout>

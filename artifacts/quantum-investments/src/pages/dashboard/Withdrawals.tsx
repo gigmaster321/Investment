@@ -1,14 +1,31 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Wallet, ArrowRight, ShieldAlert, ArrowUpFromLine, Clock, FileText } from 'lucide-react';
+import { StatCard } from '@/components/dashboard/StatCard';
+
+const mockHistory = [
+  { id: 'WDL-7201', amount: '$5,000.00', wallet: 'bc1q...x0wlh', network: 'BTC', date: 'Oct 24, 2023, 11:30 AM', status: 'Completed' },
+  { id: 'WDL-7200', amount: '$2,000.00', wallet: '0x71...8976F', network: 'ETH', date: 'Oct 21, 2023, 10:15 AM', status: 'Completed' },
+  { id: 'WDL-7199', amount: '$5,000.00', wallet: 'TXLA...7m7X', network: 'USDT', date: 'Sep 10, 2023, 13:45 PM', status: 'Processing' },
+  { id: 'WDL-7198', amount: '$1,500.00', wallet: 'bc1q...v2pq8', network: 'BTC', date: 'Aug 14, 2023, 16:20 PM', status: 'Completed' },
+  { id: 'WDL-7197', amount: '$2,500.00', wallet: '0x88...1A49B', network: 'ETH', date: 'Jul 05, 2023, 09:10 AM', status: 'Completed' },
+  { id: 'WDL-7196', amount: '$1,000.00', wallet: 'TYH8...4G9L', network: 'USDT', date: 'Jun 12, 2023, 14:30 PM', status: 'Completed' },
+  { id: 'WDL-7195', amount: '$500.00', wallet: 'bc1q...a9x2m', network: 'BTC', date: 'May 20, 2023, 11:45 AM', status: 'Completed' },
+  { id: 'WDL-7194', amount: '$8,000.00', wallet: '0x12...9C33D', network: 'ETH', date: 'Apr 18, 2023, 10:05 AM', status: 'Rejected' },
+  { id: 'WDL-7193', amount: '$3,000.00', wallet: 'TKJ1...8Y4M', network: 'USDT', date: 'Mar 10, 2023, 15:50 PM', status: 'Completed' },
+  { id: 'WDL-7192', amount: '$1,200.00', wallet: 'bc1q...o5r4t', network: 'BTC', date: 'Feb 22, 2023, 08:15 AM', status: 'Completed' },
+];
 
 export default function Withdrawals() {
   const [amount, setAmount] = useState('');
   const [address, setAddress] = useState('');
   const [network, setNetwork] = useState('btc');
   const [submitted, setSubmitted] = useState(false);
+  const [filter, setFilter] = useState('All');
 
   const availableBalance = 28430.50; // Total Profit
+
+  const filtered = mockHistory.filter(t => filter === 'All' || t.status === filter);
 
   if (submitted) {
     return (
@@ -24,14 +41,19 @@ export default function Withdrawals() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <header className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Withdraw Funds</h1>
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Withdrawals</h1>
         <p className="text-muted-foreground">Transfer profits to your external wallet securely.</p>
       </header>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 md:p-8 relative overflow-hidden">
-        
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard delay={0} title="Total Withdrawn" value="$12,000.00" icon={ArrowUpFromLine} />
+        <StatCard delay={0.1} title="Last Withdrawal" value="$5,000.00" icon={FileText} />
+        <StatCard delay={0.2} title="Pending" value="$0.00" icon={Clock} />
+      </div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 md:p-8 relative overflow-hidden max-w-2xl mx-auto">
         <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between mb-8">
           <div>
             <p className="text-sm text-accent font-medium mb-1">Available for Withdrawal</p>
@@ -104,6 +126,71 @@ export default function Withdrawals() {
             Submit Withdrawal <ArrowRight size={18} />
           </button>
         </form>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden mt-8">
+        <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold text-white">Withdrawal History</h2>
+          <div className="flex bg-white/5 p-1 rounded-lg">
+            {['All', 'Pending', 'Processing', 'Completed', 'Rejected'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setFilter(tab)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  filter === tab ? 'bg-primary/20 text-accent shadow-sm' : 'text-muted-foreground hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead>
+              <tr className="bg-white/[0.02] border-b border-white/5 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                <th className="p-4">TXN ID</th>
+                <th className="p-4">Amount</th>
+                <th className="p-4">Wallet</th>
+                <th className="p-4">Network</th>
+                <th className="p-4">Date</th>
+                <th className="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((row, i) => (
+                <motion.tr 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 + 0.4 }}
+                  key={row.id} 
+                  className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
+                >
+                  <td className="p-4 font-mono text-white/80">{row.id}</td>
+                  <td className="p-4 font-bold text-white">{row.amount}</td>
+                  <td className="p-4 text-muted-foreground font-mono">{row.wallet}</td>
+                  <td className="p-4 text-white">{row.network}</td>
+                  <td className="p-4 text-muted-foreground">{row.date}</td>
+                  <td className="p-4">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
+                      row.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
+                      row.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
+                      row.status === 'Processing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
+                      'bg-red-500/10 text-red-400 border-red-500/20'
+                    }`}>
+                      {row.status}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div className="p-12 text-center text-muted-foreground">
+              No withdrawals found matching your criteria.
+            </div>
+          )}
+        </div>
       </motion.div>
     </div>
   );

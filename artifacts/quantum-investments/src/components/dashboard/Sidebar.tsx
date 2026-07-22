@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Users, Bell } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -7,6 +7,9 @@ const NAV_ITEMS = [
   { href: '/dashboard/deposits', label: 'Deposits', icon: Download },
   { href: '/dashboard/withdrawals', label: 'Withdrawals', icon: Upload },
   { href: '/dashboard/transactions', label: 'Transactions', icon: Clock },
+  { href: '/dashboard/earnings', label: 'Earnings', icon: DollarSign },
+  { href: '/dashboard/referral', label: 'Referral', icon: Users },
+  { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
 ];
 

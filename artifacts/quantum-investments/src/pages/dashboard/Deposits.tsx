@@ -1,14 +1,28 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Copy, Check, ArrowRight, CreditCard } from 'lucide-react';
+import { Copy, Check, ArrowRight, CreditCard, ArrowDownToLine, Clock, FileText } from 'lucide-react';
 import { FaBitcoin, FaEthereum } from 'react-icons/fa';
 import { SiTether } from 'react-icons/si';
+import { StatCard } from '@/components/dashboard/StatCard';
 
 const METHODS = [
   { id: 'btc', name: 'Bitcoin', icon: FaBitcoin, color: 'text-[#F7931A]', network: 'BTC Network', address: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh' },
   { id: 'eth', name: 'Ethereum', icon: FaEthereum, color: 'text-[#627EEA]', network: 'ERC20', address: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F' },
   { id: 'usdt', name: 'USDT (Tether)', icon: SiTether, color: 'text-[#26A17B]', network: 'TRC20', address: 'TXLAQ63Xg1NwaZ5q5K7qTz5GZ7X7m7X' },
   { id: 'bank', name: 'Bank Transfer', icon: CreditCard, color: 'text-white', network: 'Wire/ACH', address: 'Contact support for routing instructions.' },
+];
+
+const mockHistory = [
+  { id: 'DEP-8492', amount: '$25,000.00', method: 'Bitcoin', date: 'Oct 24, 2023, 14:20 PM', status: 'Completed' },
+  { id: 'DEP-8491', amount: '$10,000.00', method: 'Ethereum', date: 'Oct 20, 2023, 16:00 PM', status: 'Completed' },
+  { id: 'DEP-8490', amount: '$50,000.00', method: 'Bank Transfer', date: 'Sep 15, 2023, 11:00 AM', status: 'Completed' },
+  { id: 'DEP-8489', amount: '$10,000.00', method: 'USDT (Tether)', date: 'Sep 05, 2023, 10:20 AM', status: 'Completed' },
+  { id: 'DEP-8488', amount: '$5,000.00', method: 'Bitcoin', date: 'Aug 12, 2023, 09:15 AM', status: 'Completed' },
+  { id: 'DEP-8487', amount: '$15,000.00', method: 'Ethereum', date: 'Jul 28, 2023, 13:40 PM', status: 'Completed' },
+  { id: 'DEP-8486', amount: '$2,500.00', method: 'Bitcoin', date: 'Jul 10, 2023, 08:30 AM', status: 'Completed' },
+  { id: 'DEP-8485', amount: '$1,000.00', method: 'USDT (Tether)', date: 'Jun 22, 2023, 17:50 PM', status: 'Completed' },
+  { id: 'DEP-8484', amount: '$4,000.00', method: 'Bank Transfer', date: 'May 18, 2023, 14:10 PM', status: 'Completed' },
+  { id: 'DEP-8483', amount: '$2,500.00', method: 'Bitcoin', date: 'Apr 05, 2023, 11:25 AM', status: 'Completed' },
 ];
 
 export default function Deposits() {
@@ -37,14 +51,20 @@ export default function Deposits() {
   }
 
   return (
-    <div className="max-w-4xl space-y-8">
+    <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Deposit Funds</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Deposits</h1>
         <p className="text-muted-foreground">Add capital to your Quantum Investments account.</p>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard delay={0} title="Total Deposited" value="$125,000.00" icon={ArrowDownToLine} />
+        <StatCard delay={0.1} title="Last Deposit" value="$25,000.00" icon={FileText} />
+        <StatCard delay={0.2} title="Pending Deposits" value="$0.00" icon={Clock} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-white mb-2">Amount (USD)</label>
             <div className="relative">
@@ -84,7 +104,7 @@ export default function Deposits() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-card/40 backdrop-blur-md border border-white/5 rounded-xl p-6 h-fit">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-card/40 backdrop-blur-md border border-white/5 rounded-xl p-6 h-fit">
           <h3 className="text-lg font-semibold text-white mb-4">Transfer Instructions</h3>
           
           <div className="space-y-4">
@@ -124,6 +144,50 @@ export default function Deposits() {
           </div>
         </motion.div>
       </div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden mt-8">
+        <div className="p-6 border-b border-white/5">
+          <h2 className="text-lg font-semibold text-white">Deposit History</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead>
+              <tr className="bg-white/[0.02] border-b border-white/5 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                <th className="p-4">TXN ID</th>
+                <th className="p-4">Amount</th>
+                <th className="p-4">Method</th>
+                <th className="p-4">Date</th>
+                <th className="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mockHistory.map((row, i) => (
+                <motion.tr 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 + 0.5 }}
+                  key={row.id} 
+                  className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
+                >
+                  <td className="p-4 font-mono text-white/80">{row.id}</td>
+                  <td className="p-4 font-bold text-white">{row.amount}</td>
+                  <td className="p-4 text-white">{row.method}</td>
+                  <td className="p-4 text-muted-foreground">{row.date}</td>
+                  <td className="p-4">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
+                      row.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
+                      row.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
+                      'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                    }`}>
+                      {row.status}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </div>
   );
 }
