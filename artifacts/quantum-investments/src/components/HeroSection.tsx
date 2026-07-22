@@ -31,7 +31,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-[100dvh] flex items-center pt-24 pb-12 overflow-hidden">
+    <section id="hero" className="relative min-h-[100dvh] flex items-center pt-24 pb-12 overflow-hidden">
       {/* Background Gradient & Grid */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-secondary/40 via-background to-background z-0" />
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgc3Ryb2tlPSIjM0YzRjRGIiBzdHJva2Utd2lkdGg9IjEiIG9wYWNpdHk9IjAuMDUiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+PHBhdGggZD0iTTAgNjBoNjBNNjAgMEwwIDYwIi8+PC9nPjwvc3ZnPg==')] z-0 opacity-20" />
