@@ -59,12 +59,12 @@ export function Navbar() {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center gap-4">
-          <button className="text-sm font-medium text-white hover:text-accent transition-colors px-4 py-2">
-            Login
-          </button>
-          <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition-all hover:shadow-[0_0_20px_rgba(21,101,232,0.4)]">
+          <Link href="/dashboard" className="text-sm font-medium text-white hover:text-accent transition-colors px-4 py-2">
+            Dashboard
+          </Link>
+          <Link href="/dashboard" className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full text-sm font-semibold transition-all hover:shadow-[0_0_20px_rgba(21,101,232,0.4)]">
             Start Investing
-          </button>
+          </Link>
         </div>
 
         {/* Mobile Toggle */}
@@ -98,12 +98,12 @@ export function Navbar() {
                 ))}
               </div>
               <div className="flex flex-col gap-3 mt-4">
-                <button className="w-full text-center text-white border border-white/20 py-3 rounded-lg font-medium">
-                  Login
-                </button>
-                <button className="w-full text-center bg-primary text-white py-3 rounded-lg font-semibold">
+                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="w-full block text-center text-white border border-white/20 py-3 rounded-lg font-medium">
+                  Dashboard
+                </Link>
+                <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="w-full block text-center bg-primary text-white py-3 rounded-lg font-semibold">
                   Start Investing
-                </button>
+                </Link>
               </div>
             </motion.div>
           )}

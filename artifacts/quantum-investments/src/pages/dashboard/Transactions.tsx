@@ -1,0 +1,121 @@
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { ArrowDownLeft, ArrowUpRight, Plus, Search } from 'lucide-react';
+
+const mockTransactions = [
+  { id: 'TRX-9821', type: 'Profit', amount: '+$1,250.00', date: 'Oct 25, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9820', type: 'Deposit', amount: '+$25,000.00', date: 'Oct 24, 2023, 14:20 PM', status: 'Completed' },
+  { id: 'TRX-9819', type: 'Withdrawal', amount: '-$5,000.00', date: 'Oct 24, 2023, 11:30 AM', status: 'Completed' },
+  { id: 'TRX-9818', type: 'Profit', amount: '+$1,250.00', date: 'Oct 24, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9817', type: 'Profit', amount: '+$1,250.00', date: 'Oct 23, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9816', type: 'Deposit', amount: '+$10,000.00', date: 'Oct 20, 2023, 16:00 PM', status: 'Completed' },
+  { id: 'TRX-9815', type: 'Profit', amount: '+$1,100.00', date: 'Oct 22, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9814', type: 'Withdrawal', amount: '-$2,000.00', date: 'Oct 21, 2023, 10:15 AM', status: 'Completed' },
+  { id: 'TRX-9813', type: 'Profit', amount: '+$1,100.00', date: 'Oct 21, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9812', type: 'Deposit', amount: '+$50,000.00', date: 'Sep 15, 2023, 11:00 AM', status: 'Completed' },
+  { id: 'TRX-9811', type: 'Withdrawal', amount: '-$5,000.00', date: 'Sep 10, 2023, 13:45 PM', status: 'Processing' },
+  { id: 'TRX-9810', type: 'Profit', amount: '+$850.00', date: 'Sep 09, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9809', type: 'Profit', amount: '+$850.00', date: 'Sep 08, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9808', type: 'Profit', amount: '+$850.00', date: 'Sep 07, 2023, 09:41 AM', status: 'Completed' },
+  { id: 'TRX-9807', type: 'Deposit', amount: '+$10,000.00', date: 'Sep 05, 2023, 10:20 AM', status: 'Completed' },
+];
+
+export default function Transactions() {
+  const [filter, setFilter] = useState('All');
+  const [search, setSearch] = useState('');
+
+  const filtered = mockTransactions.filter(t => {
+    if (filter !== 'All' && t.type !== filter) return false;
+    if (search && !t.id.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  return (
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Transaction History</h1>
+        <p className="text-muted-foreground">Complete record of your deposits, withdrawals, and profits.</p>
+      </header>
+
+      <div className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden flex flex-col">
+        <div className="p-6 border-b border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex bg-white/5 p-1 rounded-lg">
+            {['All', 'Deposit', 'Withdrawal', 'Profit'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setFilter(tab)}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                  filter === tab ? 'bg-primary/20 text-accent shadow-sm' : 'text-muted-foreground hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative w-full md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <input 
+              type="text"
+              placeholder="Search ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-background border border-white/10 rounded-lg py-2 pl-9 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+            />
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-white/[0.02] border-b border-white/5 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                <th className="p-4">Transaction ID</th>
+                <th className="p-4">Type</th>
+                <th className="p-4 text-right">Amount</th>
+                <th className="p-4">Date</th>
+                <th className="p-4">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((tx, i) => (
+                <motion.tr 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: (i % 10) * 0.05, duration: 0.2 }}
+                  key={tx.id} 
+                  className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                >
+                  <td className="p-4 text-sm font-mono text-white/80">{tx.id}</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-2">
+                      {tx.type === 'Deposit' && <ArrowDownLeft size={16} className="text-emerald-400" />}
+                      {tx.type === 'Withdrawal' && <ArrowUpRight size={16} className="text-destructive" />}
+                      {tx.type === 'Profit' && <Plus size={16} className="text-accent" />}
+                      <span className="text-sm font-medium text-white">{tx.type}</span>
+                    </div>
+                  </td>
+                  <td className={`p-4 text-sm font-bold text-right ${tx.type === 'Withdrawal' ? 'text-white' : 'text-accent'}`}>
+                    {tx.amount}
+                  </td>
+                  <td className="p-4 text-sm text-muted-foreground">{tx.date}</td>
+                  <td className="p-4">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${
+                      tx.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                    }`}>
+                      {tx.status}
+                    </span>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div className="p-12 text-center text-muted-foreground">
+              No transactions found matching your criteria.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
