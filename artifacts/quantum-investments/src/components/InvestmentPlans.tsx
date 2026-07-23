@@ -3,37 +3,26 @@ import { useLocation } from 'wouter';
 
 const plans = [
   {
-    name: "Starter",
-    daily: "1.5%",
-    min: "$100",
-    max: "$999",
-    duration: "30 days",
-    featured: false
+    name: "Starter AI",
+    returns: "200% – 350%",
+    investment: "$1,000 – $10,000",
+    cycle: "24 Hours",
+    featured: false,
   },
   {
-    name: "Silver",
-    daily: "2.5%",
-    min: "$1,000",
-    max: "$4,999",
-    duration: "60 days",
-    featured: false
+    name: "Growth AI",
+    returns: "350% – 550%",
+    investment: "$10,000 – $100,000",
+    cycle: "3 Days",
+    featured: true,
   },
   {
-    name: "Gold",
-    daily: "4.0%",
-    min: "$5,000",
-    max: "$19,999",
-    duration: "90 days",
-    featured: true
+    name: "Elite AI",
+    returns: "+700%",
+    investment: "$100,000+",
+    cycle: "5 Days",
+    featured: false,
   },
-  {
-    name: "Platinum",
-    daily: "6.0%",
-    min: "$20,000+",
-    max: "No limit",
-    duration: "180 days",
-    featured: false
-  }
 ];
 
 const containerVariants = {
@@ -70,7 +59,7 @@ export function InvestmentPlans() {
         </div>
 
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-center"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-center"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -95,24 +84,20 @@ export function InvestmentPlans() {
               <div className="p-8 flex-1">
                 <h3 className="text-2xl font-bold text-white mb-2 text-center">{plan.name}</h3>
                 <div className="text-center mb-6">
-                  <span className="text-5xl font-extrabold text-primary">{plan.daily}</span>
-                  <span className="block text-sm text-accent font-medium mt-1 uppercase tracking-wider">Daily Return</span>
+                  <span className="text-4xl font-extrabold text-primary">{plan.returns}</span>
+                  <span className="block text-sm text-accent font-medium mt-1 uppercase tracking-wider">Target Returns</span>
                 </div>
-                
+
                 <div className="h-px w-full bg-white/10 mb-6" />
-                
+
                 <div className="space-y-4 mb-8">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground text-sm">Min Deposit</span>
-                    <span className="text-white font-semibold">{plan.min}</span>
+                    <span className="text-muted-foreground text-sm">Investment</span>
+                    <span className="text-white font-semibold">{plan.investment}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground text-sm">Max Deposit</span>
-                    <span className="text-white font-semibold">{plan.max}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground text-sm">Duration</span>
-                    <span className="text-white font-semibold">{plan.duration}</span>
+                    <span className="text-muted-foreground text-sm">Execution Cycle</span>
+                    <span className="text-white font-semibold">{plan.cycle}</span>
                   </div>
                 </div>
                 
