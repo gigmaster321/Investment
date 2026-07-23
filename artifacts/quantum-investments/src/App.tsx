@@ -29,6 +29,7 @@ import AdminWithdrawals from '@/pages/admin/Withdrawals';
 import AdminPlans from '@/pages/admin/Plans';
 import AdminAnalytics from '@/pages/admin/Analytics';
 import AdminSettings from '@/pages/admin/Settings';
+import AdminDeposits from '@/pages/admin/Deposits';
 
 const queryClient = new QueryClient();
 
@@ -86,6 +87,9 @@ function Router() {
       </Route>
       <Route path="/admin/analytics">
         <AdminLayout><AdminAnalytics /></AdminLayout>
+      </Route>
+      <Route path="/admin/deposits">
+        <AdminLayout><AdminDeposits /></AdminLayout>
       </Route>
       <Route path="/admin/settings">
         <AdminLayout><AdminSettings /></AdminLayout>

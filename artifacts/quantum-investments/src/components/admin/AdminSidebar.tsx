@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Users, ArrowDownCircle, TrendingUp,
   BarChart2, Settings, LogOut, X, Shield,
-  CreditCard, Bell,
+  CreditCard, Bell, DollarSign,
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
@@ -33,6 +33,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Management',
     items: [
       { href: '/admin/users', label: 'User Management', icon: Users },
+      { href: '/admin/deposits', label: 'Deposits', icon: DollarSign },
       { href: '/admin/withdrawals', label: 'Withdrawals', icon: ArrowDownCircle },
       { href: '/admin/plans', label: 'Investment Plans', icon: CreditCard },
     ],
