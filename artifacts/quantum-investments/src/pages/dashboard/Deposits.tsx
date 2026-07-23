@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Copy, Check, ArrowRight, ArrowDownToLine, Clock, FileText,
-  QrCode, AlertCircle, ChevronDown,
+  QrCode, AlertCircle,
 } from 'lucide-react';
 import { FaBitcoin, FaEthereum } from 'react-icons/fa';
 import { SiTether } from 'react-icons/si';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { toast } from '@/hooks/use-toast';
+import QRCode from 'qrcode';
 
 // ─── Wallet configuration ─────────────────────────────────────────────────────
 // To update a wallet address, change only the `address` field here.
@@ -68,41 +70,95 @@ const MOCK_HISTORY = [
   { id: 'DEP-8483', amount: '$2,500.00',  method: 'Bitcoin',       date: 'Apr 05, 2023, 11:25 AM', status: 'Completed' },
 ];
 
-// ─── QR placeholder ───────────────────────────────────────────────────────────
+// ─── Payment URI builder ──────────────────────────────────────────────────────
 
-function QrPlaceholder({ method }: { method: Method }) {
+function buildPaymentUri(method: Method): string {
+  switch (method.id) {
+    case 'btc':  return `bitcoin:${method.address}`;
+    case 'eth':  return `ethereum:${method.address}`;
+    case 'usdt': return method.address;            // TRON has no standard URI prefix
+    default:     return method.address;
+  }
+}
+
+// ─── Real QR code card ────────────────────────────────────────────────────────
+
+function QrCodeCard({ method }: { method: Method }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const prevId = useRef<string>('');
+
+  useEffect(() => {
+    let cancelled = false;
+    if (prevId.current !== method.id) {
+      setDataUrl(null);          // clear while regenerating
+      prevId.current = method.id;
+    }
+    const uri = buildPaymentUri(method);
+    QRCode.toDataURL(uri, {
+      width: 220,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+      errorCorrectionLevel: 'M',
+    }).then((url) => {
+      if (!cancelled) setDataUrl(url);
+    });
+    return () => { cancelled = true; };
+  }, [method]);
+
   return (
-    <div className="flex flex-col items-center justify-center gap-3 p-5 bg-white/5 border border-white/10 rounded-xl">
-      {/* Simulated QR grid */}
-      <div className="relative w-28 h-28 bg-white rounded-lg p-2 flex items-center justify-center overflow-hidden">
-        <div className="grid grid-cols-7 grid-rows-7 gap-[2px] w-full h-full">
-          {Array.from({ length: 49 }).map((_, i) => {
-            // Corner finder patterns + pseudo-random data modules
-            const row = Math.floor(i / 7);
-            const col = i % 7;
-            const inTopLeft     = row < 3 && col < 3;
-            const inTopRight    = row < 3 && col > 3;
-            const inBottomLeft  = row > 3 && col < 3;
-            const isFinder      = inTopLeft || inTopRight || inBottomLeft;
-            const isData        = !isFinder && ((i * 7 + row * 3) % 3 === 0);
-            return (
-              <div
-                key={i}
-                className={`rounded-[1px] ${isFinder || isData ? 'bg-black' : 'bg-transparent'}`}
-              />
-            );
-          })}
+    /* Premium glassmorphism container */
+    <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm p-6 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
+
+      {/* Network + coin badge row */}
+      <div className="flex items-center gap-2">
+        <div
+          className="flex items-center justify-center w-6 h-6 rounded-full"
+          style={{ background: method.bgGlow }}
+        >
+          <method.icon className={`text-sm ${method.color}`} />
         </div>
-        {/* Coin icon overlay in center */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center shadow">
-            <method.icon className={`text-base ${method.color}`} />
-          </div>
-        </div>
+        <span className="text-xs font-semibold text-white/70 tracking-wide uppercase">
+          {method.name}
+        </span>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/8 border border-white/10 text-white/40 font-medium">
+          {method.network}
+        </span>
       </div>
+
+      {/* QR image — white card with rounded corners + shadow */}
+      <div className="relative rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
+        <AnimatePresence mode="wait">
+          {dataUrl ? (
+            <motion.img
+              key={method.id}
+              src={dataUrl}
+              alt={`${method.name} payment QR code`}
+              width={180}
+              height={180}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.2 }}
+              className="block w-[180px] h-[180px] rounded-2xl"
+              draggable={false}
+            />
+          ) : (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="w-[180px] h-[180px] bg-white/5 rounded-2xl flex items-center justify-center"
+            >
+              <QrCode className="w-8 h-8 text-white/20 animate-pulse" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Scan hint */}
       <p className="text-xs text-muted-foreground text-center leading-relaxed">
-        Scan with your {method.name} wallet app<br />
-        <span className="text-white/40">({method.network})</span>
+        Scan with your <span className="text-white/60 font-medium">{method.name}</span> wallet app
       </p>
     </div>
   );
@@ -120,6 +176,7 @@ export default function Deposits() {
     navigator.clipboard.writeText(method.address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
+    toast({ title: 'Wallet address copied.' });
   };
 
   const amountNum   = Number(amount);
@@ -278,7 +335,7 @@ export default function Deposits() {
           </div>
 
           {/* QR code */}
-          <QrPlaceholder method={method} />
+          <QrCodeCard method={method} />
 
           {/* Wallet address */}
           <div className="bg-background/70 border border-white/8 rounded-xl p-4">
