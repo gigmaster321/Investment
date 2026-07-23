@@ -2,7 +2,7 @@
   "framework": "vite",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/quantum-investments run build",
-  "outputDirectory": "artifacts/quantum-investments/dist/public",
+  "outputDirectory": "artifacts/quantum-investments/dist",
   "rewrites": [
     {
       "source": "/(.*)",
