@@ -15,7 +15,7 @@ import { toast } from '@/hooks/use-toast';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type UserStatus = 'Active' | 'Suspended';
-type UserPlan   = 'Starter' | 'Silver' | 'Gold' | 'Platinum';
+type UserPlan   = 'None' | 'Starter' | 'Silver' | 'Gold' | 'Platinum';
 type ActivityStatus = 'Completed' | 'Pending' | 'Rejected' | 'Active';
 
 const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`;
@@ -93,26 +93,8 @@ interface UserActivity {
   referralEarnings: string;
 }
 
-// ─── Seed data (2 demo users shown while real data loads) ────────────────────
-
-const SEED: User[] = [
-  {
-    id: '#U-D001', name: 'James Thornton',  username: 'james_t',
-    email: 'j.thornton@email.com', phone: '+1 234 567 8901',
-    country: 'United States', registeredDate: 'Jul 22, 2026', registeredIso: '2026-07-22',
-    status: 'Active', plan: 'Gold',
-    balance: '$14,200.00', balanceNum: 14200,
-    totalDeposits: '$28,000.00', totalWithdrawals: '$5,000.00', totalProfit: '$4,200.00',
-  },
-  {
-    id: '#U-D002', name: 'Priya Sharma',    username: 'priya_sh',
-    email: 'p.sharma@email.com', phone: '+91 98765 43210',
-    country: 'India', registeredDate: 'Jul 22, 2026', registeredIso: '2026-07-22',
-    status: 'Active', plan: 'Platinum',
-    balance: '$52,800.00', balanceNum: 52800,
-    totalDeposits: '$60,000.00', totalWithdrawals: '$12,800.00', totalProfit: '$5,600.00',
-  },
-];
+// No seed data — only real registered users are shown
+const SEED: User[] = [];
 
 // New = registered on or after Jul 20, 2026 (within 3 days of the platform date Jul 23)
 const NEW_THRESHOLD = '2026-07-20';
@@ -125,6 +107,7 @@ const STATUS_STYLE: Record<UserStatus, { label: string; color: string; bg: strin
 };
 
 const PLAN_STYLE: Record<UserPlan, { color: string; bg: string; border: string }> = {
+  None:     { color: 'text-white/30',   bg: 'bg-white/5',       border: 'border-white/10'      },
   Starter:  { color: 'text-slate-300',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20'  },
   Silver:   { color: 'text-slate-200',  bg: 'bg-slate-400/10',  border: 'border-slate-400/20'  },
   Gold:     { color: 'text-amber-300',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
@@ -167,14 +150,14 @@ function activityForUser(user: User): UserActivity {
   const profit = amountNumber(user.totalProfit);
   const withdrawals = amountNumber(user.totalWithdrawals);
   const referral = Math.round(deposits * 0.015);
-  const coin = user.plan === 'Starter' ? 'BTC' : user.plan === 'Silver' ? 'USDT' : 'ETH';
-  const activeInvestments = user.status === 'Active'
+  const coin = user.plan === 'Silver' ? 'USDT' : user.plan === 'None' ? 'BTC' : user.plan === 'Starter' ? 'BTC' : 'ETH';
+  const activeInvestments = user.status === 'Active' && user.plan !== 'None'
     ? user.plan === 'Platinum' ? 3 : user.plan === 'Gold' ? 2 : 1
     : 0;
 
   return {
     investments: [{
-      planName: `${user.plan} Plan`,
+      planName: user.plan === 'None' ? 'No Active Plan' : `${user.plan} Plan`,
       amount: user.totalDeposits,
       profitPct: deposits ? `${((profit / deposits) * 100).toFixed(1)}%` : '0.0%',
       status: user.status === 'Active' ? 'Active' : 'Completed',
@@ -425,7 +408,7 @@ function ViewModal({
           </span>
           <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${ps.bg} ${ps.border} ${ps.color}`}>
             <CreditCard size={10} />
-            {user.plan} Plan
+            {user.plan === 'None' ? 'No Plan' : `${user.plan} Plan`}
           </span>
         </div>
 
@@ -677,8 +660,8 @@ function EditModal({
                 onChange={(e) => setForm((f) => ({ ...f, plan: e.target.value as UserPlan }))}
                 className={selectCls}
               >
-                {(['Starter', 'Silver', 'Gold', 'Platinum'] as UserPlan[]).map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                {(['None', 'Starter', 'Silver', 'Gold', 'Platinum'] as UserPlan[]).map((p) => (
+                  <option key={p} value={p}>{p === 'None' ? 'None (No Plan)' : p}</option>
                 ))}
               </select>
               <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -759,20 +742,15 @@ export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('All');
 
-  // Load real users from the API; fall back to demo seed on error
+  // Load real registered users from the API on mount.
+  // Always replace state with whatever the API returns — no demo fallback.
   useEffect(() => {
-    const base = API_BASE;
-    fetch(`${base}/admin/users`, { credentials: 'include' })
+    fetch(`${API_BASE}/admin/users`, { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : Promise.reject(r)))
       .then((data: User[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setUsers(data);
-        }
-        // If API returns empty array keep demo seed so UI isn't blank
+        if (Array.isArray(data)) setUsers(data);
       })
-      .catch(() => {
-        // Keep demo seed on error
-      });
+      .catch(() => setUsers([]));
   }, []);
 
   // ── Counts for summary cards ───────────────────────────────────────────────

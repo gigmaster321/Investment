@@ -46,7 +46,7 @@ const VALID_PLANS: UserPlan[] = ["Starter", "Silver", "Gold", "Platinum"];
 
 function toUiPlan(dbPlan: string | null | undefined): UserPlan {
   if (dbPlan && VALID_PLANS.includes(dbPlan as UserPlan)) return dbPlan as UserPlan;
-  return "Starter";
+  return "None";
 }
 
 const router: IRouter = Router();
