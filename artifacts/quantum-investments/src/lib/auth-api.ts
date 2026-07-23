@@ -76,10 +76,10 @@ export const authApi = {
     }),
 
   /** Log in with email + password. Requires email to be verified. */
-  login: (email: string, password: string) =>
+  login: (email: string, password: string, rememberMe = false) =>
     request<AuthResponse>("/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberMe }),
     }),
 
   /** Destroy the current session. */

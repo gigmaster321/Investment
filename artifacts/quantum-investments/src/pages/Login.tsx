@@ -18,6 +18,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -25,20 +26,25 @@ export default function Login() {
     setError('');
     setIsLoading(true);
     try {
-      await login(email, password);
-      setLocation('/dashboard');
+      const user = await login(email, password, remember);
+      // Role-based redirect
+      if (user.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/dashboard');
+      }
     } catch (err: any) {
-      if (err?.error === 'EMAIL_NOT_VERIFIED') {
-        // Redirect to verify-email so they can complete verification
+      const code = err?.error;
+      if (code === 'EMAIL_NOT_VERIFIED') {
         setLocation(`/verify-email?email=${encodeURIComponent(email)}`);
         return;
       }
-      setError(
-        err?.message ||
-          (err?.error === 'ACCOUNT_INACTIVE'
-            ? 'Your account has been suspended. Please contact support.'
-            : 'Invalid email or password. Please try again.'),
-      );
+      const messages: Record<string, string> = {
+        USER_NOT_FOUND: 'Invalid email. No account found with this email address.',
+        INVALID_PASSWORD: 'Incorrect password. Please try again.',
+        ACCOUNT_INACTIVE: err?.message || 'Your account has been suspended. Please contact support.',
+      };
+      setError(messages[code] ?? err?.message ?? 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -127,6 +133,8 @@ export default function Login() {
             <div className="flex items-center gap-2">
               <Checkbox
                 id="remember"
+                checked={remember}
+                onCheckedChange={(v) => setRemember(!!v)}
                 className="border-white/20 data-[state=checked]:bg-accent data-[state=checked]:border-accent"
               />
               <Label htmlFor="remember" className="text-xs text-white/60 cursor-pointer">

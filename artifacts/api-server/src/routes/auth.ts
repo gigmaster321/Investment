@@ -32,6 +32,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 const verifyEmailSchema = z.object({
@@ -120,13 +121,27 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const user = await loginUser(parsed.data.email, parsed.data.password);
+    const { email, password, rememberMe } = parsed.data;
+    const user = await loginUser(email, password);
     setSession(req, user);
+
+    // Remember Me: extend cookie to 30 days; otherwise it expires with the browser session
+    if (rememberMe) {
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+    } else {
+      req.session.cookie.expires = undefined;
+      req.session.cookie.maxAge = undefined as any;
+    }
+
     res.json({ user });
   } catch (err: any) {
     if (dbError(res, err)) return;
-    if (err.code === "INVALID_CREDENTIALS") {
-      res.status(401).json({ error: "INVALID_CREDENTIALS", message: "Invalid email or password." });
+    if (err.code === "USER_NOT_FOUND") {
+      res.status(401).json({ error: "USER_NOT_FOUND", message: "No account found with this email address." });
+      return;
+    }
+    if (err.code === "INVALID_PASSWORD") {
+      res.status(401).json({ error: "INVALID_PASSWORD", message: "Incorrect password. Please try again." });
       return;
     }
     if (err.code === "EMAIL_NOT_VERIFIED") {

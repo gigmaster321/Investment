@@ -89,14 +89,14 @@ export async function loginUser(
     .limit(1);
 
   if (!user)
-    throw Object.assign(new Error("INVALID_CREDENTIALS"), {
-      code: "INVALID_CREDENTIALS",
+    throw Object.assign(new Error("USER_NOT_FOUND"), {
+      code: "USER_NOT_FOUND",
     });
 
   const valid = await verifyPassword(password, user.password);
   if (!valid)
-    throw Object.assign(new Error("INVALID_CREDENTIALS"), {
-      code: "INVALID_CREDENTIALS",
+    throw Object.assign(new Error("INVALID_PASSWORD"), {
+      code: "INVALID_PASSWORD",
     });
 
   if (!user.email_verified)

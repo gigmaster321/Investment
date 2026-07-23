@@ -1,0 +1,116 @@
+Update the existing Investment Plans section using the latest client-provided plan details.
+
+Important:
+- Do NOT redesign the current Plans section.
+- Keep the existing Quantum Investments blue premium theme.
+- Keep the current card layout.
+- Keep the "MOST POPULAR" badge on the Growth AI plan.
+- Keep all existing animations and responsiveness.
+- Do NOT change the homepage design.
+
+Update only the plan content as follows:
+
+================================
+PLAN 1 — STARTER AI
+================================
+
+Plan Name:
+Starter AI
+
+Investment Range:
+$1,000 – $10,000
+
+Target Returns:
+200% – 350%
+
+Execution Cycle:
+24 Hours
+
+Description:
+Based on historical backtesting and volatility-adjusted strategy modeling.
+
+Overview:
+Designed for new investors seeking structured exposure to innovation-focused equities with automated risk controls.
+
+Features:
+• Automated trade execution
+• Risk-adjusted capital deployment
+• Portfolio rebalancing
+• Monthly performance reporting
+
+Button:
+Invest Now
+
+================================
+PLAN 2 — GROWTH AI
+================================
+
+Plan Name:
+Growth AI
+
+Investment Range:
+$10,000 – $100,000
+
+Target Returns:
+350% – 550%
+
+Execution Cycle:
+3 Days
+
+Description:
+Advanced signal detection with volatility-aware execution framework.
+
+Overview:
+Enhanced AI signal modeling focused on high-growth innovation sectors and dynamic capital rotation.
+
+Features:
+• High-frequency signal detection
+• Sector rotation strategy
+• Volatility hedging logic
+• Weekly analytics dashboard
+
+Keep the existing "MOST POPULAR" badge.
+
+Button:
+Invest Now
+
+================================
+PLAN 3 — ELITE AI
+================================
+
+Plan Name:
+Elite AI
+
+Investment Range:
+$100,000+
+
+Target Returns:
++700%
+
+Execution Cycle:
+5 Days
+
+Description:
+Multi-layered AI execution across diversified innovation assets.
+
+Overview:
+Designed for large capital deployment with structured downside protection and dynamic reallocation systems.
+
+Features:
+• Cross-sector AI allocation engine
+• Downside risk containment protocol
+• Real-time capital rebalancing
+• Dedicated strategy oversight
+
+Button:
+Invest Now
+
+Requirements:
+
+- Preserve the current Quantum Investments branding.
+- Keep the existing blue theme.
+- Keep current spacing as much as possible.
+- Display the new descriptions and feature lists cleanly.
+- Ensure all three cards have equal height regardless of content.
+- Keep the section fully responsive for mobile, tablet, and desktop.
+- Do not modify any other homepage section.

@@ -12,7 +12,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   /** True while the initial session check is in flight. */
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthUser>;
   /**
    * Register a new account. Does NOT create a session.
    * Returns { requiresVerification: true } — redirect to /verify-email.
@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = async (email: string, password: string): Promise<AuthUser> => {
-    const { user: u } = await authApi.login(email, password);
+  const login = async (email: string, password: string, rememberMe = false): Promise<AuthUser> => {
+    const { user: u } = await authApi.login(email, password, rememberMe);
     setUser(u);
     return u;
   };
