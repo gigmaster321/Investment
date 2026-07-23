@@ -30,6 +30,7 @@ import AdminPlans from '@/pages/admin/Plans';
 import AdminAnalytics from '@/pages/admin/Analytics';
 import AdminSettings from '@/pages/admin/Settings';
 import AdminDeposits from '@/pages/admin/Deposits';
+import { InvestmentPlansProvider } from '@/lib/investment-plans';
 
 const queryClient = new QueryClient();
 
@@ -104,13 +105,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AdminAuthProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-          <LiveNotifications />
-        </TooltipProvider>
+        <InvestmentPlansProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+              <Router />
+            </WouterRouter>
+            <Toaster />
+            <LiveNotifications />
+          </TooltipProvider>
+        </InvestmentPlansProvider>
       </AdminAuthProvider>
     </QueryClientProvider>
   );

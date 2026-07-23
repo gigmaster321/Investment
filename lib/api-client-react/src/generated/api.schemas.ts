@@ -51,8 +51,51 @@ export interface ApiError {
   detail: string;
 }
 
+export type InvestmentPlanInputStatus = typeof InvestmentPlanInputStatus[keyof typeof InvestmentPlanInputStatus];
+
+
+export const InvestmentPlanInputStatus = {
+  Active: 'Active',
+  Disabled: 'Disabled',
+} as const;
+
+export interface InvestmentPlanInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 0 */
+  minInvestment: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  maxInvestment: number | null;
+  /** @minimum 0 */
+  profitPercentage: number;
+  /** @minLength 1 */
+  executionCycle: string;
+  description: string;
+  /** @minItems 1 */
+  features: string[];
+  status: InvestmentPlanInputStatus;
+  /** @minimum 0 */
+  displayOrder: number;
+}
+
+export type InvestmentPlan = InvestmentPlanInput & {
+  id: string;
+  /** @minimum 0 */
+  investors: number;
+  /** @minimum 0 */
+  totalDeposited: number;
+};
+
 /**
  * Invalid request
  */
 export type BadRequestResponse = ApiError;
+
+/**
+ * Resource not found
+ */
+export type NotFoundResponse = ApiError;
 

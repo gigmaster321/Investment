@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: admin-users
     description: Admin user profile and account management operations
+  - name: plans
+    description: Investment plan catalog management operations
 paths:
   /healthz:
     get:
@@ -112,6 +114,117 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminUserActionResponse"
+  /plans:
+    get:
+      operationId: listInvestmentPlans
+      tags: [plans]
+      summary: List investment plans
+      responses:
+        "200":
+          description: Investment plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvestmentPlan"
+    post:
+      operationId: createInvestmentPlan
+      tags: [plans]
+      summary: Create an investment plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentPlanInput"
+      responses:
+        "201":
+          description: Created investment plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /plans/{planId}:
+    get:
+      operationId: getInvestmentPlan
+      tags: [plans]
+      summary: Get an investment plan
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      responses:
+        "200":
+          description: Investment plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentPlan"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: updateInvestmentPlan
+      tags: [plans]
+      summary: Update an investment plan
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentPlanInput"
+      responses:
+        "200":
+          description: Updated investment plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteInvestmentPlan
+      tags: [plans]
+      summary: Delete an investment plan
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      responses:
+        "200":
+          description: Delete request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserActionResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /plans/{planId}/status:
+    patch:
+      operationId: updateInvestmentPlanStatus
+      tags: [plans]
+      summary: Enable or disable an investment plan
+      parameters:
+        - $ref: "#/components/parameters/PlanId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserStatusUpdate"
+      responses:
+        "200":
+          description: Updated investment plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   parameters:
     UserId:
@@ -122,9 +235,23 @@ components:
       schema:
         type: string
         minLength: 1
+    PlanId:
+      name: planId
+      in: path
+      required: true
+      description: Investment plan identifier
+      schema:
+        type: string
+        minLength: 1
   responses:
     BadRequest:
       description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    NotFound:
+      description: Resource not found
       content:
         application/json:
           schema:
@@ -181,4 +308,52 @@ components:
           type: string
         detail:
           type: string
+    InvestmentPlan:
+      allOf:
+        - $ref: "#/components/schemas/InvestmentPlanInput"
+        - type: object
+          required: [id, investors, totalDeposited]
+          properties:
+            id:
+              type: string
+            investors:
+              type: integer
+              minimum: 0
+            totalDeposited:
+              type: number
+              minimum: 0
+    InvestmentPlanInput:
+      type: object
+      required: [name, minInvestment, maxInvestment, profitPercentage, executionCycle, description, features, status, displayOrder]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        minInvestment:
+          type: number
+          minimum: 0
+        maxInvestment:
+          type:
+            - number
+            - "null"
+          minimum: 0
+        profitPercentage:
+          type: number
+          minimum: 0
+        executionCycle:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        status:
+          type: string
+          enum: [Active, Disabled]
+        displayOrder:
+          type: integer
+          minimum: 0
 

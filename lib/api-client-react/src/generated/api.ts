@@ -25,7 +25,10 @@ import type {
   AdminUserProfile,
   AdminUserStatusUpdate,
   BadRequestResponse,
-  HealthStatus
+  HealthStatus,
+  InvestmentPlan,
+  InvestmentPlanInput,
+  NotFoundResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -494,5 +497,445 @@ export const useDeleteAdminUser = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteAdminUserMutationOptions(options));
+    }
+
+export const getListInvestmentPlansUrl = () => {
+
+
+
+
+  return `/api/plans`
+}
+
+/**
+ * @summary List investment plans
+ */
+export const listInvestmentPlans = async ( options?: RequestInit): Promise<InvestmentPlan[]> => {
+
+  return customFetch<InvestmentPlan[]>(getListInvestmentPlansUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInvestmentPlansQueryKey = () => {
+    return [
+    `/api/plans`
+    ] as const;
+    }
+
+
+export const getListInvestmentPlansQueryOptions = <TData = Awaited<ReturnType<typeof listInvestmentPlans>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvestmentPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInvestmentPlansQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInvestmentPlans>>> = ({ signal }) => listInvestmentPlans({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInvestmentPlans>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInvestmentPlansQueryResult = NonNullable<Awaited<ReturnType<typeof listInvestmentPlans>>>
+export type ListInvestmentPlansQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List investment plans
+ */
+
+export function useListInvestmentPlans<TData = Awaited<ReturnType<typeof listInvestmentPlans>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvestmentPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInvestmentPlansQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateInvestmentPlanUrl = () => {
+
+
+
+
+  return `/api/plans`
+}
+
+/**
+ * @summary Create an investment plan
+ */
+export const createInvestmentPlan = async (investmentPlanInput: InvestmentPlanInput, options?: RequestInit): Promise<InvestmentPlan> => {
+
+  return customFetch<InvestmentPlan>(getCreateInvestmentPlanUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(investmentPlanInput)
+  }
+);}
+
+
+
+
+
+export const getCreateInvestmentPlanMutationOptions = <TError = ErrorType<BadRequestResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvestmentPlan>>, TError,{data: BodyType<InvestmentPlanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInvestmentPlan>>, TError,{data: BodyType<InvestmentPlanInput>}, TContext> => {
+
+const mutationKey = ['createInvestmentPlan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInvestmentPlan>>, {data: BodyType<InvestmentPlanInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInvestmentPlan(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInvestmentPlanMutationResult = NonNullable<Awaited<ReturnType<typeof createInvestmentPlan>>>
+    export type CreateInvestmentPlanMutationBody = BodyType<InvestmentPlanInput>
+    export type CreateInvestmentPlanMutationError = ErrorType<BadRequestResponse>
+
+    /**
+ * @summary Create an investment plan
+ */
+export const useCreateInvestmentPlan = <TError = ErrorType<BadRequestResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvestmentPlan>>, TError,{data: BodyType<InvestmentPlanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInvestmentPlan>>,
+        TError,
+        {data: BodyType<InvestmentPlanInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInvestmentPlanMutationOptions(options));
+    }
+
+export const getGetInvestmentPlanUrl = (planId: string,) => {
+
+
+
+
+  return `/api/plans/${planId}`
+}
+
+/**
+ * @summary Get an investment plan
+ */
+export const getInvestmentPlan = async (planId: string, options?: RequestInit): Promise<InvestmentPlan> => {
+
+  return customFetch<InvestmentPlan>(getGetInvestmentPlanUrl(planId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInvestmentPlanQueryKey = (planId: string,) => {
+    return [
+    `/api/plans/${planId}`
+    ] as const;
+    }
+
+
+export const getGetInvestmentPlanQueryOptions = <TData = Awaited<ReturnType<typeof getInvestmentPlan>>, TError = ErrorType<NotFoundResponse>>(planId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvestmentPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInvestmentPlanQueryKey(planId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInvestmentPlan>>> = ({ signal }) => getInvestmentPlan(planId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: planId !== null && planId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInvestmentPlan>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInvestmentPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getInvestmentPlan>>>
+export type GetInvestmentPlanQueryError = ErrorType<NotFoundResponse>
+
+
+/**
+ * @summary Get an investment plan
+ */
+
+export function useGetInvestmentPlan<TData = Awaited<ReturnType<typeof getInvestmentPlan>>, TError = ErrorType<NotFoundResponse>>(
+ planId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvestmentPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInvestmentPlanQueryOptions(planId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateInvestmentPlanUrl = (planId: string,) => {
+
+
+
+
+  return `/api/plans/${planId}`
+}
+
+/**
+ * @summary Update an investment plan
+ */
+export const updateInvestmentPlan = async (planId: string,
+    investmentPlanInput: InvestmentPlanInput, options?: RequestInit): Promise<InvestmentPlan> => {
+
+  return customFetch<InvestmentPlan>(getUpdateInvestmentPlanUrl(planId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(investmentPlanInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateInvestmentPlanMutationOptions = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInvestmentPlan>>, TError,{planId: string;data: BodyType<InvestmentPlanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateInvestmentPlan>>, TError,{planId: string;data: BodyType<InvestmentPlanInput>}, TContext> => {
+
+const mutationKey = ['updateInvestmentPlan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateInvestmentPlan>>, {planId: string;data: BodyType<InvestmentPlanInput>}> = (props) => {
+          const {planId,data} = props ?? {};
+
+          return  updateInvestmentPlan(planId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateInvestmentPlanMutationResult = NonNullable<Awaited<ReturnType<typeof updateInvestmentPlan>>>
+    export type UpdateInvestmentPlanMutationBody = BodyType<InvestmentPlanInput>
+    export type UpdateInvestmentPlanMutationError = ErrorType<BadRequestResponse | NotFoundResponse>
+
+    /**
+ * @summary Update an investment plan
+ */
+export const useUpdateInvestmentPlan = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInvestmentPlan>>, TError,{planId: string;data: BodyType<InvestmentPlanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateInvestmentPlan>>,
+        TError,
+        {planId: string;data: BodyType<InvestmentPlanInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateInvestmentPlanMutationOptions(options));
+    }
+
+export const getDeleteInvestmentPlanUrl = (planId: string,) => {
+
+
+
+
+  return `/api/plans/${planId}`
+}
+
+/**
+ * @summary Delete an investment plan
+ */
+export const deleteInvestmentPlan = async (planId: string, options?: RequestInit): Promise<AdminUserActionResponse> => {
+
+  return customFetch<AdminUserActionResponse>(getDeleteInvestmentPlanUrl(planId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteInvestmentPlanMutationOptions = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvestmentPlan>>, TError,{planId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteInvestmentPlan>>, TError,{planId: string}, TContext> => {
+
+const mutationKey = ['deleteInvestmentPlan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteInvestmentPlan>>, {planId: string}> = (props) => {
+          const {planId} = props ?? {};
+
+          return  deleteInvestmentPlan(planId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteInvestmentPlanMutationResult = NonNullable<Awaited<ReturnType<typeof deleteInvestmentPlan>>>
+
+    export type DeleteInvestmentPlanMutationError = ErrorType<NotFoundResponse>
+
+    /**
+ * @summary Delete an investment plan
+ */
+export const useDeleteInvestmentPlan = <TError = ErrorType<NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInvestmentPlan>>, TError,{planId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteInvestmentPlan>>,
+        TError,
+        {planId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteInvestmentPlanMutationOptions(options));
+    }
+
+export const getUpdateInvestmentPlanStatusUrl = (planId: string,) => {
+
+
+
+
+  return `/api/plans/${planId}/status`
+}
+
+/**
+ * @summary Enable or disable an investment plan
+ */
+export const updateInvestmentPlanStatus = async (planId: string,
+    adminUserStatusUpdate: AdminUserStatusUpdate, options?: RequestInit): Promise<InvestmentPlan> => {
+
+  return customFetch<InvestmentPlan>(getUpdateInvestmentPlanStatusUrl(planId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(adminUserStatusUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateInvestmentPlanStatusMutationOptions = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInvestmentPlanStatus>>, TError,{planId: string;data: BodyType<AdminUserStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateInvestmentPlanStatus>>, TError,{planId: string;data: BodyType<AdminUserStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateInvestmentPlanStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateInvestmentPlanStatus>>, {planId: string;data: BodyType<AdminUserStatusUpdate>}> = (props) => {
+          const {planId,data} = props ?? {};
+
+          return  updateInvestmentPlanStatus(planId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateInvestmentPlanStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateInvestmentPlanStatus>>>
+    export type UpdateInvestmentPlanStatusMutationBody = BodyType<AdminUserStatusUpdate>
+    export type UpdateInvestmentPlanStatusMutationError = ErrorType<BadRequestResponse | NotFoundResponse>
+
+    /**
+ * @summary Enable or disable an investment plan
+ */
+export const useUpdateInvestmentPlanStatus = <TError = ErrorType<BadRequestResponse | NotFoundResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInvestmentPlanStatus>>, TError,{planId: string;data: BodyType<AdminUserStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateInvestmentPlanStatus>>,
+        TError,
+        {planId: string;data: BodyType<AdminUserStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateInvestmentPlanStatusMutationOptions(options));
     }
 

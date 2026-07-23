@@ -1,1 +1,2 @@
 - [Imported artifact previews](imported-artifact-preview.md) — migration-backup copies can delay or duplicate preview registration after a GitHub import.
+- [Investment plan persistence](investment-plan-persistence.md) — plan CRUD currently uses an in-memory API adapter while preserving a WordPress-ready contract.

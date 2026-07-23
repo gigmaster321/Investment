@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, TrendingUp, Clock, ShieldCheck, X, DollarSign } from 'lucide-react';
+import { formatInvestmentAmount, useInvestmentPlans, type InvestmentPlan } from '@/lib/investment-plans';
 
 const historyData = [
   { id: 1, plan: 'Gold Plan', amount: '$85,000.00', profit: '$28,430.50', start: 'Sep 15, 2023', end: 'Dec 14, 2023', status: 'Active' },
@@ -13,26 +14,8 @@ const historyData = [
   { id: 8, plan: 'Starter Plan', amount: '$1,500.00', profit: 'Expired', start: 'May 01, 2022', end: 'May 30, 2022', status: 'Expired' },
 ];
 
-interface Plan {
-  id: string;
-  name: string;
-  min: string;
-  minNum: number;
-  maxNum: number | null;
-  max: string;
-  rate: string;
-  duration: string;
-  current: boolean;
-}
-
-const plansData: Plan[] = [
-  { id: 'starter', name: 'Starter', min: '$500', minNum: 500, max: '$4,999', maxNum: 4999, rate: '0.8%', duration: '30 Days', current: false },
-  { id: 'gold', name: 'Gold', min: '$5,000', minNum: 5000, max: '$49,999', maxNum: 49999, rate: '1.8%', duration: '90 Days', current: true },
-  { id: 'platinum', name: 'Platinum', min: '$50,000', minNum: 50000, max: 'Unlimited', maxNum: null, rate: '2.5%', duration: '90 Days', current: false },
-];
-
 interface BuyPlanModalProps {
-  plan: Plan;
+  plan: InvestmentPlan;
   onClose: () => void;
 }
 
@@ -41,10 +24,10 @@ function BuyPlanModal({ plan, onClose }: BuyPlanModalProps) {
   const [confirmed, setConfirmed] = useState(false);
 
   const amountNum = Number(amount);
-  const isValid = amount !== '' && amountNum >= plan.minNum && (plan.maxNum === null || amountNum <= plan.maxNum);
+  const isValid = amount !== '' && amountNum >= plan.minInvestment && (plan.maxInvestment === null || amountNum <= plan.maxInvestment);
 
   const estimatedDailyProfit = isValid
-    ? (amountNum * parseFloat(plan.rate) / 100).toFixed(2)
+    ? (amountNum * plan.profitPercentage / 100).toFixed(2)
     : '0.00';
 
   if (confirmed) {
@@ -78,20 +61,20 @@ function BuyPlanModal({ plan, onClose }: BuyPlanModalProps) {
       <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-bold text-white text-lg">{plan.name} Plan</h4>
-          <span className="text-accent font-bold text-xl">{plan.rate}<span className="text-sm text-muted-foreground font-normal"> / day</span></span>
+           <span className="text-accent font-bold text-xl">{plan.profitPercentage}%<span className="text-sm text-muted-foreground font-normal"> target</span></span>
         </div>
         <div className="grid grid-cols-3 gap-3 text-sm">
           <div>
             <p className="text-muted-foreground text-xs mb-1 flex items-center gap-1"><Clock size={11} /> Duration</p>
-            <p className="text-white font-medium">{plan.duration}</p>
+             <p className="text-white font-medium">{plan.executionCycle}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-xs mb-1">Min. Deposit</p>
-            <p className="text-white font-medium">{plan.min}</p>
+             <p className="text-white font-medium">{formatInvestmentAmount(plan.minInvestment)}</p>
           </div>
           <div>
             <p className="text-muted-foreground text-xs mb-1">Max. Deposit</p>
-            <p className="text-white font-medium">{plan.max}</p>
+             <p className="text-white font-medium">{formatInvestmentAmount(plan.maxInvestment)}</p>
           </div>
         </div>
       </div>
@@ -105,17 +88,17 @@ function BuyPlanModal({ plan, onClose }: BuyPlanModalProps) {
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder={`Min. ${plan.min}`}
-            min={plan.minNum}
-            max={plan.maxNum ?? undefined}
+            placeholder={`Min. ${formatInvestmentAmount(plan.minInvestment)}`}
+            min={plan.minInvestment}
+            max={plan.maxInvestment ?? undefined}
             className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-8 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
           />
         </div>
         {amount !== '' && !isValid && (
           <p className="text-xs text-red-400 mt-1.5">
-            {amountNum < plan.minNum
-              ? `Minimum investment is ${plan.min}`
-              : `Maximum investment is ${plan.max}`}
+             {amountNum < plan.minInvestment
+               ? `Minimum investment is ${formatInvestmentAmount(plan.minInvestment)}`
+               : `Maximum investment is ${formatInvestmentAmount(plan.maxInvestment)}`}
           </p>
         )}
       </div>
@@ -150,7 +133,9 @@ function BuyPlanModal({ plan, onClose }: BuyPlanModalProps) {
 
 export default function Investments() {
   const [activeTab, setActiveTab] = useState('Active');
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<InvestmentPlan | null>(null);
+  const { plans, loading } = useInvestmentPlans();
+  const activePlans = plans.filter((plan) => plan.status === 'Active');
 
   return (
     <div className="space-y-8">
@@ -306,20 +291,20 @@ export default function Investments() {
 
       {activeTab === 'Plans' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plansData.map((plan, i) => (
+          {activePlans.map((plan, i) => (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
               key={plan.id}
               className={`bg-card/40 backdrop-blur-md border rounded-2xl p-6 flex flex-col ${
-                plan.current ? 'border-primary shadow-[0_0_30px_rgba(30,167,255,0.15)]' : 'border-white/5 hover:border-white/20'
+                i === 1 ? 'border-primary shadow-[0_0_30px_rgba(30,167,255,0.15)]' : 'border-white/5 hover:border-white/20'
               } transition-all duration-300`}
             >
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-white">{plan.name}</h3>
-                  {plan.current && (
+                   {i === 1 && (
                     <span className="px-2 py-1 bg-primary/20 text-accent border border-primary/30 rounded-md text-xs font-semibold">
                       Current Plan
                     </span>
@@ -327,35 +312,38 @@ export default function Investments() {
                 </div>
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground mb-1">Daily Return</p>
-                  <p className="text-3xl font-bold text-accent">{plan.rate}</p>
+                 <p className="text-3xl font-bold text-accent">{plan.profitPercentage}%</p>
                 </div>
                 <div className="space-y-2 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Min. Deposit</span>
-                    <span className="text-white font-medium">{plan.min}</span>
+                   <span className="text-white font-medium">{formatInvestmentAmount(plan.minInvestment)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Max. Deposit</span>
-                    <span className="text-white font-medium">{plan.max}</span>
+                   <span className="text-white font-medium">{formatInvestmentAmount(plan.maxInvestment)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Duration</span>
-                    <span className="text-white font-medium">{plan.duration}</span>
+                   <span className="text-white font-medium">{plan.executionCycle}</span>
                   </div>
                 </div>
               </div>
               <button 
-                onClick={() => { if (!plan.current) setSelectedPlan(plan); }}
+                 onClick={() => setSelectedPlan(plan)}
                 className={`mt-auto w-full py-3 rounded-xl font-semibold transition-all ${
-                  plan.current 
+                   i === 1
                     ? 'bg-white/10 text-white cursor-default' 
                     : 'bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(21,101,232,0.3)] cursor-pointer'
                 }`}
               >
-                {plan.current ? 'Active' : 'Buy Plan'}
+                 {i === 1 ? 'Featured' : 'Buy Plan'}
               </button>
             </motion.div>
           ))}
+          {!loading && activePlans.length === 0 && (
+            <p className="col-span-full text-center text-sm text-muted-foreground">No active investment plans are available.</p>
+          )}
         </div>
       )}
 

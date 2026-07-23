@@ -15,3 +15,7 @@ export * from './adminUserStatusUpdateStatus';
 export * from './apiError';
 export * from './badRequestResponse';
 export * from './healthStatus';
+export * from './investmentPlan';
+export * from './investmentPlanInput';
+export * from './investmentPlanInputStatus';
+export * from './notFoundResponse';

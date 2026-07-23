@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import adminUsersRouter from "./routes/admin-users";
+import plansRouter from "./routes/plans";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -33,5 +34,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", router);
 // WordPress-compatible REST namespace for external admin clients.
 app.use("/wp-json/quantum/v1/admin/users", adminUsersRouter);
+app.use("/wp-json/quantum/v1/plans", plansRouter);
 
 export default app;

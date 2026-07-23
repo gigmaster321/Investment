@@ -115,3 +115,280 @@ export const DeleteAdminUserResponse = zod.object({
 })
 
 
+/**
+ * @summary List investment plans
+ */
+
+export const listInvestmentPlansResponseOneMinInvestmentMin = 0;
+
+export const listInvestmentPlansResponseOneMaxInvestmentMin = 0;
+
+export const listInvestmentPlansResponseOneProfitPercentageMin = 0;
+
+
+
+export const listInvestmentPlansResponseOneDisplayOrderMin = 0;
+
+export const listInvestmentPlansResponseTwoInvestorsMin = 0;
+
+export const listInvestmentPlansResponseTwoTotalDepositedMin = 0;
+
+
+
+export const ListInvestmentPlansResponseItem = zod.object({
+  "name": zod.string().min(1),
+  "minInvestment": zod.number().min(listInvestmentPlansResponseOneMinInvestmentMin),
+  "maxInvestment": zod.number().min(listInvestmentPlansResponseOneMaxInvestmentMin).nullable(),
+  "profitPercentage": zod.number().min(listInvestmentPlansResponseOneProfitPercentageMin),
+  "executionCycle": zod.string().min(1),
+  "description": zod.string(),
+  "features": zod.array(zod.string()).min(1),
+  "status": zod.enum(['Active', 'Disabled']),
+  "displayOrder": zod.number().min(listInvestmentPlansResponseOneDisplayOrderMin)
+}).and(zod.object({
+  "id": zod.string(),
+  "investors": zod.number().min(listInvestmentPlansResponseTwoInvestorsMin),
+  "totalDeposited": zod.number().min(listInvestmentPlansResponseTwoTotalDepositedMin)
+}))
+export const ListInvestmentPlansResponse = zod.array(ListInvestmentPlansResponseItem)
+
+
+/**
+ * @summary Create an investment plan
+ */
+
+export const createInvestmentPlanBodyMinInvestmentMin = 0;
+
+export const createInvestmentPlanBodyMaxInvestmentMin = 0;
+
+export const createInvestmentPlanBodyProfitPercentageMin = 0;
+
+
+
+export const createInvestmentPlanBodyDisplayOrderMin = 0;
+
+
+
+export const CreateInvestmentPlanBody = zod.object({
+  "name": zod.string().min(1),
+  "minInvestment": zod.number().min(createInvestmentPlanBodyMinInvestmentMin),
+  "maxInvestment": zod.number().min(createInvestmentPlanBodyMaxInvestmentMin).nullable(),
+  "profitPercentage": zod.number().min(createInvestmentPlanBodyProfitPercentageMin),
+  "executionCycle": zod.string().min(1),
+  "description": zod.string(),
+  "features": zod.array(zod.string()).min(1),
+  "status": zod.enum(['Active', 'Disabled']),
+  "displayOrder": zod.number().min(createInvestmentPlanBodyDisplayOrderMin)
+})
+
+
+export const createInvestmentPlanResponseOneMinInvestmentMin = 0;
+
+export const createInvestmentPlanResponseOneMaxInvestmentMin = 0;
+
+export const createInvestmentPlanResponseOneProfitPercentageMin = 0;
+
+
+
+export const createInvestmentPlanResponseOneDisplayOrderMin = 0;
+
+export const createInvestmentPlanResponseTwoInvestorsMin = 0;
+
+export const createInvestmentPlanResponseTwoTotalDepositedMin = 0;
+
+
+
+export const CreateInvestmentPlanResponse = zod.object({
+  "name": zod.string().min(1),
+  "minInvestment": zod.number().min(createInvestmentPlanResponseOneMinInvestmentMin),
+  "maxInvestment": zod.number().min(createInvestmentPlanResponseOneMaxInvestmentMin).nullable(),
+  "profitPercentage": zod.number().min(createInvestmentPlanResponseOneProfitPercentageMin),
+  "executionCycle": zod.string().min(1),
+  "description": zod.string(),
+  "features": zod.array(zod.string()).min(1),
+  "status": zod.enum(['Active', 'Disabled']),
+  "displayOrder": zod.number().min(createInvestmentPlanResponseOneDisplayOrderMin)
+}).and(zod.object({
+  "id": zod.string(),
+  "investors": zod.number().min(createInvestmentPlanResponseTwoInvestorsMin),
+  "totalDeposited": zod.number().min(createInvestmentPlanResponseTwoTotalDepositedMin)
+}))
+
+
+/**
+ * @summary Get an investment plan
+ */
+
+
+
+export const GetInvestmentPlanParams = zod.object({
+  "planId": zod.coerce.string().min(1).describe('Investment plan identifier')
+})
+
+
+export const getInvestmentPlanResponseOneMinInvestmentMin = 0;
+
+export const getInvestmentPlanResponseOneMaxInvestmentMin = 0;
+
+export const getInvestmentPlanResponseOneProfitPercentageMin = 0;
+
+
+
+export const getInvestmentPlanResponseOneDisplayOrderMin = 0;
+
+export const getInvestmentPlanResponseTwoInvestorsMin = 0;
+
+export const getInvestmentPlanResponseTwoTotalDepositedMin = 0;
+
+
+
+export const GetInvestmentPlanResponse = zod.object({
+  "name": zod.string().min(1),
+  "minInvestment": zod.number().min(getInvestmentPlanResponseOneMinInvestmentMin),
+  "maxInvestment": zod.number().min(getInvestmentPlanResponseOneMaxInvestmentMin).nullable(),
+  "profitPercentage": zod.number().min(getInvestmentPlanResponseOneProfitPercentageMin),
+  "executionCycle": zod.string().min(1),
+  "description": zod.string(),
+  "features": zod.array(zod.string()).min(1),
+  "status": zod.enum(['Active', 'Disabled']),
+  "displayOrder": zod.number().min(getInvestmentPlanResponseOneDisplayOrderMin)
+}).and(zod.object({
+  "id": zod.string(),
+  "investors": zod.number().min(getInvestmentPlanResponseTwoInvestorsMin),
+  "totalDeposited": zod.number().min(getInvestmentPlanResponseTwoTotalDepositedMin)
+}))
+
+
+/**
+ * @summary Update an investment plan
+ */
+
+
+
+export const UpdateInvestmentPlanParams = zod.object({
+  "planId": zod.coerce.string().min(1).describe('Investment plan identifier')
+})
+
+
+export const updateInvestmentPlanBodyMinInvestmentMin = 0;
+
+export const updateInvestmentPlanBodyMaxInvestmentMin = 0;
+
+export const updateInvestmentPlanBodyProfitPercentageMin = 0;
+
+
+
+export const updateInvestmentPlanBodyDisplayOrderMin = 0;
+
+
+
+export const UpdateInvestmentPlanBody = zod.object({
+  "name": zod.string().min(1),
+  "minInvestment": zod.number().min(updateInvestmentPlanBodyMinInvestmentMin),
+  "maxInvestment": zod.number().min(updateInvestmentPlanBodyMaxInvestmentMin).nullable(),
+  "profitPercentage": zod.number().min(updateInvestmentPlanBodyProfitPercentageMin),
+  "executionCycle": zod.string().min(1),
+  "description": zod.string(),
+  "features": zod.array(zod.string()).min(1),
+  "status": zod.enum(['Active', 'Disabled']),
+  "displayOrder": zod.number().min(updateInvestmentPlanBodyDisplayOrderMin)
+})
+
+
+export const updateInvestmentPlanResponseOneMinInvestmentMin = 0;
+
+export const updateInvestmentPlanResponseOneMaxInvestmentMin = 0;
+
+export const updateInvestmentPlanResponseOneProfitPercentageMin = 0;
+
+
+
+export const updateInvestmentPlanResponseOneDisplayOrderMin = 0;
+
+export const updateInvestmentPlanResponseTwoInvestorsMin = 0;
+
+export const updateInvestmentPlanResponseTwoTotalDepositedMin = 0;
+
+
+
+export const UpdateInvestmentPlanResponse = zod.object({
+  "name": zod.string().min(1),
+  "minInvestment": zod.number().min(updateInvestmentPlanResponseOneMinInvestmentMin),
+  "maxInvestment": zod.number().min(updateInvestmentPlanResponseOneMaxInvestmentMin).nullable(),
+  "profitPercentage": zod.number().min(updateInvestmentPlanResponseOneProfitPercentageMin),
+  "executionCycle": zod.string().min(1),
+  "description": zod.string(),
+  "features": zod.array(zod.string()).min(1),
+  "status": zod.enum(['Active', 'Disabled']),
+  "displayOrder": zod.number().min(updateInvestmentPlanResponseOneDisplayOrderMin)
+}).and(zod.object({
+  "id": zod.string(),
+  "investors": zod.number().min(updateInvestmentPlanResponseTwoInvestorsMin),
+  "totalDeposited": zod.number().min(updateInvestmentPlanResponseTwoTotalDepositedMin)
+}))
+
+
+/**
+ * @summary Delete an investment plan
+ */
+
+
+
+export const DeleteInvestmentPlanParams = zod.object({
+  "planId": zod.coerce.string().min(1).describe('Investment plan identifier')
+})
+
+export const DeleteInvestmentPlanResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Enable or disable an investment plan
+ */
+
+
+
+export const UpdateInvestmentPlanStatusParams = zod.object({
+  "planId": zod.coerce.string().min(1).describe('Investment plan identifier')
+})
+
+export const UpdateInvestmentPlanStatusBody = zod.object({
+  "status": zod.enum(['Active', 'Suspended'])
+})
+
+
+export const updateInvestmentPlanStatusResponseOneMinInvestmentMin = 0;
+
+export const updateInvestmentPlanStatusResponseOneMaxInvestmentMin = 0;
+
+export const updateInvestmentPlanStatusResponseOneProfitPercentageMin = 0;
+
+
+
+export const updateInvestmentPlanStatusResponseOneDisplayOrderMin = 0;
+
+export const updateInvestmentPlanStatusResponseTwoInvestorsMin = 0;
+
+export const updateInvestmentPlanStatusResponseTwoTotalDepositedMin = 0;
+
+
+
+export const UpdateInvestmentPlanStatusResponse = zod.object({
+  "name": zod.string().min(1),
+  "minInvestment": zod.number().min(updateInvestmentPlanStatusResponseOneMinInvestmentMin),
+  "maxInvestment": zod.number().min(updateInvestmentPlanStatusResponseOneMaxInvestmentMin).nullable(),
+  "profitPercentage": zod.number().min(updateInvestmentPlanStatusResponseOneProfitPercentageMin),
+  "executionCycle": zod.string().min(1),
+  "description": zod.string(),
+  "features": zod.array(zod.string()).min(1),
+  "status": zod.enum(['Active', 'Disabled']),
+  "displayOrder": zod.number().min(updateInvestmentPlanStatusResponseOneDisplayOrderMin)
+}).and(zod.object({
+  "id": zod.string(),
+  "investors": zod.number().min(updateInvestmentPlanStatusResponseTwoInvestorsMin),
+  "totalDeposited": zod.number().min(updateInvestmentPlanStatusResponseTwoTotalDepositedMin)
+}))
+
+
