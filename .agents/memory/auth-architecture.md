@@ -32,6 +32,18 @@ AdminGuard reads from both providers, so AuthProvider must be the outer wrapper.
 
 **Why:** AdminGuard needs to distinguish "not authenticated at all" from "authenticated but wrong role".
 
+## OTP / Email verification flow
+
+- `email_otps` table: `id, user_id (FK→users cascade), code, expires_at, used, created_at`
+- OTP TTL: 10 minutes; Resend cooldown: 60 seconds
+- `POST /api/auth/register` → creates user (email_verified=false), generates OTP, sends email, returns `{ requiresVerification: true }` — NO session
+- `POST /api/auth/verify-email` → verifies code, sets email_verified=true, returns `{ verified: true }` — NO session (user must then log in)
+- `POST /api/auth/resend-otp` → enforces 60s cooldown, generates new OTP, sends email
+- `POST /api/auth/login` → returns `EMAIL_NOT_VERIFIED` (403) if email not verified; Login.tsx auto-redirects to /verify-email on this error
+- `ProtectedRoute` also checks `user.email_verified`; redirects to /verify-email if false
+- Dev mode: when RESEND_API_KEY is not set, OTP is logged to console AND returned in API response as `devOtp`; Register.tsx forwards it to VerifyEmail via query param
+- Email service: `artifacts/api-server/src/services/email.ts` — tries Resend (RESEND_API_KEY) first, falls back to console log
+
 ## WordPress readiness
 
 `auth-api.ts` uses a single `API_BASE` constant. Swap to a WP REST endpoint to redirect all auth calls without touching component code.

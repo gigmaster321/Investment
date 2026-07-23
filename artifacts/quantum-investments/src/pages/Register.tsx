@@ -41,14 +41,20 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      await register({
+      const result = await register({
         full_name: fullName,
         username,
         email,
         phone: phone || undefined,
         password,
       });
-      setLocation('/dashboard');
+
+      if (result.requiresVerification) {
+        // Build redirect URL — include devOtp if present so VerifyEmail page can display it
+        const params = new URLSearchParams({ email });
+        if (result.devOtp) params.set('devOtp', result.devOtp);
+        setLocation(`/verify-email?${params.toString()}`);
+      }
     } catch (err: any) {
       if (err?.error === 'EMAIL_EXISTS') {
         setError('An account with this email already exists.');

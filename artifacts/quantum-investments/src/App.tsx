@@ -6,6 +6,7 @@ import NotFound from '@/pages/not-found';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
+import VerifyEmail from '@/pages/VerifyEmail';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -45,8 +46,9 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/verify-email" component={VerifyEmail} />
 
-      {/* User dashboard — all routes protected */}
+      {/* User dashboard — requires authentication + verified email */}
       <Route path="/dashboard">
         <ProtectedRoute>
           <DashboardLayout><DashboardOverview /></DashboardLayout>

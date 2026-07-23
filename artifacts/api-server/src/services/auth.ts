@@ -45,7 +45,8 @@ export async function registerUser(data: {
     .from(usersTable)
     .where(eq(usersTable.email, data.email))
     .limit(1);
-  if (byEmail) throw Object.assign(new Error("EMAIL_EXISTS"), { code: "EMAIL_EXISTS" });
+  if (byEmail)
+    throw Object.assign(new Error("EMAIL_EXISTS"), { code: "EMAIL_EXISTS" });
 
   const [byUsername] = await db
     .select()
@@ -98,6 +99,11 @@ export async function loginUser(
       code: "INVALID_CREDENTIALS",
     });
 
+  if (!user.email_verified)
+    throw Object.assign(new Error("EMAIL_NOT_VERIFIED"), {
+      code: "EMAIL_NOT_VERIFIED",
+    });
+
   if (user.account_status !== "active")
     throw Object.assign(new Error("ACCOUNT_INACTIVE"), {
       code: "ACCOUNT_INACTIVE",
@@ -118,4 +124,44 @@ export async function getUserById(id: number): Promise<PublicUser | null> {
     .limit(1);
 
   return user ? toPublicUser(user) : null;
+}
+
+export async function getUserByEmail(email: string): Promise<PublicUser | null> {
+  const { db, usersTable } = await getDb();
+  const { eq } = await import("drizzle-orm");
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, email))
+    .limit(1);
+
+  return user ? toPublicUser(user) : null;
+}
+
+/** Mark a user's email as verified. */
+export async function markEmailVerified(userId: number): Promise<void> {
+  const { db, usersTable } = await getDb();
+  const { eq } = await import("drizzle-orm");
+
+  await db
+    .update(usersTable)
+    .set({ email_verified: true, updated_at: new Date() })
+    .where(eq(usersTable.id, userId));
+}
+
+/** Fetch full user row including password — needed for OTP lookups via email. */
+export async function getUserRowByEmail(
+  email: string,
+): Promise<User | null> {
+  const { db, usersTable } = await getDb();
+  const { eq } = await import("drizzle-orm");
+
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, email))
+    .limit(1);
+
+  return user ?? null;
 }

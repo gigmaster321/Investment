@@ -5,7 +5,7 @@ import {
   useEffect,
   ReactNode,
 } from 'react';
-import { authApi, AuthUser } from '@/lib/auth-api';
+import { authApi, AuthUser, RegisterResponse } from '@/lib/auth-api';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -13,13 +13,17 @@ interface AuthContextValue {
   /** True while the initial session check is in flight. */
   isLoading: boolean;
   login: (email: string, password: string) => Promise<AuthUser>;
+  /**
+   * Register a new account. Does NOT create a session.
+   * Returns { requiresVerification: true } — redirect to /verify-email.
+   */
   register: (data: {
     full_name: string;
     username: string;
     email: string;
     phone?: string;
     password: string;
-  }) => Promise<AuthUser>;
+  }) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
 }
 
@@ -46,10 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (
     data: Parameters<typeof authApi.register>[0],
-  ): Promise<AuthUser> => {
-    const { user: u } = await authApi.register(data);
-    setUser(u);
-    return u;
+  ): Promise<RegisterResponse> => {
+    // Registration no longer creates a session.
+    // The user must verify their email before they can log in.
+    return authApi.register(data);
   };
 
   const logout = async (): Promise<void> => {

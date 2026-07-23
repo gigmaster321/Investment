@@ -28,6 +28,11 @@ export default function Login() {
       await login(email, password);
       setLocation('/dashboard');
     } catch (err: any) {
+      if (err?.error === 'EMAIL_NOT_VERIFIED') {
+        // Redirect to verify-email so they can complete verification
+        setLocation(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
       setError(
         err?.message ||
           (err?.error === 'ACCOUNT_INACTIVE'

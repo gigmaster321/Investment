@@ -23,11 +23,19 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export interface RegisterResponse {
+  requiresVerification: boolean;
+  /** Only present in development when RESEND_API_KEY is not configured. */
+  devOtp?: string;
+  devNote?: string;
+}
+
 export interface AuthError {
   status: number;
   error: string;
   message?: string;
   details?: Record<string, string[]>;
+  retryAfterSeconds?: number;
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -51,7 +59,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const authApi = {
-  /** Register a new user account and start a session. */
+  /**
+   * Register a new user account.
+   * Does NOT start a session — user must verify email, then log in.
+   */
   register: (data: {
     full_name: string;
     username: string;
@@ -59,12 +70,12 @@ export const authApi = {
     phone?: string;
     password: string;
   }) =>
-    request<AuthResponse>("/register", {
+    request<RegisterResponse>("/register", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
-  /** Log in with email + password. Returns user and starts a session. */
+  /** Log in with email + password. Requires email to be verified. */
   login: (email: string, password: string) =>
     request<AuthResponse>("/login", {
       method: "POST",
@@ -77,4 +88,18 @@ export const authApi = {
 
   /** Fetch the currently authenticated user (session check). */
   me: () => request<AuthResponse>("/me"),
+
+  /** Verify a 6-digit OTP code sent to the user's email. */
+  verifyEmail: (email: string, code: string) =>
+    request<{ verified: boolean; alreadyVerified?: boolean }>("/verify-email", {
+      method: "POST",
+      body: JSON.stringify({ email, code }),
+    }),
+
+  /** Request a new OTP be sent (60-second cooldown enforced by server). */
+  resendOtp: (email: string) =>
+    request<{ sent: boolean; devOtp?: string; devNote?: string }>("/resend-otp", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
 };

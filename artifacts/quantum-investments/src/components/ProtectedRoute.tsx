@@ -7,18 +7,28 @@ interface ProtectedRouteProps {
 }
 
 /**
- * Redirects unauthenticated visitors to /login.
- * Shows a loading spinner while the session check is in flight.
+ * Guards routes that require authentication AND a verified email.
+ *
+ * - Not authenticated → redirect to /login
+ * - Authenticated but email not verified → redirect to /verify-email
+ * - Authenticated and verified → render children
  */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
       setLocation('/login');
+      return;
     }
-  }, [isLoading, isAuthenticated, setLocation]);
+
+    if (user && !user.email_verified) {
+      setLocation(`/verify-email?email=${encodeURIComponent(user.email)}`);
+    }
+  }, [isLoading, isAuthenticated, user, setLocation]);
 
   if (isLoading) {
     return (
@@ -28,7 +38,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || (user && !user.email_verified)) {
     return null;
   }
 
