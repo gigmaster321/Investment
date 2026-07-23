@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { requireAdmin } from "../middleware/requireAuth.js";
 
 export type PlanStatus = "Active" | "Disabled";
 
@@ -160,7 +161,7 @@ router.get("/:planId", (req, res) => {
   res.json(plan);
 });
 
-router.post("/", (req, res) => {
+router.post("/", requireAdmin, (req, res) => {
   if (!validatePlanInput(req.body)) {
     badRequest(res, "Provide a name, valid investment range, profit percentage, execution cycle, description, features, status, and display order.");
     return;
@@ -185,7 +186,7 @@ router.post("/", (req, res) => {
   res.status(201).json(plan);
 });
 
-router.put("/:planId", (req, res) => {
+router.put("/:planId", requireAdmin, (req, res) => {
   const existing = plans.get(String(req.params.planId));
   if (!existing) {
     res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
@@ -210,7 +211,7 @@ router.put("/:planId", (req, res) => {
   res.json(plan);
 });
 
-router.patch("/:planId/status", (req, res) => {
+router.patch("/:planId/status", requireAdmin, (req, res) => {
   const existing = plans.get(String(req.params.planId));
   if (!existing) {
     res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
@@ -225,7 +226,7 @@ router.patch("/:planId/status", (req, res) => {
   res.json(plan);
 });
 
-router.delete("/:planId", (req, res) => {
+router.delete("/:planId", requireAdmin, (req, res) => {
   const id = String(req.params.planId);
   if (!plans.delete(id)) {
     res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });

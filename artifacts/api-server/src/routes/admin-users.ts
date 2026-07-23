@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { requireAdmin } from "../middleware/requireAuth.js";
 
 type UserStatus = "Active" | "Suspended";
 
@@ -41,6 +42,8 @@ function updated(profile: UserProfileRecord) {
 }
 
 const router: IRouter = Router();
+
+router.use(requireAdmin);
 
 router.get("/:userId/profile", (req, res) => {
   res.json(getOrCreateProfile(String(req.params.userId)));

@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
-import { getInvestmentPlanById, recordPlanInvestment } from "./plans";
+import { requireAuth } from "../middleware/requireAuth.js";
+import { getInvestmentPlanById, recordPlanInvestment } from "./plans.js";
 
 export type InvestmentStatus = "Pending" | "Active" | "Completed" | "Cancelled";
 export type InvestmentAction = "activate" | "pause" | "complete" | "cancel";
@@ -34,26 +35,15 @@ interface CreateInvestmentInput {
   amount: number;
 }
 
-const DEFAULT_USER: InvestmentUser = {
-  id: "user-demo-001",
-  name: "John Doe",
-  email: "john.doe@example.com",
-};
-
 const investments = new Map<string, Investment>();
 let nextInvestmentNumber = 1;
 
 function requestUser(req: Request): InvestmentUser {
-  const userId = typeof req.header("x-user-id") === "string" && req.header("x-user-id")!.trim()
-    ? req.header("x-user-id")!.trim()
-    : DEFAULT_USER.id;
-  const name = typeof req.header("x-user-name") === "string" && req.header("x-user-name")!.trim()
-    ? req.header("x-user-name")!.trim()
-    : DEFAULT_USER.name;
-  const email = typeof req.header("x-user-email") === "string" && req.header("x-user-email")!.trim()
-    ? req.header("x-user-email")!.trim()
-    : DEFAULT_USER.email;
-  return { id: userId, name, email };
+  return {
+    id: String(req.session.userId ?? "guest"),
+    name: req.session.userEmail ?? "Guest",
+    email: req.session.userEmail ?? "guest@example.com",
+  };
 }
 
 function parseCycleDays(cycle: string) {
@@ -134,6 +124,8 @@ function createInvestment(input: CreateInvestmentInput, user: InvestmentUser) {
 }
 
 const router: IRouter = Router();
+
+router.use(requireAuth);
 
 router.get("/", (req, res) => {
   const scope = req.query.scope;
