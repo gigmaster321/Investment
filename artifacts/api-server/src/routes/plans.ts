@@ -8,8 +8,10 @@ export interface InvestmentPlan {
   minInvestment: number;
   maxInvestment: number | null;
   profitPercentage: number;
+  returnRange?: string;
   executionCycle: string;
   description: string;
+  overview?: string;
   features: string[];
   status: PlanStatus;
   displayOrder: number;
@@ -24,16 +26,23 @@ type PlanInput = Omit<
 
 const plans = new Map<string, InvestmentPlan>([
   [
-    "starter",
+    "starter-ai",
     {
-      id: "starter",
-      name: "Starter",
-      minInvestment: 100,
-      maxInvestment: 999,
-      profitPercentage: 5,
-      executionCycle: "30 days",
-      description: "A practical starting point for building a diversified portfolio.",
-      features: ["Daily ROI payouts", "Email support", "Basic analytics", "Referral bonus 2%"],
+      id: "starter-ai",
+      name: "Starter AI",
+      minInvestment: 1000,
+      maxInvestment: 10000,
+      profitPercentage: 200,
+      returnRange: "200% – 350%",
+      executionCycle: "24 Hours",
+      description: "Based on historical backtesting and volatility-adjusted strategy modeling.",
+      overview: "Designed for new investors seeking structured exposure to innovation-focused equities with automated risk controls.",
+      features: [
+        "Automated trade execution",
+        "Risk-adjusted capital deployment",
+        "Portfolio rebalancing",
+        "Monthly performance reporting",
+      ],
       status: "Active",
       displayOrder: 1,
       investors: 1842,
@@ -41,16 +50,23 @@ const plans = new Map<string, InvestmentPlan>([
     },
   ],
   [
-    "silver",
+    "growth-ai",
     {
-      id: "silver",
-      name: "Silver",
-      minInvestment: 1000,
-      maxInvestment: 4999,
-      profitPercentage: 8,
-      executionCycle: "30 days",
-      description: "More room to grow with enhanced support and reporting.",
-      features: ["Daily ROI payouts", "Priority email support", "Advanced analytics", "Referral bonus 4%", "Faster withdrawals"],
+      id: "growth-ai",
+      name: "Growth AI",
+      minInvestment: 10000,
+      maxInvestment: 100000,
+      profitPercentage: 350,
+      returnRange: "350% – 550%",
+      executionCycle: "3 Days",
+      description: "Advanced signal detection with volatility-aware execution framework.",
+      overview: "Enhanced AI signal modeling focused on high-growth innovation sectors and dynamic capital rotation.",
+      features: [
+        "High-frequency signal detection",
+        "Sector rotation strategy",
+        "Volatility hedging logic",
+        "Weekly analytics dashboard",
+      ],
       status: "Active",
       displayOrder: 2,
       investors: 1203,
@@ -58,37 +74,27 @@ const plans = new Map<string, InvestmentPlan>([
     },
   ],
   [
-    "gold",
+    "elite-ai",
     {
-      id: "gold",
-      name: "Gold",
-      minInvestment: 5000,
-      maxInvestment: 24999,
-      profitPercentage: 12,
-      executionCycle: "30 days",
-      description: "A high-touch plan for investors seeking stronger portfolio support.",
-      features: ["Daily ROI payouts", "24/7 dedicated support", "Full analytics suite", "Referral bonus 6%", "Same-day withdrawals", "Portfolio manager"],
+      id: "elite-ai",
+      name: "Elite AI",
+      minInvestment: 100000,
+      maxInvestment: null,
+      profitPercentage: 700,
+      returnRange: "+700%",
+      executionCycle: "5 Days",
+      description: "Multi-layered AI execution across diversified innovation assets.",
+      overview: "Designed for large capital deployment with structured downside protection and dynamic reallocation systems.",
+      features: [
+        "Cross-sector AI allocation engine",
+        "Downside risk containment protocol",
+        "Real-time capital rebalancing",
+        "Dedicated strategy oversight",
+      ],
       status: "Active",
       displayOrder: 3,
       investors: 614,
       totalDeposited: 18200000,
-    },
-  ],
-  [
-    "platinum",
-    {
-      id: "platinum",
-      name: "Platinum",
-      minInvestment: 25000,
-      maxInvestment: null,
-      profitPercentage: 18,
-      executionCycle: "30 days",
-      description: "VIP portfolio access with dedicated strategy oversight.",
-      features: ["Daily ROI payouts", "Personal account manager", "Real-time analytics", "Referral bonus 10%", "Instant withdrawals", "VIP investment advisory", "Custom strategies"],
-      status: "Active",
-      displayOrder: 4,
-      investors: 162,
-      totalDeposited: 47800000,
     },
   ],
 ]);

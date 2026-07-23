@@ -67,7 +67,9 @@ export function InvestmentPlans() {
 
                 {/* Returns */}
                 <div className="text-center mb-4">
-                  <span className="text-4xl font-extrabold text-primary">{plan.profitPercentage}%</span>
+                  <span className="text-4xl font-extrabold text-primary">
+                    {plan.returnRange ?? `${plan.profitPercentage}%`}
+                  </span>
                   <span className="block text-sm text-accent font-medium mt-1 uppercase tracking-wider">Target Returns</span>
                 </div>
 
@@ -83,7 +85,9 @@ export function InvestmentPlans() {
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground text-sm">Investment</span>
                     <span className="text-white font-semibold">
-                      {formatInvestmentAmount(plan.minInvestment)} – {formatInvestmentAmount(plan.maxInvestment)}
+                      {plan.maxInvestment !== null
+                        ? `${formatInvestmentAmount(plan.minInvestment)} – ${formatInvestmentAmount(plan.maxInvestment)}`
+                        : `${formatInvestmentAmount(plan.minInvestment)}+`}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -96,7 +100,7 @@ export function InvestmentPlans() {
 
                 {/* Overview */}
                 <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                  {plan.description}
+                  {plan.overview ?? plan.description}
                 </p>
 
                 {/* Features */}
