@@ -6,6 +6,7 @@ import { AboutSection } from '@/components/AboutSection';
 import { WhyChooseUs } from '@/components/WhyChooseUs';
 import { HowItWorks } from '@/components/HowItWorks';
 import { CompanyStats } from '@/components/CompanyStats';
+import { Testimonials } from '@/components/Testimonials';
 import { FaqSection } from '@/components/FaqSection';
 import { CtaSection } from '@/components/CtaSection';
 import { SiteFooter } from '@/components/SiteFooter';
@@ -21,6 +22,7 @@ export default function Home() {
       <WhyChooseUs />
       <HowItWorks />
       <CompanyStats />
+      <Testimonials />
       <FaqSection />
       <CtaSection />
       <SiteFooter />
