@@ -1,177 +1,782 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Search, Users, Filter, Eye, UserCheck, UserX, MoreHorizontal } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Search, Users, UserCheck, UserX, TrendingUp,
+  Eye, Pencil, Trash2, X, ChevronDown, Save,
+  Phone, Mail, MapPin, Calendar, CreditCard,
+  Wallet, ArrowDownLeft, ArrowUpRight, BadgeCheck,
+  ShieldOff, ShieldCheck, AlertTriangle,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { toast } from '@/hooks/use-toast';
 
-const ALL_USERS = [
-  { id: '#U-4821', name: 'James Thornton', email: 'j.thornton@email.com', plan: 'Gold', balance: '$14,200', joined: 'Jul 22, 2026', status: 'Active', country: 'USA' },
-  { id: '#U-4820', name: 'Priya Sharma', email: 'p.sharma@email.com', plan: 'Platinum', balance: '$52,800', joined: 'Jul 22, 2026', status: 'Active', country: 'India' },
-  { id: '#U-4819', name: 'Carlos Rivera', email: 'c.rivera@email.com', plan: 'Silver', balance: '$3,950', joined: 'Jul 21, 2026', status: 'Pending', country: 'Mexico' },
-  { id: '#U-4818', name: 'Sofia Becker', email: 's.becker@email.com', plan: 'Starter', balance: '$1,100', joined: 'Jul 21, 2026', status: 'Active', country: 'Germany' },
-  { id: '#U-4817', name: 'Amir Hassan', email: 'a.hassan@email.com', plan: 'Gold', balance: '$0', joined: 'Jul 20, 2026', status: 'Suspended', country: 'UAE' },
-  { id: '#U-4816', name: 'Elena Volkov', email: 'e.volkov@email.com', plan: 'Platinum', balance: '$89,300', joined: 'Jul 19, 2026', status: 'Active', country: 'Russia' },
-  { id: '#U-4815', name: 'David Osei', email: 'd.osei@email.com', plan: 'Silver', balance: '$7,600', joined: 'Jul 18, 2026', status: 'Active', country: 'Ghana' },
-  { id: '#U-4814', name: 'Lin Wei', email: 'l.wei@email.com', plan: 'Gold', balance: '$23,400', joined: 'Jul 17, 2026', status: 'Active', country: 'China' },
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type UserStatus = 'Active' | 'Suspended';
+type UserPlan   = 'Starter' | 'Silver' | 'Gold' | 'Platinum';
+
+interface User {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+  country: string;
+  registeredDate: string;   // "Jul 22, 2026"
+  registeredIso: string;    // "2026-07-22" for sorting/filtering
+  status: UserStatus;
+  plan: UserPlan;
+  balance: string;
+  balanceNum: number;
+  totalDeposits: string;
+  totalWithdrawals: string;
+  totalProfit: string;
+}
+
+// ─── Seed data ────────────────────────────────────────────────────────────────
+
+const SEED: User[] = [
+  {
+    id: '#U-4821', name: 'James Thornton',  username: 'james_t',
+    email: 'j.thornton@email.com', phone: '+1 234 567 8901',
+    country: 'United States', registeredDate: 'Jul 22, 2026', registeredIso: '2026-07-22',
+    status: 'Active', plan: 'Gold',
+    balance: '$14,200.00', balanceNum: 14200,
+    totalDeposits: '$28,000.00', totalWithdrawals: '$5,000.00', totalProfit: '$4,200.00',
+  },
+  {
+    id: '#U-4820', name: 'Priya Sharma',    username: 'priya_sh',
+    email: 'p.sharma@email.com', phone: '+91 98765 43210',
+    country: 'India', registeredDate: 'Jul 22, 2026', registeredIso: '2026-07-22',
+    status: 'Active', plan: 'Platinum',
+    balance: '$52,800.00', balanceNum: 52800,
+    totalDeposits: '$60,000.00', totalWithdrawals: '$12,800.00', totalProfit: '$5,600.00',
+  },
+  {
+    id: '#U-4819', name: 'Carlos Rivera',   username: 'carlos_r',
+    email: 'c.rivera@email.com', phone: '+52 123 456 7890',
+    country: 'Mexico', registeredDate: 'Jul 21, 2026', registeredIso: '2026-07-21',
+    status: 'Active', plan: 'Silver',
+    balance: '$3,950.00', balanceNum: 3950,
+    totalDeposits: '$5,000.00', totalWithdrawals: '$1,800.00', totalProfit: '$750.00',
+  },
+  {
+    id: '#U-4818', name: 'Sofia Becker',    username: 'sofia_b',
+    email: 's.becker@email.com', phone: '+49 171 234 5678',
+    country: 'Germany', registeredDate: 'Jul 21, 2026', registeredIso: '2026-07-21',
+    status: 'Active', plan: 'Starter',
+    balance: '$1,100.00', balanceNum: 1100,
+    totalDeposits: '$2,000.00', totalWithdrawals: '$500.00', totalProfit: '$100.00',
+  },
+  {
+    id: '#U-4817', name: 'Amir Hassan',     username: 'amir_h',
+    email: 'a.hassan@email.com', phone: '+971 50 123 4567',
+    country: 'UAE', registeredDate: 'Jul 20, 2026', registeredIso: '2026-07-20',
+    status: 'Suspended', plan: 'Gold',
+    balance: '$0.00', balanceNum: 0,
+    totalDeposits: '$10,000.00', totalWithdrawals: '$0.00', totalProfit: '$0.00',
+  },
+  {
+    id: '#U-4816', name: 'Elena Volkov',    username: 'elena_v',
+    email: 'e.volkov@email.com', phone: '+7 912 345 6789',
+    country: 'Russia', registeredDate: 'Jul 19, 2026', registeredIso: '2026-07-19',
+    status: 'Active', plan: 'Platinum',
+    balance: '$89,300.00', balanceNum: 89300,
+    totalDeposits: '$95,000.00', totalWithdrawals: '$8,500.00', totalProfit: '$2,800.00',
+  },
+  {
+    id: '#U-4815', name: 'David Osei',      username: 'david_o',
+    email: 'd.osei@email.com', phone: '+233 20 123 4567',
+    country: 'Ghana', registeredDate: 'Jul 18, 2026', registeredIso: '2026-07-18',
+    status: 'Active', plan: 'Silver',
+    balance: '$7,600.00', balanceNum: 7600,
+    totalDeposits: '$12,000.00', totalWithdrawals: '$1,800.00', totalProfit: '$1,400.00',
+  },
+  {
+    id: '#U-4814', name: 'Lin Wei',         username: 'lin_w',
+    email: 'l.wei@email.com', phone: '+86 138 0000 0000',
+    country: 'China', registeredDate: 'Jul 17, 2026', registeredIso: '2026-07-17',
+    status: 'Active', plan: 'Gold',
+    balance: '$23,400.00', balanceNum: 23400,
+    totalDeposits: '$30,000.00', totalWithdrawals: '$8,500.00', totalProfit: '$1,900.00',
+  },
 ];
 
-const STATUS_STYLES: Record<string, string> = {
-  Active: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-  Pending: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-  Suspended: 'text-red-400 bg-red-500/10 border-red-500/20',
+// New = registered on or after Jul 20, 2026 (within 3 days of the platform date Jul 23)
+const NEW_THRESHOLD = '2026-07-20';
+
+// ─── Style maps ───────────────────────────────────────────────────────────────
+
+const STATUS_STYLE: Record<UserStatus, { label: string; color: string; bg: string; border: string }> = {
+  Active:    { label: 'Active',    color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  Suspended: { label: 'Suspended', color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20'     },
 };
 
-const PLAN_STYLES: Record<string, string> = {
-  Starter: 'text-slate-300 bg-slate-500/10 border-slate-500/20',
-  Silver: 'text-slate-300 bg-slate-400/10 border-slate-400/20',
-  Gold: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
-  Platinum: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
+const PLAN_STYLE: Record<UserPlan, { color: string; bg: string; border: string }> = {
+  Starter:  { color: 'text-slate-300',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20'  },
+  Silver:   { color: 'text-slate-200',  bg: 'bg-slate-400/10',  border: 'border-slate-400/20'  },
+  Gold:     { color: 'text-amber-300',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
+  Platinum: { color: 'text-cyan-300',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20'   },
 };
 
-export default function AdminUsers() {
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('All');
+const AVATAR_COLORS = [
+  'bg-blue-600/30 text-blue-300 border-blue-500/30',
+  'bg-violet-600/30 text-violet-300 border-violet-500/30',
+  'bg-emerald-600/30 text-emerald-300 border-emerald-500/30',
+  'bg-amber-600/30 text-amber-300 border-amber-500/30',
+  'bg-rose-600/30 text-rose-300 border-rose-500/30',
+  'bg-cyan-600/30 text-cyan-300 border-cyan-500/30',
+  'bg-indigo-600/30 text-indigo-300 border-indigo-500/30',
+  'bg-pink-600/30 text-pink-300 border-pink-500/30',
+];
 
-  const filtered = ALL_USERS.filter((u) => {
-    const matchSearch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase()) ||
-      u.id.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'All' || u.status === filter;
-    return matchSearch && matchFilter;
-  });
+function avatarColor(id: string) {
+  const n = parseInt(id.replace(/\D/g, ''), 10) || 0;
+  return AVATAR_COLORS[n % AVATAR_COLORS.length];
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(' ');
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : name.slice(0, 2).toUpperCase();
+}
+
+// ─── Avatar ───────────────────────────────────────────────────────────────────
+
+function Avatar({ user, size = 'md' }: { user: User; size?: 'sm' | 'md' | 'lg' }) {
+  const sz = size === 'lg' ? 'w-14 h-14 text-base' : size === 'md' ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-[10px]';
+  return (
+    <div className={`${sz} rounded-full border flex items-center justify-center font-bold shrink-0 ${avatarColor(user.id)}`}>
+      {initials(user.name)}
+    </div>
+  );
+}
+
+// ─── Modal shell ──────────────────────────────────────────────────────────────
+
+function ModalShell({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+        style={{ background: 'rgba(5,12,28,0.88)', backdropFilter: 'blur(6px)' }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.93, opacity: 0, y: 8 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.93, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          className="relative bg-[hsl(221,70%,10%)] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function ModalHeader({ title, subtitle, user, onClose }: {
+  title: string; subtitle?: string; user?: User; onClose: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+      <div className="flex items-center gap-3">
+        {user && <Avatar user={user} size="md" />}
+        <div>
+          <p className="text-sm font-bold text-white">{title}</p>
+          {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+      </div>
+      <button
+        onClick={onClose}
+        className="p-1.5 rounded-lg text-muted-foreground hover:text-white hover:bg-white/10 transition-colors"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+}
+
+function InfoRow({ icon: Icon, label, value, mono, accent }: {
+  icon?: typeof Mail; label: string; value: string;
+  mono?: boolean; accent?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      {Icon && <Icon size={13} className="text-muted-foreground/50 mt-0.5 shrink-0" />}
+      <div className="flex-1 min-w-0 flex items-center justify-between gap-2">
+        <span className="text-[10px] text-muted-foreground shrink-0">{label}</span>
+        <span className={`text-xs text-right break-all ${mono ? 'font-mono' : ''} ${accent ? 'text-accent font-semibold' : 'text-white'}`}>
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── View Modal ───────────────────────────────────────────────────────────────
+
+function ViewModal({ user, onClose }: { user: User; onClose: () => void }) {
+  const ss = STATUS_STYLE[user.status];
+  const ps = PLAN_STYLE[user.plan];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">User Management</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Browse, search, and manage all registered users.</p>
-      </div>
+    <ModalShell onClose={onClose}>
+      <ModalHeader
+        title={user.name}
+        subtitle={`@${user.username} · ${user.id}`}
+        user={user}
+        onClose={onClose}
+      />
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Users', value: '4,821', icon: Users },
-          { label: 'Active', value: '3,892', icon: UserCheck },
-          { label: 'Pending', value: '619', icon: MoreHorizontal },
-          { label: 'Suspended', value: '310', icon: UserX },
-        ].map((s) => (
-          <div key={s.label} className="bg-card/40 border border-white/5 rounded-xl p-4 flex items-center gap-3">
-            <div className="bg-primary/15 p-2 rounded-lg">
-              <s.icon size={16} className="text-accent" />
-            </div>
-            <div>
-              <p className="text-white font-bold text-lg leading-tight">{s.value}</p>
-              <p className="text-muted-foreground text-[11px]">{s.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+        {/* Status + Plan badges */}
+        <div className="flex gap-2">
+          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${ss.bg} ${ss.border} ${ss.color}`}>
+            {user.status === 'Active' ? <ShieldCheck size={10} /> : <ShieldOff size={10} />}
+            {user.status}
+          </span>
+          <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${ps.bg} ${ps.border} ${ps.color}`}>
+            <CreditCard size={10} />
+            {user.plan} Plan
+          </span>
+        </div>
 
-      {/* Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="bg-card/40 border border-white/5 rounded-xl overflow-hidden"
-      >
-        {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3 px-6 py-4 border-b border-white/5">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <Input
-              placeholder="Search by name, email or ID…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-9 bg-muted/40 border-white/10 text-white placeholder:text-white/25 text-sm"
+        {/* Personal info */}
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+            Personal Information
+          </p>
+          <InfoRow icon={BadgeCheck}  label="Full Name"    value={user.name} />
+          <InfoRow icon={Mail}        label="Email"        value={user.email} mono />
+          <InfoRow icon={Phone}       label="Phone"        value={user.phone} mono />
+          <InfoRow icon={MapPin}      label="Country"      value={user.country} />
+          <InfoRow icon={Calendar}    label="Registered"   value={user.registeredDate} />
+        </div>
+
+        {/* Financial summary */}
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+            Financial Summary
+          </p>
+          <InfoRow icon={Wallet}           label="Available Balance"  value={user.balance}           accent />
+          <InfoRow icon={ArrowDownLeft}    label="Total Deposits"     value={user.totalDeposits} />
+          <InfoRow icon={ArrowUpRight}     label="Total Withdrawals"  value={user.totalWithdrawals} />
+          <InfoRow icon={TrendingUp}       label="Total Profit"       value={user.totalProfit} />
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+
+interface EditForm {
+  name: string; username: string; email: string;
+  phone: string; status: UserStatus; plan: UserPlan;
+}
+
+function EditModal({
+  user, onClose, onSave,
+}: {
+  user: User;
+  onClose: () => void;
+  onSave: (id: string, patch: Partial<User>) => void;
+}) {
+  const [form, setForm] = useState<EditForm>({
+    name:     user.name,
+    username: user.username,
+    email:    user.email,
+    phone:    user.phone,
+    status:   user.status,
+    plan:     user.plan,
+  });
+
+  function handleSave() {
+    onSave(user.id, {
+      name:     form.name.trim(),
+      username: form.username.trim(),
+      email:    form.email.trim(),
+      phone:    form.phone.trim(),
+      status:   form.status,
+      plan:     form.plan,
+    });
+    onClose();
+  }
+
+  const fieldCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-xs placeholder:text-white/20 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 transition-all';
+  const labelCls = 'block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-1.5';
+  const selectCls = 'w-full bg-[hsl(221,70%,8%)] border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-xs focus:outline-none focus:border-accent/50 transition-all appearance-none';
+
+  return (
+    <ModalShell onClose={onClose}>
+      <ModalHeader title="Edit User" subtitle={user.id} user={user} onClose={onClose} />
+
+      <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Full Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              className={fieldCls}
+              placeholder="Full name"
             />
           </div>
-          <div className="flex items-center gap-1 bg-muted/40 border border-white/10 rounded-lg p-1">
-            <Filter size={13} className="text-muted-foreground ml-2 mr-1" />
-            {['All', 'Active', 'Pending', 'Suspended'].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${
-                  filter === f ? 'bg-primary/30 text-accent' : 'text-muted-foreground hover:text-white'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
+          <div>
+            <label className={labelCls}>Username</label>
+            <input
+              value={form.username}
+              onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+              className={fieldCls}
+              placeholder="username"
+            />
           </div>
-        </div>
-
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead>
-              <tr className="border-b border-white/5">
-                {['User', 'Plan', 'Balance', 'Country', 'Joined', 'Status', 'Actions'].map((h) => (
-                  <th key={h} className="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-6 py-3">
-                    {h}
-                  </th>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Email Address</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              className={fieldCls}
+              placeholder="email@example.com"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Phone Number</label>
+            <input
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              className={fieldCls}
+              placeholder="+1 234 567 8900"
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Account Status</label>
+            <div className="relative">
+              <select
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as UserStatus }))}
+                className={selectCls}
+              >
+                <option value="Active">Active</option>
+                <option value="Suspended">Suspended</option>
+              </select>
+              <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            </div>
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Investment Plan</label>
+            <div className="relative">
+              <select
+                value={form.plan}
+                onChange={(e) => setForm((f) => ({ ...f, plan: e.target.value as UserPlan }))}
+                className={selectCls}
+              >
+                {(['Starter', 'Silver', 'Gold', 'Platinum'] as UserPlan[]).map((p) => (
+                  <option key={p} value={p}>{p}</option>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u) => (
-                <tr key={u.id} className="border-b border-white/3 hover:bg-white/3 transition-colors">
-                  <td className="px-6 py-3.5">
-                    <p className="text-white text-xs font-semibold">{u.name}</p>
-                    <p className="text-muted-foreground text-[10px]">{u.email}</p>
-                    <p className="text-muted-foreground/50 text-[10px]">{u.id}</p>
-                  </td>
-                  <td className="px-6 py-3.5">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${PLAN_STYLES[u.plan]}`}>
-                      {u.plan}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3.5 text-white text-xs font-semibold">{u.balance}</td>
-                  <td className="px-6 py-3.5 text-muted-foreground text-xs">{u.country}</td>
-                  <td className="px-6 py-3.5 text-muted-foreground text-xs">{u.joined}</td>
-                  <td className="px-6 py-3.5">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLES[u.status]}`}>
-                      {u.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3.5">
-                    <button className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground hover:text-white border border-white/10 hover:border-white/25 rounded-md px-2.5 py-1.5 transition-colors">
-                      <Eye size={11} />
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-muted-foreground text-sm">
-                    No users match your search.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination stub */}
-        <div className="flex items-center justify-between px-6 py-3 border-t border-white/5">
-          <p className="text-[11px] text-muted-foreground">
-            Showing {filtered.length} of {ALL_USERS.length} users
-          </p>
-          <div className="flex gap-1">
-            {[1, 2, 3, '…', 18].map((p, i) => (
-              <button
-                key={i}
-                className={`text-xs w-7 h-7 rounded-md border transition-colors ${
-                  p === 1 ? 'bg-primary/30 text-accent border-primary/30' : 'border-white/10 text-muted-foreground hover:text-white hover:border-white/25'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+              </select>
+              <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            </div>
           </div>
         </div>
-      </motion.div>
-    </div>
+      </div>
+
+      <div className="px-5 py-4 border-t border-white/5 flex gap-3">
+        <button
+          onClick={handleSave}
+          className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-[0_0_16px_rgba(21,101,232,0.25)]"
+        >
+          <Save size={13} />
+          Save Changes
+        </button>
+        <button
+          onClick={onClose}
+          className="flex-1 text-xs font-semibold text-muted-foreground hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ─── Delete Confirm Modal ────────────────────────────────────────────────────
+
+function DeleteModal({
+  user, onClose, onConfirm,
+}: {
+  user: User; onClose: () => void; onConfirm: (id: string) => void;
+}) {
+  return (
+    <ModalShell onClose={onClose}>
+      <div className="p-6 flex flex-col items-center text-center gap-4">
+        <div className="w-12 h-12 rounded-full bg-red-500/15 border border-red-500/20 flex items-center justify-center">
+          <AlertTriangle size={20} className="text-red-400" />
+        </div>
+        <div>
+          <p className="text-white font-bold text-base">Delete User?</p>
+          <p className="text-muted-foreground text-xs mt-1.5 leading-relaxed max-w-xs">
+            You are about to permanently delete <span className="text-white font-semibold">{user.name}</span>.
+            This action cannot be undone and will remove all associated data.
+          </p>
+        </div>
+        <div className="flex gap-3 w-full mt-1">
+          <button
+            onClick={() => { onConfirm(user.id); onClose(); }}
+            className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 text-xs font-semibold py-2.5 rounded-xl transition-colors"
+          >
+            Yes, Delete
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+type FilterKey = 'All' | 'Active' | 'Suspended' | 'New Users' | 'Investors';
+type ModalMode = { kind: 'view'; user: User } | { kind: 'edit'; user: User } | { kind: 'delete'; user: User } | null;
+
+export default function AdminUsers() {
+  useAdminAuth(); // ensures admin context is wired
+
+  const [users, setUsers]   = useState<User[]>(SEED);
+  const [modal, setModal]   = useState<ModalMode>(null);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<FilterKey>('All');
+
+  // ── Counts for summary cards ───────────────────────────────────────────────
+  const counts = useMemo(() => ({
+    total:     users.length,
+    active:    users.filter((u) => u.status === 'Active').length,
+    suspended: users.filter((u) => u.status === 'Suspended').length,
+    investors: users.filter((u) => u.balanceNum > 0).length,
+  }), [users]);
+
+  // ── Filtered rows ─────────────────────────────────────────────────────────
+  const rows = useMemo(() => {
+    const q = search.toLowerCase();
+    return users.filter((u) => {
+      const matchSearch = !q ||
+        u.name.toLowerCase().includes(q) ||
+        u.username.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.id.toLowerCase().includes(q) ||
+        u.phone.toLowerCase().includes(q);
+
+      const matchFilter = (() => {
+        switch (filter) {
+          case 'Active':    return u.status === 'Active';
+          case 'Suspended': return u.status === 'Suspended';
+          case 'New Users': return u.registeredIso >= NEW_THRESHOLD;
+          case 'Investors': return u.balanceNum > 0;
+          default:          return true;
+        }
+      })();
+
+      return matchSearch && matchFilter;
+    });
+  }, [users, search, filter]);
+
+  // ── User actions ─────────────────────────────────────────────────────────
+
+  function handleSave(id: string, patch: Partial<User>) {
+    setUsers((prev) => prev.map((u) => u.id === id ? { ...u, ...patch } : u));
+    toast({ title: '✅ User Updated', description: 'User record saved successfully.' });
+  }
+
+  function handleToggleStatus(user: User) {
+    const next: UserStatus = user.status === 'Active' ? 'Suspended' : 'Active';
+    setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, status: next } : u));
+    toast({
+      title: next === 'Suspended' ? '🚫 User Suspended' : '✅ User Activated',
+      description: `${user.name}'s account has been ${next === 'Suspended' ? 'suspended' : 'reactivated'}.`,
+    });
+  }
+
+  function handleDelete(id: string) {
+    const u = users.find((u) => u.id === id);
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    toast({ title: '🗑️ User Deleted', description: `${u?.name ?? id} has been removed.` });
+  }
+
+  const FILTER_TABS: FilterKey[] = ['All', 'Active', 'Suspended', 'New Users', 'Investors'];
+
+  const COLS = [
+    'Profile', 'Full Name', 'Username', 'Email',
+    'Phone', 'Registered', 'Status', 'Plan', 'Balance', 'Actions',
+  ];
+
+  return (
+    <>
+      {/* Modals */}
+      {modal?.kind === 'view'   && <ViewModal   user={modal.user} onClose={() => setModal(null)} />}
+      {modal?.kind === 'edit'   && <EditModal   user={modal.user} onClose={() => setModal(null)} onSave={handleSave} />}
+      {modal?.kind === 'delete' && <DeleteModal user={modal.user} onClose={() => setModal(null)} onConfirm={handleDelete} />}
+
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-white">User Management</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Browse, search, and manage all registered users.
+          </p>
+        </div>
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'Total Users',  value: counts.total,     icon: Users,      color: 'text-accent',         bg: 'bg-accent/10',         border: 'border-accent/20'         },
+            { label: 'Active',       value: counts.active,    icon: UserCheck,  color: 'text-emerald-400',    bg: 'bg-emerald-500/10',    border: 'border-emerald-500/20'    },
+            { label: 'Suspended',    value: counts.suspended, icon: UserX,      color: 'text-red-400',        bg: 'bg-red-500/10',        border: 'border-red-500/20'        },
+            { label: 'Investors',    value: counts.investors, icon: TrendingUp, color: 'text-amber-400',      bg: 'bg-amber-500/10',      border: 'border-amber-500/20'      },
+          ].map((s) => (
+            <div key={s.label} className="bg-card/40 border border-white/5 rounded-xl p-4 flex items-center gap-3">
+              <div className={`${s.bg} border ${s.border} p-2.5 rounded-lg`}>
+                <s.icon size={15} className={s.color} />
+              </div>
+              <div>
+                <p className="text-white font-bold text-xl leading-tight">{s.value}</p>
+                <p className="text-muted-foreground text-[10px]">{s.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35 }}
+          className="bg-card/40 border border-white/5 rounded-xl overflow-hidden"
+        >
+          {/* Toolbar */}
+          <div className="flex flex-col lg:flex-row gap-3 px-5 py-4 border-b border-white/5">
+            {/* Search */}
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+              <Input
+                placeholder="Search name, username, email, phone…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 h-9 bg-muted/40 border-white/10 text-white placeholder:text-white/25 text-xs"
+              />
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex items-center gap-0.5 bg-muted/30 border border-white/8 rounded-lg p-1 overflow-x-auto">
+              {FILTER_TABS.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  className={`text-[11px] font-medium px-3 py-1.5 rounded-md transition-colors whitespace-nowrap ${
+                    filter === f
+                      ? 'bg-primary/30 text-accent'
+                      : 'text-muted-foreground hover:text-white'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[1080px]">
+              <thead>
+                <tr className="border-b border-white/5">
+                  {COLS.map((h) => (
+                    <th
+                      key={h}
+                      className="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-4 py-3 whitespace-nowrap"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((u) => {
+                  const ss = STATUS_STYLE[u.status];
+                  const ps = PLAN_STYLE[u.plan];
+                  return (
+                    <motion.tr
+                      key={u.id}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors"
+                    >
+                      {/* Avatar */}
+                      <td className="px-4 py-3.5">
+                        <Avatar user={u} size="md" />
+                      </td>
+
+                      {/* Full Name */}
+                      <td className="px-4 py-3.5">
+                        <p className="text-white text-xs font-semibold whitespace-nowrap">{u.name}</p>
+                        <p className="text-muted-foreground/50 text-[10px] font-mono">{u.id}</p>
+                      </td>
+
+                      {/* Username */}
+                      <td className="px-4 py-3.5 text-muted-foreground text-xs font-mono">
+                        @{u.username}
+                      </td>
+
+                      {/* Email */}
+                      <td className="px-4 py-3.5 text-muted-foreground text-[10px] whitespace-nowrap">
+                        {u.email}
+                      </td>
+
+                      {/* Phone */}
+                      <td className="px-4 py-3.5 text-muted-foreground text-[10px] whitespace-nowrap font-mono">
+                        {u.phone}
+                      </td>
+
+                      {/* Registered */}
+                      <td className="px-4 py-3.5 text-muted-foreground text-[10px] whitespace-nowrap">
+                        {u.registeredDate}
+                        {u.registeredIso >= NEW_THRESHOLD && (
+                          <span className="ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/20">
+                            NEW
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${ss.bg} ${ss.border} ${ss.color} whitespace-nowrap`}>
+                          {u.status === 'Active' ? <ShieldCheck size={9} /> : <ShieldOff size={9} />}
+                          {u.status}
+                        </span>
+                      </td>
+
+                      {/* Plan */}
+                      <td className="px-4 py-3.5">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ps.bg} ${ps.border} ${ps.color} whitespace-nowrap`}>
+                          {u.plan}
+                        </span>
+                      </td>
+
+                      {/* Balance */}
+                      <td className="px-4 py-3.5 text-white text-xs font-bold whitespace-nowrap">
+                        {u.balance}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {/* View */}
+                          <button
+                            onClick={() => setModal({ kind: 'view', user: u })}
+                            title="View Profile"
+                            className="flex items-center gap-1 text-[10px] font-semibold text-accent hover:text-accent/70 border border-accent/20 hover:border-accent/40 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
+                          >
+                            <Eye size={10} />
+                            View
+                          </button>
+
+                          {/* Edit */}
+                          <button
+                            onClick={() => setModal({ kind: 'edit', user: u })}
+                            title="Edit User"
+                            className="flex items-center gap-1 text-[10px] font-semibold text-white/70 hover:text-white border border-white/10 hover:border-white/25 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
+                          >
+                            <Pencil size={10} />
+                            Edit
+                          </button>
+
+                          {/* Suspend / Activate */}
+                          {u.status === 'Active' ? (
+                            <button
+                              onClick={() => handleToggleStatus(u)}
+                              title="Suspend User"
+                              className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 hover:bg-amber-500/10 border border-amber-500/20 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
+                            >
+                              <ShieldOff size={10} />
+                              Suspend
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleStatus(u)}
+                              title="Activate User"
+                              className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
+                            >
+                              <ShieldCheck size={10} />
+                              Activate
+                            </button>
+                          )}
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => setModal({ kind: 'delete', user: u })}
+                            title="Delete User"
+                            className="flex items-center gap-1 text-[10px] font-semibold text-red-400/70 hover:text-red-400 hover:bg-red-500/10 border border-red-500/15 hover:border-red-500/30 rounded-md px-2 py-1 transition-colors"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+
+                {rows.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="px-5 py-14 text-center">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
+                        <Users size={28} strokeWidth={1.2} />
+                        <p className="text-sm">No users match your search or filter.</p>
+                        {(search || filter !== 'All') && (
+                          <button
+                            onClick={() => { setSearch(''); setFilter('All'); }}
+                            className="text-xs text-accent hover:text-accent/70 mt-1 transition-colors"
+                          >
+                            Clear filters
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-white/5">
+            <p className="text-[10px] text-muted-foreground/50">
+              Showing {rows.length} of {users.length} users
+              {filter !== 'All' && ` · Filter: ${filter}`}
+            </p>
+            {(search || filter !== 'All') && (
+              <button
+                onClick={() => { setSearch(''); setFilter('All'); }}
+                className="text-[10px] text-accent hover:text-accent/70 transition-colors"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        </motion.div>
+      </div>
+    </>
   );
 }
