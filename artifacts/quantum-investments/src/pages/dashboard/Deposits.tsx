@@ -77,7 +77,7 @@ function buildPaymentUri(method: Method): string {
     case 'btc':  return `bitcoin:${method.address}`;
     case 'eth':  return `ethereum:${method.address}`;
     case 'usdt': return method.address;            // TRON has no standard URI prefix
-    default:     return method.address;
+    default:     throw new Error('Unsupported payment method');
   }
 }
 
