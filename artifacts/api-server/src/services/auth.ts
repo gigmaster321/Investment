@@ -67,7 +67,7 @@ export async function registerUser(data: {
       phone: data.phone ?? null,
       password: hashed,
       role: "user",
-      email_verified: false,
+      email_verified: true,
       account_status: "active",
     })
     .returning();

@@ -1,0 +1,112 @@
+Simplify the authentication system and make the project fully demo-ready.
+
+Do NOT implement or require:
+
+- Email OTP verification
+- Email sending
+- SMTP
+- Resend
+- Email verification
+- Domain email configuration
+- Production authentication complexity
+
+Remove any code that blocks login or registration because of these features.
+
+========================
+ADMIN LOGIN
+========================
+
+Create one permanent administrator account.
+
+Default credentials:
+
+Email: admin@quantuminvestments.com
+Password: Admin@123456
+
+Requirements:
+
+- Automatically create this admin account if it does not exist.
+- Ensure this account always has administrator privileges.
+- Admin login must always work.
+- Redirect successfully to the Admin Dashboard.
+- No "Invalid admin credentials" errors.
+
+========================
+USER AUTHENTICATION
+========================
+
+Make registration simple.
+
+User should only enter:
+
+- Name
+- Email
+- Password
+
+After registration:
+
+- Save the user.
+- Allow immediate login.
+- No OTP.
+- No email verification.
+- No email confirmation.
+
+User login must always authenticate correctly and redirect to the User Dashboard.
+
+========================
+REMOVE BLOCKERS
+========================
+
+Remove any authentication checks that require:
+
+- email_verified
+- verification tokens
+- OTP validation
+- email provider
+- Resend API
+- SMTP
+- domain verification
+
+========================
+FIX ERRORS
+========================
+
+Completely eliminate:
+
+- Login failed. Please try again.
+- Invalid admin credentials.
+- Registration failed.
+- Authentication errors.
+- Session errors.
+
+Find the root cause and fix it.
+
+========================
+VERIFY
+========================
+
+Before finishing, verify:
+
+✓ Admin login works using:
+Email: admin@quantuminvestments.com
+Password: Admin@123456
+
+✓ User registration works.
+
+✓ User login works.
+
+✓ User Dashboard opens.
+
+✓ Admin Dashboard opens.
+
+✓ Logout works.
+
+✓ Sessions work correctly.
+
+Do not finish until every item above is working.
+
+Finally provide:
+
+1. Admin login credentials.
+2. Test user credentials.
+3. Confirmation that login, registration and admin access were tested successfully.

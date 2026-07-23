@@ -8,7 +8,6 @@ import {
   markEmailVerified,
 } from "../services/auth.js";
 import { createOtp, verifyOtp, getResendCooldownSeconds } from "../services/otp.js";
-import { sendOtpEmail } from "../services/email.js";
 
 const router = Router();
 
@@ -83,18 +82,7 @@ router.post("/register", async (req, res) => {
   try {
     const user = await registerUser(parsed.data);
 
-    // Generate OTP and send verification email
-    const code = await createOtp(user.id);
-    const emailResult = await sendOtpEmail(user.email, user.full_name, code);
-
-    const response: Record<string, unknown> = { requiresVerification: true };
-    // Include OTP in response only in development (no real email configured)
-    if (emailResult.devOtp) {
-      response.devOtp = emailResult.devOtp;
-      response.devNote = "RESEND_API_KEY not configured — use this code to verify.";
-    }
-
-    res.status(201).json(response);
+    res.status(201).json({ success: true, userId: user.id });
   } catch (err: any) {
     if (dbError(res, err)) return;
     if (err.code === "EMAIL_EXISTS") {

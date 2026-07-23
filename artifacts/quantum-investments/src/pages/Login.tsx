@@ -35,14 +35,11 @@ export default function Login() {
       }
     } catch (err: any) {
       const code = err?.error;
-      if (code === 'EMAIL_NOT_VERIFIED') {
-        setLocation(`/verify-email?email=${encodeURIComponent(email)}`);
-        return;
-      }
       const messages: Record<string, string> = {
-        USER_NOT_FOUND: 'Invalid email. No account found with this email address.',
+        USER_NOT_FOUND: 'No account found with this email address.',
         INVALID_PASSWORD: 'Incorrect password. Please try again.',
         ACCOUNT_INACTIVE: err?.message || 'Your account has been suspended. Please contact support.',
+        EMAIL_NOT_VERIFIED: 'Your email is not verified. Please contact support.',
       };
       setError(messages[code] ?? err?.message ?? 'Login failed. Please try again.');
     } finally {

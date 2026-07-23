@@ -18,6 +18,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
@@ -41,7 +42,7 @@ export default function Register() {
 
     setIsLoading(true);
     try {
-      const result = await register({
+      await register({
         full_name: fullName,
         username,
         email,
@@ -49,12 +50,8 @@ export default function Register() {
         password,
       });
 
-      if (result.requiresVerification) {
-        // Build redirect URL — include devOtp if present so VerifyEmail page can display it
-        const params = new URLSearchParams({ email });
-        if (result.devOtp) params.set('devOtp', result.devOtp);
-        setLocation(`/verify-email?${params.toString()}`);
-      }
+      setSuccess(true);
+      setTimeout(() => setLocation('/login'), 2000);
     } catch (err: any) {
       if (err?.error === 'EMAIL_EXISTS') {
         setError('An account with this email already exists.');
@@ -100,6 +97,15 @@ export default function Register() {
         </p>
 
         <form onSubmit={handleRegister} className="space-y-4">
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 bg-green-500/15 border border-green-500/30 text-green-400 text-xs rounded-lg px-3 py-2.5"
+            >
+              Account created successfully! Redirecting to login…
+            </motion.div>
+          )}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
