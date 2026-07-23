@@ -14,6 +14,8 @@ tags:
     description: Admin user profile and account management operations
   - name: plans
     description: Investment plan catalog management operations
+  - name: investments
+    description: User investment assignment and lifecycle operations
 paths:
   /healthz:
     get:
@@ -225,6 +227,98 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+  /investments:
+    get:
+      operationId: listInvestments
+      tags: [investments]
+      summary: List investments
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [user, all]
+            default: user
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Investment records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Investment"
+    post:
+      operationId: createInvestment
+      tags: [investments]
+      summary: Create a pending investment assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentInput"
+      responses:
+        "201":
+          description: Created investment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /investments/{investmentId}:
+    get:
+      operationId: getInvestment
+      tags: [investments]
+      summary: Get an investment
+      parameters:
+        - $ref: "#/components/parameters/InvestmentId"
+      responses:
+        "200":
+          description: Investment record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /investments/{investmentId}/status:
+    patch:
+      operationId: updateInvestmentStatus
+      tags: [investments]
+      summary: Apply an admin lifecycle action to an investment
+      parameters:
+        - $ref: "#/components/parameters/InvestmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentStatusAction"
+      responses:
+        "200":
+          description: Updated investment record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
   parameters:
     UserId:
@@ -243,6 +337,14 @@ components:
       schema:
         type: string
         minLength: 1
+    InvestmentId:
+      name: investmentId
+      in: path
+      required: true
+      description: Investment record identifier
+      schema:
+        type: string
+        minLength: 1
   responses:
     BadRequest:
       description: Invalid request
@@ -252,6 +354,12 @@ components:
             $ref: "#/components/schemas/ApiError"
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    Conflict:
+      description: Request conflicts with the current resource state
       content:
         application/json:
           schema:
@@ -356,4 +464,77 @@ components:
         displayOrder:
           type: integer
           minimum: 0
+    InvestmentUser:
+      type: object
+      required: [id, name, email]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+    InvestmentPlanSnapshot:
+      type: object
+      required: [id, name, executionCycle]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        executionCycle:
+          type: string
+    Investment:
+      type: object
+      required: [id, user, plan, investmentAmount, profitPercentage, investmentDate, maturityDate, status, isPaused, expectedReturn, remainingSeconds, displayStatus]
+      properties:
+        id:
+          type: string
+        user:
+          $ref: "#/components/schemas/InvestmentUser"
+        plan:
+          $ref: "#/components/schemas/InvestmentPlanSnapshot"
+        investmentAmount:
+          type: number
+          minimum: 0
+        profitPercentage:
+          type: number
+          minimum: 0
+        investmentDate:
+          type: string
+          format: date-time
+        maturityDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [Pending, Active, Completed, Cancelled]
+        isPaused:
+          type: boolean
+        expectedReturn:
+          type: number
+          minimum: 0
+        remainingSeconds:
+          type: integer
+          minimum: 0
+        displayStatus:
+          type: string
+          enum: [Pending, Active, Paused, Completed, Cancelled]
+    InvestmentInput:
+      type: object
+      required: [planId, amount]
+      properties:
+        planId:
+          type: string
+          minLength: 1
+        amount:
+          type: number
+          exclusiveMinimum: 0
+    InvestmentStatusAction:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [activate, pause, complete, cancel]
 

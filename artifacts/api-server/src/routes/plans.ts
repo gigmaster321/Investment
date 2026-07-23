@@ -93,6 +93,20 @@ const plans = new Map<string, InvestmentPlan>([
   ],
 ]);
 
+export function getInvestmentPlanById(id: string) {
+  return plans.get(id);
+}
+
+export function recordPlanInvestment(id: string, amount: number) {
+  const plan = plans.get(id);
+  if (!plan) return;
+  plans.set(id, {
+    ...plan,
+    investors: plan.investors + 1,
+    totalDeposited: plan.totalDeposited + amount,
+  });
+}
+
 function validatePlanInput(value: unknown): value is PlanInput {
   if (!value || typeof value !== "object") return false;
   const input = value as Partial<PlanInput>;

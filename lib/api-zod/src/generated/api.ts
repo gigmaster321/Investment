@@ -392,3 +392,187 @@ export const UpdateInvestmentPlanStatusResponse = zod.object({
 }))
 
 
+/**
+ * @summary List investments
+ */
+export const listInvestmentsQueryScopeDefault = `user`;
+
+export const ListInvestmentsQueryParams = zod.object({
+  "scope": zod.enum(['user', 'all']).default(listInvestmentsQueryScopeDefault),
+  "userId": zod.coerce.string().optional()
+})
+
+export const listInvestmentsResponseInvestmentAmountMin = 0;
+
+export const listInvestmentsResponseProfitPercentageMin = 0;
+
+export const listInvestmentsResponseExpectedReturnMin = 0;
+
+export const listInvestmentsResponseRemainingSecondsMin = 0;
+
+
+
+export const ListInvestmentsResponseItem = zod.object({
+  "id": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string()
+}),
+  "plan": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "executionCycle": zod.string()
+}),
+  "investmentAmount": zod.number().min(listInvestmentsResponseInvestmentAmountMin),
+  "profitPercentage": zod.number().min(listInvestmentsResponseProfitPercentageMin),
+  "investmentDate": zod.coerce.date(),
+  "maturityDate": zod.coerce.date(),
+  "status": zod.enum(['Pending', 'Active', 'Completed', 'Cancelled']),
+  "isPaused": zod.boolean(),
+  "expectedReturn": zod.number().min(listInvestmentsResponseExpectedReturnMin),
+  "remainingSeconds": zod.number().min(listInvestmentsResponseRemainingSecondsMin),
+  "displayStatus": zod.enum(['Pending', 'Active', 'Paused', 'Completed', 'Cancelled'])
+})
+export const ListInvestmentsResponse = zod.array(ListInvestmentsResponseItem)
+
+
+/**
+ * @summary Create a pending investment assignment
+ */
+
+export const createInvestmentBodyAmountExclusiveMin = 0;
+
+
+
+export const CreateInvestmentBody = zod.object({
+  "planId": zod.string().min(1),
+  "amount": zod.number().gt(createInvestmentBodyAmountExclusiveMin)
+})
+
+export const createInvestmentResponseInvestmentAmountMin = 0;
+
+export const createInvestmentResponseProfitPercentageMin = 0;
+
+export const createInvestmentResponseExpectedReturnMin = 0;
+
+export const createInvestmentResponseRemainingSecondsMin = 0;
+
+
+
+export const CreateInvestmentResponse = zod.object({
+  "id": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string()
+}),
+  "plan": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "executionCycle": zod.string()
+}),
+  "investmentAmount": zod.number().min(createInvestmentResponseInvestmentAmountMin),
+  "profitPercentage": zod.number().min(createInvestmentResponseProfitPercentageMin),
+  "investmentDate": zod.coerce.date(),
+  "maturityDate": zod.coerce.date(),
+  "status": zod.enum(['Pending', 'Active', 'Completed', 'Cancelled']),
+  "isPaused": zod.boolean(),
+  "expectedReturn": zod.number().min(createInvestmentResponseExpectedReturnMin),
+  "remainingSeconds": zod.number().min(createInvestmentResponseRemainingSecondsMin),
+  "displayStatus": zod.enum(['Pending', 'Active', 'Paused', 'Completed', 'Cancelled'])
+})
+
+
+/**
+ * @summary Get an investment
+ */
+
+
+
+export const GetInvestmentParams = zod.object({
+  "investmentId": zod.coerce.string().min(1).describe('Investment record identifier')
+})
+
+export const getInvestmentResponseInvestmentAmountMin = 0;
+
+export const getInvestmentResponseProfitPercentageMin = 0;
+
+export const getInvestmentResponseExpectedReturnMin = 0;
+
+export const getInvestmentResponseRemainingSecondsMin = 0;
+
+
+
+export const GetInvestmentResponse = zod.object({
+  "id": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string()
+}),
+  "plan": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "executionCycle": zod.string()
+}),
+  "investmentAmount": zod.number().min(getInvestmentResponseInvestmentAmountMin),
+  "profitPercentage": zod.number().min(getInvestmentResponseProfitPercentageMin),
+  "investmentDate": zod.coerce.date(),
+  "maturityDate": zod.coerce.date(),
+  "status": zod.enum(['Pending', 'Active', 'Completed', 'Cancelled']),
+  "isPaused": zod.boolean(),
+  "expectedReturn": zod.number().min(getInvestmentResponseExpectedReturnMin),
+  "remainingSeconds": zod.number().min(getInvestmentResponseRemainingSecondsMin),
+  "displayStatus": zod.enum(['Pending', 'Active', 'Paused', 'Completed', 'Cancelled'])
+})
+
+
+/**
+ * @summary Apply an admin lifecycle action to an investment
+ */
+
+
+
+export const UpdateInvestmentStatusParams = zod.object({
+  "investmentId": zod.coerce.string().min(1).describe('Investment record identifier')
+})
+
+export const UpdateInvestmentStatusBody = zod.object({
+  "action": zod.enum(['activate', 'pause', 'complete', 'cancel'])
+})
+
+export const updateInvestmentStatusResponseInvestmentAmountMin = 0;
+
+export const updateInvestmentStatusResponseProfitPercentageMin = 0;
+
+export const updateInvestmentStatusResponseExpectedReturnMin = 0;
+
+export const updateInvestmentStatusResponseRemainingSecondsMin = 0;
+
+
+
+export const UpdateInvestmentStatusResponse = zod.object({
+  "id": zod.string(),
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string()
+}),
+  "plan": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "executionCycle": zod.string()
+}),
+  "investmentAmount": zod.number().min(updateInvestmentStatusResponseInvestmentAmountMin),
+  "profitPercentage": zod.number().min(updateInvestmentStatusResponseProfitPercentageMin),
+  "investmentDate": zod.coerce.date(),
+  "maturityDate": zod.coerce.date(),
+  "status": zod.enum(['Pending', 'Active', 'Completed', 'Cancelled']),
+  "isPaused": zod.boolean(),
+  "expectedReturn": zod.number().min(updateInvestmentStatusResponseExpectedReturnMin),
+  "remainingSeconds": zod.number().min(updateInvestmentStatusResponseRemainingSecondsMin),
+  "displayStatus": zod.enum(['Pending', 'Active', 'Paused', 'Completed', 'Cancelled'])
+})
+
+

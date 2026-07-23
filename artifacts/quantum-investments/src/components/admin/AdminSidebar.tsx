@@ -36,6 +36,7 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/admin/deposits', label: 'Deposits', icon: DollarSign },
       { href: '/admin/withdrawals', label: 'Withdrawals', icon: ArrowDownCircle },
       { href: '/admin/plans', label: 'Investment Plans', icon: CreditCard },
+      { href: '/admin/investments', label: 'Investment Assignments', icon: TrendingUp },
     ],
   },
   {

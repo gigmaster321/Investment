@@ -89,6 +89,79 @@ export type InvestmentPlan = InvestmentPlanInput & {
   totalDeposited: number;
 };
 
+export interface InvestmentUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface InvestmentPlanSnapshot {
+  id: string;
+  name: string;
+  executionCycle: string;
+}
+
+export type InvestmentStatus = typeof InvestmentStatus[keyof typeof InvestmentStatus];
+
+
+export const InvestmentStatus = {
+  Pending: 'Pending',
+  Active: 'Active',
+  Completed: 'Completed',
+  Cancelled: 'Cancelled',
+} as const;
+
+export type InvestmentDisplayStatus = typeof InvestmentDisplayStatus[keyof typeof InvestmentDisplayStatus];
+
+
+export const InvestmentDisplayStatus = {
+  Pending: 'Pending',
+  Active: 'Active',
+  Paused: 'Paused',
+  Completed: 'Completed',
+  Cancelled: 'Cancelled',
+} as const;
+
+export interface Investment {
+  id: string;
+  user: InvestmentUser;
+  plan: InvestmentPlanSnapshot;
+  /** @minimum 0 */
+  investmentAmount: number;
+  /** @minimum 0 */
+  profitPercentage: number;
+  investmentDate: string;
+  maturityDate: string;
+  status: InvestmentStatus;
+  isPaused: boolean;
+  /** @minimum 0 */
+  expectedReturn: number;
+  /** @minimum 0 */
+  remainingSeconds: number;
+  displayStatus: InvestmentDisplayStatus;
+}
+
+export interface InvestmentInput {
+  /** @minLength 1 */
+  planId: string;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+}
+
+export type InvestmentStatusActionAction = typeof InvestmentStatusActionAction[keyof typeof InvestmentStatusActionAction];
+
+
+export const InvestmentStatusActionAction = {
+  activate: 'activate',
+  pause: 'pause',
+  complete: 'complete',
+  cancel: 'cancel',
+} as const;
+
+export interface InvestmentStatusAction {
+  action: InvestmentStatusActionAction;
+}
+
 /**
  * Invalid request
  */
@@ -98,4 +171,22 @@ export type BadRequestResponse = ApiError;
  * Resource not found
  */
 export type NotFoundResponse = ApiError;
+
+/**
+ * Request conflicts with the current resource state
+ */
+export type ConflictResponse = ApiError;
+
+export type ListInvestmentsParams = {
+scope?: ListInvestmentsScope;
+userId?: string;
+};
+
+export type ListInvestmentsScope = typeof ListInvestmentsScope[keyof typeof ListInvestmentsScope];
+
+
+export const ListInvestmentsScope = {
+  user: 'user',
+  all: 'all',
+} as const;
 

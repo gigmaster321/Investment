@@ -31,6 +31,8 @@ import AdminAnalytics from '@/pages/admin/Analytics';
 import AdminSettings from '@/pages/admin/Settings';
 import AdminDeposits from '@/pages/admin/Deposits';
 import { InvestmentPlansProvider } from '@/lib/investment-plans';
+import { InvestmentsProvider } from '@/lib/investments';
+import AdminInvestments from '@/pages/admin/Investments';
 
 const queryClient = new QueryClient();
 
@@ -92,6 +94,9 @@ function Router() {
       <Route path="/admin/deposits">
         <AdminLayout><AdminDeposits /></AdminLayout>
       </Route>
+      <Route path="/admin/investments">
+        <AdminLayout><AdminInvestments /></AdminLayout>
+      </Route>
       <Route path="/admin/settings">
         <AdminLayout><AdminSettings /></AdminLayout>
       </Route>
@@ -106,13 +111,15 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AdminAuthProvider>
         <InvestmentPlansProvider>
-          <TooltipProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-            <LiveNotifications />
-          </TooltipProvider>
+          <InvestmentsProvider>
+            <TooltipProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+                <Router />
+              </WouterRouter>
+              <Toaster />
+              <LiveNotifications />
+            </TooltipProvider>
+          </InvestmentsProvider>
         </InvestmentPlansProvider>
       </AdminAuthProvider>
     </QueryClientProvider>
