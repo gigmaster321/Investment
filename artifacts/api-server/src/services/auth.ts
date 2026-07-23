@@ -150,6 +150,54 @@ export async function markEmailVerified(userId: number): Promise<void> {
     .where(eq(usersTable.id, userId));
 }
 
+/**
+ * Ensure the fixed administrator account exists.
+ * Called once on server start — idempotent and silent on duplicate.
+ */
+export async function seedAdminUser(): Promise<void> {
+  const ADMIN_EMAIL = "admin@quantuminvestments.com";
+  const ADMIN_PASSWORD = "Admin@123";
+
+  try {
+    const { db, usersTable } = await getDb();
+    const { eq } = await import("drizzle-orm");
+
+    const [existing] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, ADMIN_EMAIL))
+      .limit(1);
+
+    if (existing) {
+      // Ensure the existing record has the right role/status in case it was
+      // created incorrectly before.
+      await db
+        .update(usersTable)
+        .set({ role: "admin", email_verified: true, account_status: "active", updated_at: new Date() })
+        .where(eq(usersTable.email, ADMIN_EMAIL));
+      return;
+    }
+
+    const hashed = await hashPassword(ADMIN_PASSWORD);
+
+    await db.insert(usersTable).values({
+      full_name: "Administrator",
+      username: "admin",
+      email: ADMIN_EMAIL,
+      phone: null,
+      password: hashed,
+      role: "admin",
+      email_verified: true,
+      account_status: "active",
+    });
+  } catch (err: any) {
+    // DB unavailable at startup — non-fatal; admin seed will run on next start.
+    if (err?.code !== "DB_UNAVAILABLE") {
+      throw err;
+    }
+  }
+}
+
 /** Fetch full user row including password — needed for OTP lookups via email. */
 export async function getUserRowByEmail(
   email: string,

@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedAdminUser } from "./services/auth.js";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,9 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Seed the fixed admin account (idempotent — safe to run every startup).
+  seedAdminUser()
+    .then(() => logger.info("Admin account ready."))
+    .catch((err) => logger.error({ err }, "Failed to seed admin account."));
 });
