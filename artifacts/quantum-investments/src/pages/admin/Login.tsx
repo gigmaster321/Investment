@@ -28,7 +28,7 @@ export default function AdminLogin() {
     if (ok) {
       setLocation('/admin');
     } else {
-      setError('Invalid admin credentials. Please try again.');
+      setError('Invalid admin credentials or insufficient permissions.');
     }
   };
 
@@ -157,14 +157,6 @@ export default function AdminLogin() {
               )}
             </Button>
           </form>
-
-          {/* Demo hint */}
-          <div className="mt-5 p-3 bg-white/3 border border-white/8 rounded-lg">
-            <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
-              <span className="text-white/40 font-semibold">Demo:</span>{' '}
-              Use <span className="text-accent/80">admin@quantuminvestments.com</span> with any password
-            </p>
-          </div>
 
           <div className="flex items-center justify-center gap-1.5 mt-5 text-white/25 text-[10px] font-medium">
             <Lock className="w-3 h-3" />

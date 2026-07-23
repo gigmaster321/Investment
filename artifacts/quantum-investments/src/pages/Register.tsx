@@ -1,28 +1,70 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, User, AtSign, Phone } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, AtSign, Phone, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 // @ts-ignore
 import logoPath from '@assets/Quantum_Investment_1784716537861.jpeg';
 
 export default function Register() {
   const [, setLocation] = useLocation();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate register delay
-    await new Promise((r) => setTimeout(r, 800));
-    setIsLoading(false);
-    setLocation('/dashboard');
+    try {
+      await register({
+        full_name: fullName,
+        username,
+        email,
+        phone: phone || undefined,
+        password,
+      });
+      setLocation('/dashboard');
+    } catch (err: any) {
+      if (err?.error === 'EMAIL_EXISTS') {
+        setError('An account with this email already exists.');
+      } else if (err?.error === 'USERNAME_EXISTS') {
+        setError('This username is already taken. Please choose another.');
+      } else if (err?.error === 'VALIDATION_ERROR' && err?.details) {
+        const first = Object.values(err.details as Record<string, string[]>).flat()[0];
+        setError(first || 'Please check your details and try again.');
+      } else if (err?.error === 'SERVICE_UNAVAILABLE') {
+        setError('Service temporarily unavailable. Please try again later.');
+      } else {
+        setError(err?.message || 'Registration failed. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -52,6 +94,17 @@ export default function Register() {
         </p>
 
         <form onSubmit={handleRegister} className="space-y-4">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 bg-destructive/15 border border-destructive/30 text-red-400 text-xs rounded-lg px-3 py-2.5"
+            >
+              <AlertCircle size={14} className="shrink-0" />
+              {error}
+            </motion.div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             
             {/* Full Name */}
@@ -65,6 +118,8 @@ export default function Register() {
                   type="text"
                   placeholder="John Doe"
                   required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   className="pl-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
                 />
               </div>
@@ -81,6 +136,8 @@ export default function Register() {
                   type="text"
                   placeholder="johndoe123"
                   required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   className="pl-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
                 />
               </div>
@@ -97,6 +154,8 @@ export default function Register() {
                   type="email"
                   placeholder="you@example.com"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="pl-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
                 />
               </div>
@@ -112,7 +171,8 @@ export default function Register() {
                 <Input
                   type="tel"
                   placeholder="+1 (555) 000-0000"
-                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="pl-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
                 />
               </div>
@@ -129,6 +189,8 @@ export default function Register() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="pl-10 pr-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
                 />
                 <button
@@ -152,6 +214,8 @@ export default function Register() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="pl-10 pr-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
                 />
                 <button

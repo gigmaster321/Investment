@@ -8,6 +8,9 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import { Route, Switch, Router as WouterRouter } from 'wouter';
 
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import DashboardOverview from '@/pages/dashboard/index';
 import Investments from '@/pages/dashboard/Investments';
@@ -43,39 +46,57 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 
-      {/* User dashboard */}
+      {/* User dashboard — all routes protected */}
       <Route path="/dashboard">
-        <DashboardLayout><DashboardOverview /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><DashboardOverview /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/investments">
-        <DashboardLayout><Investments /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Investments /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/deposits">
-        <DashboardLayout><Deposits /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Deposits /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/withdrawals">
-        <DashboardLayout><Withdrawals /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Withdrawals /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/transactions">
-        <DashboardLayout><Transactions /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Transactions /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/earnings">
-        <DashboardLayout><Earnings /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Earnings /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/referral">
-        <DashboardLayout><Referral /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Referral /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/notifications">
-        <DashboardLayout><Notifications /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Notifications /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
       <Route path="/dashboard/profile">
-        <DashboardLayout><Profile /></DashboardLayout>
+        <ProtectedRoute>
+          <DashboardLayout><Profile /></DashboardLayout>
+        </ProtectedRoute>
       </Route>
 
       {/* Admin panel — public login page */}
       <Route path="/admin/login" component={AdminLogin} />
 
-      {/* Admin panel — protected routes */}
+      {/* Admin panel — protected routes (AdminGuard handles auth + role checks) */}
       <Route path="/admin">
         <AdminLayout><AdminDashboard /></AdminLayout>
       </Route>
@@ -109,19 +130,21 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AdminAuthProvider>
-        <InvestmentPlansProvider>
-          <InvestmentsProvider>
-            <TooltipProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-                <Router />
-              </WouterRouter>
-              <Toaster />
-              <LiveNotifications />
-            </TooltipProvider>
-          </InvestmentsProvider>
-        </InvestmentPlansProvider>
-      </AdminAuthProvider>
+      <AuthProvider>
+        <AdminAuthProvider>
+          <InvestmentPlansProvider>
+            <InvestmentsProvider>
+              <TooltipProvider>
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+                  <Router />
+                </WouterRouter>
+                <Toaster />
+                <LiveNotifications />
+              </TooltipProvider>
+            </InvestmentsProvider>
+          </InvestmentPlansProvider>
+        </AdminAuthProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

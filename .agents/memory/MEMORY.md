@@ -1,4 +1,5 @@
 - [Imported artifact previews](imported-artifact-preview.md) — migration-backup copies can delay or duplicate preview registration after a GitHub import.
+- [Auth Architecture](auth-architecture.md) — session-based auth across API server and frontend; dynamic DB import pattern; provider nesting rules.
 - [Investment plan persistence](investment-plan-persistence.md) — plan CRUD currently uses an in-memory API adapter while preserving a WordPress-ready contract.
 - [Investment assignment snapshots](investment-assignment-snapshots.md) — investment records retain the plan terms captured at creation time.
 - [Vercel monorepo deployment](vercel-monorepo-deployment.md) — the active Vite app builds from the repository root into the nested quantum-investments output directory.

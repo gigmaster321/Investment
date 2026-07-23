@@ -1,27 +1,42 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 // @ts-ignore
 import logoPath from '@assets/Quantum_Investment_1784716537861.jpeg';
 
 export default function Login() {
   const [, setLocation] = useLocation();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setIsLoading(true);
-    // Simulate sign in delay
-    await new Promise((r) => setTimeout(r, 800));
-    setIsLoading(false);
-    setLocation('/dashboard');
+    try {
+      await login(email, password);
+      setLocation('/dashboard');
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          (err?.error === 'ACCOUNT_INACTIVE'
+            ? 'Your account has been suspended. Please contact support.'
+            : 'Invalid email or password. Please try again.'),
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,6 +66,17 @@ export default function Login() {
         </p>
 
         <form onSubmit={handleSignIn} className="space-y-5">
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-2 bg-destructive/15 border border-destructive/30 text-red-400 text-xs rounded-lg px-3 py-2.5"
+            >
+              <AlertCircle size={14} className="shrink-0" />
+              {error}
+            </motion.div>
+          )}
+
           <div className="space-y-2">
             <Label className="text-white/70 text-xs uppercase tracking-wider font-semibold">
               Email Address
@@ -61,6 +87,8 @@ export default function Login() {
                 type="email"
                 placeholder="you@example.com"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="pl-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
               />
             </div>
@@ -76,6 +104,8 @@ export default function Login() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="pl-10 pr-10 h-11 bg-muted/50 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20 transition-all"
               />
               <button
