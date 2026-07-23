@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import pinoHttp from "pino-http";
 import router from "./routes/index.js";
 import adminUsersRouter from "./routes/admin-users.js";
@@ -41,11 +42,23 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session middleware — uses MemoryStore in development.
-// Replace with connect-pg-simple when the database is provisioned for production persistence.
+// Persistent session store — survives server restarts.
+// connect-pg-simple creates the "session" table automatically on first use.
+const PgSession = connectPgSimple(session);
+
+const sessionStore = process.env.DATABASE_URL
+  ? new PgSession({
+      conString: process.env.DATABASE_URL,
+      // Table was created via schema migration; no need for runtime auto-create.
+      // Prune expired sessions once per hour.
+      pruneSessionInterval: 60 * 60,
+    })
+  : undefined; // falls back to MemoryStore when DATABASE_URL is not set
+
 app.use(
   session({
     name: "qinvest.sid",
+    store: sessionStore,
     secret: process.env.SESSION_SECRET || "change-me-in-production",
     resave: false,
     saveUninitialized: false,

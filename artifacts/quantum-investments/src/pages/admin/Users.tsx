@@ -93,11 +93,11 @@ interface UserActivity {
   referralEarnings: string;
 }
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
+// ─── Seed data (2 demo users shown while real data loads) ────────────────────
 
 const SEED: User[] = [
   {
-    id: '#U-4821', name: 'James Thornton',  username: 'james_t',
+    id: '#U-D001', name: 'James Thornton',  username: 'james_t',
     email: 'j.thornton@email.com', phone: '+1 234 567 8901',
     country: 'United States', registeredDate: 'Jul 22, 2026', registeredIso: '2026-07-22',
     status: 'Active', plan: 'Gold',
@@ -105,60 +105,12 @@ const SEED: User[] = [
     totalDeposits: '$28,000.00', totalWithdrawals: '$5,000.00', totalProfit: '$4,200.00',
   },
   {
-    id: '#U-4820', name: 'Priya Sharma',    username: 'priya_sh',
+    id: '#U-D002', name: 'Priya Sharma',    username: 'priya_sh',
     email: 'p.sharma@email.com', phone: '+91 98765 43210',
     country: 'India', registeredDate: 'Jul 22, 2026', registeredIso: '2026-07-22',
     status: 'Active', plan: 'Platinum',
     balance: '$52,800.00', balanceNum: 52800,
     totalDeposits: '$60,000.00', totalWithdrawals: '$12,800.00', totalProfit: '$5,600.00',
-  },
-  {
-    id: '#U-4819', name: 'Carlos Rivera',   username: 'carlos_r',
-    email: 'c.rivera@email.com', phone: '+52 123 456 7890',
-    country: 'Mexico', registeredDate: 'Jul 21, 2026', registeredIso: '2026-07-21',
-    status: 'Active', plan: 'Silver',
-    balance: '$3,950.00', balanceNum: 3950,
-    totalDeposits: '$5,000.00', totalWithdrawals: '$1,800.00', totalProfit: '$750.00',
-  },
-  {
-    id: '#U-4818', name: 'Sofia Becker',    username: 'sofia_b',
-    email: 's.becker@email.com', phone: '+49 171 234 5678',
-    country: 'Germany', registeredDate: 'Jul 21, 2026', registeredIso: '2026-07-21',
-    status: 'Active', plan: 'Starter',
-    balance: '$1,100.00', balanceNum: 1100,
-    totalDeposits: '$2,000.00', totalWithdrawals: '$500.00', totalProfit: '$100.00',
-  },
-  {
-    id: '#U-4817', name: 'Amir Hassan',     username: 'amir_h',
-    email: 'a.hassan@email.com', phone: '+971 50 123 4567',
-    country: 'UAE', registeredDate: 'Jul 20, 2026', registeredIso: '2026-07-20',
-    status: 'Suspended', plan: 'Gold',
-    balance: '$0.00', balanceNum: 0,
-    totalDeposits: '$10,000.00', totalWithdrawals: '$0.00', totalProfit: '$0.00',
-  },
-  {
-    id: '#U-4816', name: 'Elena Volkov',    username: 'elena_v',
-    email: 'e.volkov@email.com', phone: '+7 912 345 6789',
-    country: 'Russia', registeredDate: 'Jul 19, 2026', registeredIso: '2026-07-19',
-    status: 'Active', plan: 'Platinum',
-    balance: '$89,300.00', balanceNum: 89300,
-    totalDeposits: '$95,000.00', totalWithdrawals: '$8,500.00', totalProfit: '$2,800.00',
-  },
-  {
-    id: '#U-4815', name: 'David Osei',      username: 'david_o',
-    email: 'd.osei@email.com', phone: '+233 20 123 4567',
-    country: 'Ghana', registeredDate: 'Jul 18, 2026', registeredIso: '2026-07-18',
-    status: 'Active', plan: 'Silver',
-    balance: '$7,600.00', balanceNum: 7600,
-    totalDeposits: '$12,000.00', totalWithdrawals: '$1,800.00', totalProfit: '$1,400.00',
-  },
-  {
-    id: '#U-4814', name: 'Lin Wei',         username: 'lin_w',
-    email: 'l.wei@email.com', phone: '+86 138 0000 0000',
-    country: 'China', registeredDate: 'Jul 17, 2026', registeredIso: '2026-07-17',
-    status: 'Active', plan: 'Gold',
-    balance: '$23,400.00', balanceNum: 23400,
-    totalDeposits: '$30,000.00', totalWithdrawals: '$8,500.00', totalProfit: '$1,900.00',
   },
 ];
 
@@ -806,6 +758,22 @@ export default function AdminUsers() {
   const [modal, setModal]   = useState<ModalMode>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('All');
+
+  // Load real users from the API; fall back to demo seed on error
+  useEffect(() => {
+    const base = API_BASE;
+    fetch(`${base}/admin/users`, { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((data: User[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setUsers(data);
+        }
+        // If API returns empty array keep demo seed so UI isn't blank
+      })
+      .catch(() => {
+        // Keep demo seed on error
+      });
+  }, []);
 
   // ── Counts for summary cards ───────────────────────────────────────────────
   const counts = useMemo(() => ({

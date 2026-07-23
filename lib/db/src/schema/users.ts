@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, numeric } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -13,6 +13,11 @@ export const usersTable = pgTable("users", {
     .$type<"active" | "suspended" | "blocked">()
     .notNull()
     .default("active"),
+  // Financial fields — managed by admin / deposit/withdrawal actions
+  balance: numeric("balance", { precision: 15, scale: 2 }).notNull().default("0"),
+  total_deposit: numeric("total_deposit", { precision: 15, scale: 2 }).notNull().default("0"),
+  total_withdrawal: numeric("total_withdrawal", { precision: 15, scale: 2 }).notNull().default("0"),
+  current_plan: text("current_plan"),
   created_at: timestamp("created_at").notNull().defaultNow(),
   updated_at: timestamp("updated_at").notNull().defaultNow(),
 });
