@@ -1,18 +1,18 @@
 import { motion } from 'framer-motion';
 import {
   Users, TrendingUp, DollarSign, ArrowUpCircle, Clock,
-  Activity, ArrowUp, ArrowDown,
+  Activity, ArrowUp, ArrowDown, CheckCircle, XCircle,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
 const STAT_CARDS = [
-  { title: 'Total Users', value: '4,821', change: '+12.4%', up: true, icon: Users, color: 'from-blue-600/20 to-blue-500/10', border: 'border-blue-500/20' },
-  { title: 'Active Investors', value: '3,147', change: '+8.2%', up: true, icon: TrendingUp, color: 'from-accent/20 to-accent/5', border: 'border-accent/20' },
-  { title: 'Total Deposits', value: '$2.84M', change: '+22.1%', up: true, icon: DollarSign, color: 'from-emerald-600/20 to-emerald-500/10', border: 'border-emerald-500/20' },
-  { title: 'Total Withdrawals', value: '$1.12M', change: '+5.7%', up: true, icon: ArrowUpCircle, color: 'from-violet-600/20 to-violet-500/10', border: 'border-violet-500/20' },
-  { title: 'Pending Withdrawals', value: '38', change: '-3 today', up: false, icon: Clock, color: 'from-amber-600/20 to-amber-500/10', border: 'border-amber-500/20' },
+  { title: 'Total Users',          value: '4,821',  change: '+12.4%',  up: true,  icon: Users,         color: 'from-blue-600/20 to-blue-500/10',     border: 'border-blue-500/20'    },
+  { title: 'Active Investors',     value: '3,147',  change: '+8.2%',   up: true,  icon: TrendingUp,    color: 'from-accent/20 to-accent/5',           border: 'border-accent/20'      },
+  { title: 'Total Deposits',       value: '$2.84M', change: '+22.1%',  up: true,  icon: DollarSign,    color: 'from-emerald-600/20 to-emerald-500/10', border: 'border-emerald-500/20' },
+  { title: 'Total Withdrawals',    value: '$1.12M', change: '+5.7%',   up: true,  icon: ArrowUpCircle, color: 'from-violet-600/20 to-violet-500/10',   border: 'border-violet-500/20'  },
+  { title: 'Pending Withdrawals',  value: '38',     change: '-3 today', up: false, icon: Clock,        color: 'from-amber-600/20 to-amber-500/10',     border: 'border-amber-500/20'   },
 ];
 
 const growthData = [
@@ -26,23 +26,24 @@ const growthData = [
 ];
 
 const RECENT_USERS = [
-  { id: '#U-4821', name: 'James Thornton', email: 'j.thornton@email.com', plan: 'Gold', joined: '2h ago', status: 'Active' },
-  { id: '#U-4820', name: 'Priya Sharma', email: 'p.sharma@email.com', plan: 'Platinum', joined: '5h ago', status: 'Active' },
-  { id: '#U-4819', name: 'Carlos Rivera', email: 'c.rivera@email.com', plan: 'Silver', joined: '1d ago', status: 'Pending' },
-  { id: '#U-4818', name: 'Sofia Becker', email: 's.becker@email.com', plan: 'Starter', joined: '1d ago', status: 'Active' },
-  { id: '#U-4817', name: 'Amir Hassan', email: 'a.hassan@email.com', plan: 'Gold', joined: '2d ago', status: 'Suspended' },
+  { id: '#U-4821', name: 'James Thornton', email: 'j.thornton@email.com', plan: 'Gold',     joined: '2h ago',  status: 'Active'    },
+  { id: '#U-4820', name: 'Priya Sharma',   email: 'p.sharma@email.com',   plan: 'Platinum', joined: '5h ago',  status: 'Active'    },
+  { id: '#U-4819', name: 'Carlos Rivera',  email: 'c.rivera@email.com',   plan: 'Silver',   joined: '1d ago',  status: 'Pending'   },
+  { id: '#U-4818', name: 'Sofia Becker',   email: 's.becker@email.com',   plan: 'Starter',  joined: '1d ago',  status: 'Active'    },
+  { id: '#U-4817', name: 'Amir Hassan',    email: 'a.hassan@email.com',   plan: 'Gold',     joined: '2d ago',  status: 'Suspended' },
 ];
 
-const PENDING_WITHDRAWALS = [
-  { id: '#W-0381', user: 'James Thornton', amount: '$4,200', method: 'Bitcoin', requested: '1h ago' },
-  { id: '#W-0380', user: 'Priya Sharma', amount: '$12,800', method: 'Bank Transfer', requested: '3h ago' },
-  { id: '#W-0379', user: 'Elena Volkov', amount: '$950', method: 'USDT', requested: '6h ago' },
-];
+// Withdrawal status breakdown — update these values when wired to a real API
+const WITHDRAWAL_COUNTS = {
+  Pending:  4,
+  Approved: 3,
+  Rejected: 2,
+};
 
 const STATUS_COLORS: Record<string, string> = {
-  Active: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-  Pending: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-  Suspended: 'text-red-400 bg-red-500/10 border-red-500/20',
+  Active:    'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+  Pending:   'text-amber-400   bg-amber-500/10   border-amber-500/20',
+  Suspended: 'text-red-400     bg-red-500/10     border-red-500/20',
 };
 
 export default function AdminDashboard() {
@@ -104,11 +105,11 @@ export default function AdminDashboard() {
           <AreaChart data={growthData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
             <defs>
               <linearGradient id="usersGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1EA7FF" stopOpacity={0.25} />
+                <stop offset="5%"  stopColor="#1EA7FF" stopOpacity={0.25} />
                 <stop offset="95%" stopColor="#1EA7FF" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="depositsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1565D8" stopOpacity={0.25} />
+                <stop offset="5%"  stopColor="#1565D8" stopOpacity={0.25} />
                 <stop offset="95%" stopColor="#1565D8" stopOpacity={0} />
               </linearGradient>
             </defs>
@@ -119,14 +120,15 @@ export default function AdminDashboard() {
               contentStyle={{ background: 'hsl(221,70%,16%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, fontSize: 12 }}
               labelStyle={{ color: 'rgba(255,255,255,0.7)' }}
             />
-            <Area type="monotone" dataKey="users" stroke="#1EA7FF" strokeWidth={2} fill="url(#usersGrad)" name="Users" />
+            <Area type="monotone" dataKey="users"    stroke="#1EA7FF" strokeWidth={2} fill="url(#usersGrad)"    name="Users" />
             <Area type="monotone" dataKey="deposits" stroke="#1565D8" strokeWidth={2} fill="url(#depositsGrad)" name="Deposits ($)" />
           </AreaChart>
         </ResponsiveContainer>
       </motion.div>
 
-      {/* Recent users + pending withdrawals */}
+      {/* Recent users + withdrawal status */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
         {/* Recent users */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -177,7 +179,7 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        {/* Pending withdrawals */}
+        {/* Withdrawal Status breakdown */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -185,35 +187,60 @@ export default function AdminDashboard() {
           className="bg-card/40 border border-white/5 rounded-xl overflow-hidden"
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
-            <h2 className="text-sm font-semibold text-white">Pending Withdrawals</h2>
+            <h2 className="text-sm font-semibold text-white">Withdrawal Requests</h2>
             <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/20 rounded-full px-2 py-0.5">
-              {PENDING_WITHDRAWALS.length} new
+              {WITHDRAWAL_COUNTS.Pending} pending
             </span>
           </div>
-          <div className="flex flex-col gap-0">
-            {PENDING_WITHDRAWALS.map((w, i) => (
-              <div key={w.id} className={`px-5 py-4 flex flex-col gap-2 ${i < PENDING_WITHDRAWALS.length - 1 ? 'border-b border-white/5' : ''}`}>
-                <div className="flex items-center justify-between">
-                  <span className="text-white text-xs font-semibold">{w.user}</span>
-                  <span className="text-accent text-xs font-bold">{w.amount}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground text-[10px]">{w.method} · {w.requested}</span>
-                  <div className="flex gap-1.5">
-                    <button className="text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-md px-2 py-0.5 transition-colors">
-                      Approve
-                    </button>
-                    <button className="text-[10px] font-semibold text-red-400 hover:bg-red-500/15 border border-red-500/20 rounded-md px-2 py-0.5 transition-colors">
-                      Reject
-                    </button>
-                  </div>
-                </div>
+
+          {/* Status breakdown cards */}
+          <div className="p-4 flex flex-col gap-3">
+            {/* Pending */}
+            <a href="/admin/withdrawals" className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/8 border border-amber-500/15 hover:bg-amber-500/12 transition-colors group">
+              <div className="p-2 rounded-lg bg-amber-500/15 border border-amber-500/20 shrink-0">
+                <Clock size={15} className="text-amber-400" />
               </div>
-            ))}
+              <div className="flex-1 min-w-0">
+                <p className="text-amber-400 text-xs font-semibold">Pending</p>
+                <p className="text-muted-foreground text-[10px]">Awaiting review</p>
+              </div>
+              <span className="text-amber-400 text-xl font-bold shrink-0">
+                {WITHDRAWAL_COUNTS.Pending}
+              </span>
+            </a>
+
+            {/* Approved */}
+            <a href="/admin/withdrawals" className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-500/8 border border-emerald-500/15 hover:bg-emerald-500/12 transition-colors group">
+              <div className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/20 shrink-0">
+                <CheckCircle size={15} className="text-emerald-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-emerald-400 text-xs font-semibold">Approved</p>
+                <p className="text-muted-foreground text-[10px]">Processed &amp; paid out</p>
+              </div>
+              <span className="text-emerald-400 text-xl font-bold shrink-0">
+                {WITHDRAWAL_COUNTS.Approved}
+              </span>
+            </a>
+
+            {/* Rejected */}
+            <a href="/admin/withdrawals" className="flex items-center gap-3 p-3.5 rounded-xl bg-red-500/8 border border-red-500/15 hover:bg-red-500/12 transition-colors group">
+              <div className="p-2 rounded-lg bg-red-500/15 border border-red-500/20 shrink-0">
+                <XCircle size={15} className="text-red-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-red-400 text-xs font-semibold">Rejected</p>
+                <p className="text-muted-foreground text-[10px]">Declined requests</p>
+              </div>
+              <span className="text-red-400 text-xl font-bold shrink-0">
+                {WITHDRAWAL_COUNTS.Rejected}
+              </span>
+            </a>
           </div>
+
           <div className="px-5 py-3 border-t border-white/5">
             <a href="/admin/withdrawals" className="text-xs text-accent hover:text-accent/70 transition-colors">
-              View all withdrawals →
+              Manage all withdrawals →
             </a>
           </div>
         </motion.div>
