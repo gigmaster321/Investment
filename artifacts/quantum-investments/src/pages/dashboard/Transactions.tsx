@@ -20,6 +20,24 @@ const mockTransactions = [
   { id: 'TRX-9807', type: 'Deposit', amount: '+$10,000.00', date: 'Sep 05, 2023, 10:20 AM', status: 'Completed' },
 ];
 
+function exportToCSV(rows: typeof mockTransactions) {
+  const headers = ['Transaction ID', 'Type', 'Amount', 'Date', 'Status'];
+  const lines = [
+    headers.join(','),
+    ...rows.map(tx =>
+      [tx.id, tx.type, tx.amount, `"${tx.date}"`, tx.status].join(',')
+    ),
+  ];
+  const csv = lines.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'transactions.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function Transactions() {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
@@ -28,8 +46,7 @@ export default function Transactions() {
 
   const filtered = mockTransactions.filter(t => {
     if (filter !== 'All' && t.type !== filter) return false;
-    if (search && !t.id.toLowerCase().includes(search.toLowerCase())) return false;
-    // Simple date string matching simulation is skipped for simplicity
+    if (search && !t.id.toLowerCase().includes(search.toLowerCase()) && !t.type.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
@@ -45,13 +62,16 @@ export default function Transactions() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
             <input 
               type="text"
-              placeholder="Search ID..."
+              placeholder="Search ID or type..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-background border border-white/10 rounded-lg py-2 pl-9 pr-4 text-sm text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
+          <button
+            onClick={() => exportToCSV(filtered)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+          >
             <Download size={16} />
             <span>Export CSV</span>
           </button>
@@ -82,7 +102,7 @@ export default function Transactions() {
               onChange={e => setDateFrom(e.target.value)}
               className="bg-background border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:outline-none focus:border-primary"
             />
-            <span className="text-muted-foreground">-</span>
+            <span className="text-muted-foreground">–</span>
             <input 
               type="date" 
               value={dateTo}

@@ -2,12 +2,12 @@ import { Link, useLocation } from 'wouter';
 import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Users, Bell } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/investments', label: 'Investments', icon: TrendingUp },
   { href: '/dashboard/deposits', label: 'Deposits', icon: Download },
   { href: '/dashboard/withdrawals', label: 'Withdrawals', icon: Upload },
-  { href: '/dashboard/transactions', label: 'Transactions', icon: Clock },
   { href: '/dashboard/earnings', label: 'Earnings', icon: DollarSign },
+  { href: '/dashboard/transactions', label: 'Transactions', icon: Clock },
   { href: '/dashboard/referral', label: 'Referral', icon: Users },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
@@ -15,6 +15,11 @@ const NAV_ITEMS = [
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
+
+  const handleLogout = () => {
+    onClose?.();
+    window.location.href = '/login';
+  };
 
   return (
     <div className="h-full flex flex-col bg-sidebar/80 backdrop-blur-xl border-r border-white/5 w-64 md:w-72">
@@ -33,7 +38,10 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       <nav className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-2">
         {NAV_ITEMS.map((item) => {
-          const isActive = location === item.href || (item.href === '/dashboard' && location === '/dashboard/');
+          const isActive =
+            item.href === '/dashboard'
+              ? location === '/dashboard' || location === '/dashboard/'
+              : location.startsWith(item.href);
           return (
             <Link key={item.href} href={item.href}>
               <div
@@ -53,13 +61,9 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       </nav>
 
       <div className="p-4 border-t border-white/5">
-        <button 
+        <button
           className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-          onClick={() => {
-            if (confirm('Are you sure you want to log out?')) {
-              window.location.href = '/';
-            }
-          }}
+          onClick={handleLogout}
         >
           <LogOut size={20} />
           <span className="font-medium text-sm">Logout</span>

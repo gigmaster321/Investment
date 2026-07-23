@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
+import { Link } from 'wouter';
 
 interface StatCardProps {
   title: string;
@@ -7,15 +8,18 @@ interface StatCardProps {
   subtitle?: string;
   icon: LucideIcon;
   delay?: number;
+  href?: string;
+  onClick?: () => void;
 }
 
-export function StatCard({ title, value, subtitle, icon: Icon, delay = 0 }: StatCardProps) {
-  return (
-    <motion.div 
+export function StatCard({ title, value, subtitle, icon: Icon, delay = 0, href, onClick }: StatCardProps) {
+  const card = (
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
-      className="bg-card/40 backdrop-blur-md border border-white/5 rounded-xl p-6 flex flex-col gap-4 hover:bg-card/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(30,167,255,0.15)]"
+      className={`bg-card/40 backdrop-blur-md border border-white/5 rounded-xl p-6 flex flex-col gap-4 hover:bg-card/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(30,167,255,0.15)] ${href || onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
     >
       <div className="flex items-center justify-between">
         <span className="text-muted-foreground font-medium text-sm">{title}</span>
@@ -29,4 +33,9 @@ export function StatCard({ title, value, subtitle, icon: Icon, delay = 0 }: Stat
       </div>
     </motion.div>
   );
+
+  if (href) {
+    return <Link href={href}>{card}</Link>;
+  }
+  return card;
 }

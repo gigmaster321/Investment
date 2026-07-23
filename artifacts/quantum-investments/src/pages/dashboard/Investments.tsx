@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { CheckCircle2, TrendingUp, Clock, ShieldCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, TrendingUp, Clock, ShieldCheck, X, DollarSign } from 'lucide-react';
 
 const historyData = [
   { id: 1, plan: 'Gold Plan', amount: '$85,000.00', profit: '$28,430.50', start: 'Sep 15, 2023', end: 'Dec 14, 2023', status: 'Active' },
@@ -13,14 +13,144 @@ const historyData = [
   { id: 8, plan: 'Starter Plan', amount: '$1,500.00', profit: 'Expired', start: 'May 01, 2022', end: 'May 30, 2022', status: 'Expired' },
 ];
 
-const plansData = [
-  { id: 'starter', name: 'Starter', min: '$500', max: '$4,999', rate: '0.8%', current: false },
-  { id: 'gold', name: 'Gold', min: '$5,000', max: '$49,999', rate: '1.8%', current: true },
-  { id: 'platinum', name: 'Platinum', min: '$50,000', max: 'Unlimited', rate: '2.5%', current: false },
+interface Plan {
+  id: string;
+  name: string;
+  min: string;
+  minNum: number;
+  maxNum: number | null;
+  max: string;
+  rate: string;
+  duration: string;
+  current: boolean;
+}
+
+const plansData: Plan[] = [
+  { id: 'starter', name: 'Starter', min: '$500', minNum: 500, max: '$4,999', maxNum: 4999, rate: '0.8%', duration: '30 Days', current: false },
+  { id: 'gold', name: 'Gold', min: '$5,000', minNum: 5000, max: '$49,999', maxNum: 49999, rate: '1.8%', duration: '90 Days', current: true },
+  { id: 'platinum', name: 'Platinum', min: '$50,000', minNum: 50000, max: 'Unlimited', maxNum: null, rate: '2.5%', duration: '90 Days', current: false },
 ];
+
+interface BuyPlanModalProps {
+  plan: Plan;
+  onClose: () => void;
+}
+
+function BuyPlanModal({ plan, onClose }: BuyPlanModalProps) {
+  const [amount, setAmount] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+
+  const amountNum = Number(amount);
+  const isValid = amount !== '' && amountNum >= plan.minNum && (plan.maxNum === null || amountNum <= plan.maxNum);
+
+  const estimatedDailyProfit = isValid
+    ? (amountNum * parseFloat(plan.rate) / 100).toFixed(2)
+    : '0.00';
+
+  if (confirmed) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center text-center py-6 px-2"
+      >
+        <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+          <CheckCircle2 size={32} />
+        </div>
+        <h3 className="text-xl font-bold text-white mb-2">Investment Submitted</h3>
+        <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
+          Your investment of <span className="text-white font-semibold">${Number(amount).toLocaleString()}</span> in the{' '}
+          <span className="text-accent font-semibold">{plan.name} Plan</span> has been received and is being processed.
+        </p>
+        <button
+          onClick={onClose}
+          className="mt-6 text-sm text-primary hover:text-accent font-medium transition-colors"
+        >
+          Close
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Plan summary */}
+      <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-bold text-white text-lg">{plan.name} Plan</h4>
+          <span className="text-accent font-bold text-xl">{plan.rate}<span className="text-sm text-muted-foreground font-normal"> / day</span></span>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <div>
+            <p className="text-muted-foreground text-xs mb-1 flex items-center gap-1"><Clock size={11} /> Duration</p>
+            <p className="text-white font-medium">{plan.duration}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs mb-1">Min. Deposit</p>
+            <p className="text-white font-medium">{plan.min}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground text-xs mb-1">Max. Deposit</p>
+            <p className="text-white font-medium">{plan.max}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Amount input */}
+      <div>
+        <label className="block text-sm font-medium text-white mb-2">Investment Amount (USD)</label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder={`Min. ${plan.min}`}
+            min={plan.minNum}
+            max={plan.maxNum ?? undefined}
+            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-8 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+          />
+        </div>
+        {amount !== '' && !isValid && (
+          <p className="text-xs text-red-400 mt-1.5">
+            {amountNum < plan.minNum
+              ? `Minimum investment is ${plan.min}`
+              : `Maximum investment is ${plan.max}`}
+          </p>
+        )}
+      </div>
+
+      {/* Estimated return */}
+      {isValid && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-accent/10 border border-accent/20 rounded-xl p-4 flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2 text-accent text-sm">
+            <TrendingUp size={16} />
+            <span className="font-medium">Estimated daily profit</span>
+          </div>
+          <span className="text-white font-bold text-lg">${estimatedDailyProfit}</span>
+        </motion.div>
+      )}
+
+      {/* Continue button */}
+      <button
+        onClick={() => { if (isValid) setConfirmed(true); }}
+        disabled={!isValid}
+        className="w-full bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed text-white py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(21,101,232,0.3)]"
+      >
+        <DollarSign size={18} />
+        Continue
+      </button>
+    </div>
+  );
+}
 
 export default function Investments() {
   const [activeTab, setActiveTab] = useState('Active');
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
   return (
     <div className="space-y-8">
@@ -208,21 +338,58 @@ export default function Investments() {
                     <span className="text-muted-foreground">Max. Deposit</span>
                     <span className="text-white font-medium">{plan.max}</span>
                   </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Duration</span>
+                    <span className="text-white font-medium">{plan.duration}</span>
+                  </div>
                 </div>
               </div>
               <button 
+                onClick={() => { if (!plan.current) setSelectedPlan(plan); }}
                 className={`mt-auto w-full py-3 rounded-xl font-semibold transition-all ${
                   plan.current 
                     ? 'bg-white/10 text-white cursor-default' 
-                    : 'bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(21,101,232,0.3)]'
+                    : 'bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(21,101,232,0.3)] cursor-pointer'
                 }`}
               >
-                {plan.current ? 'Active' : 'Select Plan'}
+                {plan.current ? 'Active' : 'Buy Plan'}
               </button>
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* Buy Plan Modal */}
+      <AnimatePresence>
+        {selectedPlan && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedPlan(null); }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.2 }}
+              className="bg-[hsl(221,70%,13%)] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-bold text-white">Invest in {selectedPlan.name} Plan</h2>
+                <button
+                  onClick={() => setSelectedPlan(null)}
+                  className="text-muted-foreground hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <BuyPlanModal plan={selectedPlan} onClose={() => setSelectedPlan(null)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

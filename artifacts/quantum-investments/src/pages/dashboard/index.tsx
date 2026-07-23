@@ -29,10 +29,10 @@ export default function DashboardOverview() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard delay={0} title="Total Balance" value="$142,854.20" subtitle="+12.5% this month" icon={Wallet} />
-        <StatCard delay={0.1} title="Active Investment" value="$85,000.00" subtitle="Gold Plan" icon={Activity} />
-        <StatCard delay={0.2} title="Total Profit" value="$28,430.50" subtitle="+$1,250.00 today" icon={TrendingUp} />
-        <StatCard delay={0.3} title="Total Withdrawals" value="$12,000.00" icon={Download} />
+        <StatCard delay={0} title="Total Balance" value="$142,854.20" subtitle="+12.5% this month" icon={Wallet} href="/dashboard" />
+        <StatCard delay={0.1} title="Active Investment" value="$85,000.00" subtitle="Gold Plan" icon={Activity} href="/dashboard/investments" />
+        <StatCard delay={0.2} title="Total Profit" value="$28,430.50" subtitle="+$1,250.00 today" icon={TrendingUp} href="/dashboard/earnings" />
+        <StatCard delay={0.3} title="Total Withdrawals" value="$12,000.00" icon={Download} href="/dashboard/withdrawals" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

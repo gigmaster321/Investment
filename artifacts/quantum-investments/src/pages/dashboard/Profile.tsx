@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, Phone, Save } from 'lucide-react';
+import { User, Mail, Lock, Phone, Save, CheckCircle2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
@@ -8,7 +9,13 @@ export default function Profile() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 1000);
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        title: 'Profile updated',
+        description: 'Your changes have been saved successfully.',
+      });
+    }, 800);
   };
 
   return (
@@ -89,7 +96,10 @@ export default function Profile() {
 
             <div className="pt-4 flex justify-end">
               <button type="submit" disabled={isSaving} className="bg-primary hover:bg-primary/90 disabled:opacity-70 text-white px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(21,101,232,0.3)]">
-                {isSaving ? 'Saving...' : <><Save size={18} /> Save Changes</>}
+                {isSaving
+                  ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Saving...</>
+                  : <><Save size={18} /> Save Changes</>
+                }
               </button>
             </div>
           </motion.form>
