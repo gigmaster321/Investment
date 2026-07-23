@@ -1,0 +1,127 @@
+Perform a COMPLETE end-to-end audit of the entire application and make the authentication system production-ready.
+
+Do NOT patch individual bugs.
+Do NOT use fake success responses.
+Find and fix the root causes.
+
+Current Problems:
+- User registration fails.
+- User login fails.
+- Admin login fails.
+- Authentication is unreliable.
+- Some backend functionality is broken.
+
+Your task is to inspect the entire backend and make everything fully functional.
+
+=========================
+AUTHENTICATION
+=========================
+
+- Fix user registration.
+- Fix user login.
+- Fix admin login.
+- Ensure authenticated sessions persist correctly.
+- Fix logout.
+- Fix protected routes.
+- Fix role-based access control.
+- Ensure users cannot access admin pages.
+- Ensure admins can access all admin pages.
+
+=========================
+DATABASE
+=========================
+
+- Verify the database connection.
+- Fix any broken environment variables.
+- Run all pending migrations.
+- Create any missing tables.
+- Repair broken relationships.
+- Remove duplicate or invalid records if necessary.
+- Ensure all CRUD operations work correctly.
+
+Required tables should include authentication, users, plans, deposits, withdrawals, transactions, notifications, email verification, and any other required tables.
+
+=========================
+ADMIN SYSTEM
+=========================
+
+Ensure a real administrator account exists.
+
+If missing:
+- Create the default admin account.
+- Assign proper administrator role and permissions.
+- Verify password hashing.
+- Verify admin authentication.
+
+Admin dashboard must open successfully.
+
+=========================
+USER SYSTEM
+=========================
+
+Verify:
+
+- Register
+- Login
+- Forgot Password
+- Reset Password
+- Email Verification
+- Dashboard Access
+- Logout
+
+Everything must work correctly.
+
+=========================
+API
+=========================
+
+Inspect every authentication endpoint.
+
+Fix:
+- Validation errors
+- Runtime exceptions
+- Database query failures
+- Authentication failures
+- Session issues
+- Authorization issues
+
+=========================
+DEBUGGING
+=========================
+
+Check:
+
+- Server logs
+- Browser console
+- Network requests
+- Backend exceptions
+
+Fix every error found.
+
+=========================
+FINAL VERIFICATION
+=========================
+
+Before finishing, verify all of the following:
+
+✓ User registration works.
+✓ User account is saved in the database.
+✓ User login works.
+✓ Session persists after refresh.
+✓ User dashboard loads.
+✓ Admin login works.
+✓ Admin dashboard loads.
+✓ Role permissions work correctly.
+✓ Logout works.
+✓ No authentication errors remain.
+✓ No backend runtime errors remain.
+✓ No database errors remain.
+
+Only finish after every item above has been verified successfully.
+
+At the end, provide a report including:
+- Root causes found.
+- Files modified.
+- Database changes.
+- Migrations applied.
+- Test results proving registration, user login, and admin login all work successfully.
