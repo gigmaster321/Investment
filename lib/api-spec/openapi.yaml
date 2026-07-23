@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: admin-users
+    description: Admin user profile and account management operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,109 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /admin/users/{userId}/profile:
+    get:
+      operationId: getAdminUserProfile
+      tags: [admin-users]
+      summary: Get an admin user profile
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Profile state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserProfile"
+  /admin/users/{userId}/notes:
+    put:
+      operationId: updateAdminUserNotes
+      tags: [admin-users]
+      summary: Save private admin notes
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserNotesUpdate"
+      responses:
+        "200":
+          description: Updated profile state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /admin/users/{userId}/status:
+    patch:
+      operationId: updateAdminUserStatus
+      tags: [admin-users]
+      summary: Activate or suspend a user account
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserStatusUpdate"
+      responses:
+        "200":
+          description: Updated profile state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /admin/users/{userId}/password-reset:
+    post:
+      operationId: requestAdminUserPasswordReset
+      tags: [admin-users]
+      summary: Request a user password reset
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Reset request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserActionResponse"
+  /admin/users/{userId}:
+    delete:
+      operationId: deleteAdminUser
+      tags: [admin-users]
+      summary: Delete a user account
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Delete request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserActionResponse"
 components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: Application user identifier, for example #U-4821
+      schema:
+        type: string
+        minLength: 1
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +137,48 @@ components:
           type: string
       required:
         - status
+    AdminUserProfile:
+      type: object
+      required: [userId, status, notes, updatedAt]
+      properties:
+        userId:
+          type: string
+        status:
+          type: string
+          enum: [Active, Suspended]
+        notes:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    AdminUserNotesUpdate:
+      type: object
+      required: [notes]
+      properties:
+        notes:
+          type: string
+          maxLength: 5000
+    AdminUserStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [Active, Suspended]
+    AdminUserActionResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    ApiError:
+      type: object
+      required: [title, detail]
+      properties:
+        title:
+          type: string
+        detail:
+          type: string
 

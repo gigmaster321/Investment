@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Users, UserCheck, UserX, TrendingUp,
   Eye, Pencil, Trash2, X, ChevronDown, Save,
   Phone, Mail, MapPin, Calendar, CreditCard,
   Wallet, ArrowDownLeft, ArrowUpRight, BadgeCheck,
-  ShieldOff, ShieldCheck, AlertTriangle,
+  ShieldOff, ShieldCheck, AlertTriangle, KeyRound,
+  NotebookPen, Activity,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -15,6 +16,26 @@ import { toast } from '@/hooks/use-toast';
 
 type UserStatus = 'Active' | 'Suspended';
 type UserPlan   = 'Starter' | 'Silver' | 'Gold' | 'Platinum';
+type ActivityStatus = 'Completed' | 'Pending' | 'Rejected' | 'Active';
+
+const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`;
+
+async function adminApiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.detail ?? body?.title ?? `Request failed (${response.status})`);
+  }
+
+  return response.json() as Promise<T>;
+}
 
 interface User {
   id: string;
@@ -32,6 +53,44 @@ interface User {
   totalDeposits: string;
   totalWithdrawals: string;
   totalProfit: string;
+}
+
+interface InvestmentRecord {
+  planName: string;
+  amount: string;
+  profitPct: string;
+  status: ActivityStatus;
+  purchaseDate: string;
+}
+
+interface DepositRecord {
+  coin: string;
+  amount: string;
+  status: ActivityStatus;
+  date: string;
+}
+
+interface WithdrawalRecord {
+  amount: string;
+  method: string;
+  status: ActivityStatus;
+  date: string;
+}
+
+interface TransactionRecord {
+  type: 'Deposits' | 'Withdrawals' | 'Profits' | 'Bonuses';
+  amount: string;
+  status: ActivityStatus;
+  date: string;
+}
+
+interface UserActivity {
+  investments: InvestmentRecord[];
+  deposits: DepositRecord[];
+  withdrawals: WithdrawalRecord[];
+  transactions: TransactionRecord[];
+  activeInvestments: number;
+  referralEarnings: string;
 }
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
@@ -143,6 +202,68 @@ function initials(name: string) {
     : name.slice(0, 2).toUpperCase();
 }
 
+function amountNumber(value: string) {
+  return Number(value.replace(/[$,]/g, '')) || 0;
+}
+
+function money(value: number) {
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function activityForUser(user: User): UserActivity {
+  const deposits = amountNumber(user.totalDeposits);
+  const profit = amountNumber(user.totalProfit);
+  const withdrawals = amountNumber(user.totalWithdrawals);
+  const referral = Math.round(deposits * 0.015);
+  const coin = user.plan === 'Starter' ? 'BTC' : user.plan === 'Silver' ? 'USDT' : 'ETH';
+  const activeInvestments = user.status === 'Active'
+    ? user.plan === 'Platinum' ? 3 : user.plan === 'Gold' ? 2 : 1
+    : 0;
+
+  return {
+    investments: [{
+      planName: `${user.plan} Plan`,
+      amount: user.totalDeposits,
+      profitPct: deposits ? `${((profit / deposits) * 100).toFixed(1)}%` : '0.0%',
+      status: user.status === 'Active' ? 'Active' : 'Completed',
+      purchaseDate: user.registeredDate,
+    }],
+    deposits: [{
+      coin,
+      amount: user.totalDeposits,
+      status: 'Completed',
+      date: user.registeredDate,
+    }],
+    withdrawals: [{
+      amount: user.totalWithdrawals,
+      method: `${coin} Wallet`,
+      status: withdrawals > 0 ? 'Completed' : 'Pending',
+      date: user.registeredDate,
+    }],
+    transactions: [
+      { type: 'Deposits', amount: user.totalDeposits, status: 'Completed', date: user.registeredDate },
+      { type: 'Withdrawals', amount: user.totalWithdrawals, status: withdrawals > 0 ? 'Completed' : 'Pending', date: user.registeredDate },
+      { type: 'Profits', amount: user.totalProfit, status: profit > 0 ? 'Completed' : 'Pending', date: user.registeredDate },
+      { type: 'Bonuses', amount: money(referral), status: referral > 0 ? 'Completed' : 'Pending', date: user.registeredDate },
+    ],
+    activeInvestments,
+    referralEarnings: money(referral),
+  };
+}
+
+function statusClass(status: ActivityStatus) {
+  switch (status) {
+    case 'Active':
+      return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
+    case 'Pending':
+      return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
+    case 'Rejected':
+      return 'text-red-400 bg-red-500/10 border-red-500/20';
+    default:
+      return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
+  }
+}
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 
 function Avatar({ user, size = 'md' }: { user: User; size?: 'sm' | 'md' | 'lg' }) {
@@ -221,11 +342,118 @@ function InfoRow({ icon: Icon, label, value, mono, accent }: {
   );
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+      {children}
+    </p>
+  );
+}
+
+function ActivityTable({
+  headers,
+  rows,
+}: {
+  headers: string[];
+  rows: Array<Array<React.ReactNode>>;
+}) {
+  return (
+    <div className="overflow-x-auto -mx-1">
+      <table className="w-full min-w-[500px] text-left">
+        <thead>
+          <tr className="border-b border-white/5">
+            {headers.map((header) => (
+              <th
+                key={header}
+                className="px-2 py-2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50 whitespace-nowrap"
+              >
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={index} className="border-b border-white/[0.03] last:border-0">
+              {row.map((cell, cellIndex) => (
+                <td key={cellIndex} className="px-2 py-2.5 text-[10px] text-muted-foreground whitespace-nowrap">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ActivityStatus({ status }: { status: ActivityStatus }) {
+  return (
+    <span className={`inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded-full border ${statusClass(status)}`}>
+      {status}
+    </span>
+  );
+}
+
+function ProfileStat({ icon: Icon, label, value, accent }: {
+  icon: typeof Wallet;
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="bg-white/[0.03] border border-white/5 rounded-lg p-3 min-w-0">
+      <div className="flex items-center gap-1.5 text-muted-foreground/60 mb-1">
+        <Icon size={12} />
+        <span className="text-[9px] uppercase tracking-wider truncate">{label}</span>
+      </div>
+      <p className={`text-sm font-bold truncate ${accent ? 'text-accent' : 'text-white'}`}>{value}</p>
+    </div>
+  );
+}
+
 // ─── View Modal ───────────────────────────────────────────────────────────────
 
-function ViewModal({ user, onClose }: { user: User; onClose: () => void }) {
+function ViewModal({
+  user,
+  onClose,
+  notes,
+  onSaveNotes,
+  onResetPassword,
+  onToggleStatus,
+  onDelete,
+}: {
+  user: User;
+  onClose: () => void;
+  notes: string;
+  onSaveNotes: (notes: string) => void;
+  onResetPassword: () => void;
+  onToggleStatus: () => void;
+  onDelete: () => void;
+}) {
   const ss = STATUS_STYLE[user.status];
   const ps = PLAN_STYLE[user.plan];
+  const activity = activityForUser(user);
+  const [draftNotes, setDraftNotes] = useState(notes);
+
+  useEffect(() => {
+    let mounted = true;
+    adminApiRequest<{ notes: string }>(`/admin/users/${encodeURIComponent(user.id)}/profile`)
+      .then((profile) => {
+        if (mounted) setDraftNotes(profile.notes);
+      })
+      .catch(() => {
+        // The seeded profile remains visible while a WordPress/API adapter is offline.
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [user.id]);
+
+  function saveNotes() {
+    onSaveNotes(draftNotes.trim());
+  }
 
   return (
     <ModalShell onClose={onClose}>
@@ -251,9 +479,7 @@ function ViewModal({ user, onClose }: { user: User; onClose: () => void }) {
 
         {/* Personal info */}
         <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-            Personal Information
-          </p>
+          <SectionTitle>Personal Information</SectionTitle>
           <InfoRow icon={BadgeCheck}  label="Full Name"    value={user.name} />
           <InfoRow icon={Mail}        label="Email"        value={user.email} mono />
           <InfoRow icon={Phone}       label="Phone"        value={user.phone} mono />
@@ -263,13 +489,132 @@ function ViewModal({ user, onClose }: { user: User; onClose: () => void }) {
 
         {/* Financial summary */}
         <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-            Financial Summary
-          </p>
+          <SectionTitle>Financial Summary</SectionTitle>
           <InfoRow icon={Wallet}           label="Available Balance"  value={user.balance}           accent />
           <InfoRow icon={ArrowDownLeft}    label="Total Deposits"     value={user.totalDeposits} />
           <InfoRow icon={ArrowUpRight}     label="Total Withdrawals"  value={user.totalWithdrawals} />
           <InfoRow icon={TrendingUp}       label="Total Profit"       value={user.totalProfit} />
+        </div>
+
+        {/* Account statistics */}
+        <div className="space-y-3">
+          <SectionTitle>Account Statistics</SectionTitle>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <ProfileStat icon={ArrowDownLeft} label="Total Deposits" value={user.totalDeposits} />
+            <ProfileStat icon={ArrowUpRight} label="Total Withdrawals" value={user.totalWithdrawals} />
+            <ProfileStat icon={Wallet} label="Current Balance" value={user.balance} accent />
+            <ProfileStat icon={Activity} label="Active Investments" value={String(activity.activeInvestments)} />
+            <ProfileStat icon={Users} label="Referral Earnings" value={activity.referralEarnings} />
+            <ProfileStat icon={TrendingUp} label="Profit Earned" value={user.totalProfit} />
+          </div>
+        </div>
+
+        {/* User activity */}
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <SectionTitle>Investment History</SectionTitle>
+          <ActivityTable
+            headers={['Plan Name', 'Amount', 'Profit %', 'Status', 'Purchase Date']}
+            rows={activity.investments.map((investment) => [
+              <span className="text-white font-semibold">{investment.planName}</span>,
+              investment.amount,
+              investment.profitPct,
+              <ActivityStatus status={investment.status} />,
+              investment.purchaseDate,
+            ])}
+          />
+        </div>
+
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <SectionTitle>Deposit History</SectionTitle>
+          <ActivityTable
+            headers={['Coin', 'Amount', 'Status', 'Date']}
+            rows={activity.deposits.map((deposit) => [
+              <span className="text-white font-semibold">{deposit.coin}</span>,
+              deposit.amount,
+              <ActivityStatus status={deposit.status} />,
+              deposit.date,
+            ])}
+          />
+        </div>
+
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <SectionTitle>Withdrawal History</SectionTitle>
+          <ActivityTable
+            headers={['Amount', 'Method', 'Status', 'Date']}
+            rows={activity.withdrawals.map((withdrawal) => [
+              withdrawal.amount,
+              <span className="text-white">{withdrawal.method}</span>,
+              <ActivityStatus status={withdrawal.status} />,
+              withdrawal.date,
+            ])}
+          />
+        </div>
+
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <SectionTitle>Transaction History</SectionTitle>
+          <ActivityTable
+            headers={['Type', 'Amount', 'Status', 'Date']}
+            rows={activity.transactions.map((transaction) => [
+              <span className="text-white font-semibold">{transaction.type}</span>,
+              transaction.amount,
+              <ActivityStatus status={transaction.status} />,
+              transaction.date,
+            ])}
+          />
+        </div>
+
+        {/* Admin notes */}
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <SectionTitle>Private Admin Notes</SectionTitle>
+            <NotebookPen size={13} className="text-muted-foreground/50" />
+          </div>
+          <textarea
+            value={draftNotes}
+            onChange={(event) => setDraftNotes(event.target.value)}
+            placeholder="VIP Client&#10;Requested manual withdrawal&#10;Needs verification"
+            rows={4}
+            className="w-full resize-y bg-white/5 border border-white/10 rounded-xl py-2.5 px-3 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 transition-all"
+          />
+          <button
+            onClick={saveNotes}
+            className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white text-[10px] font-semibold py-2 px-3 rounded-lg transition-all"
+          >
+            <Save size={12} />
+            Save Private Notes
+          </button>
+        </div>
+
+        {/* Account management */}
+        <div className="border border-white/5 rounded-xl p-4 space-y-3">
+          <SectionTitle>Account Management</SectionTitle>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={onResetPassword}
+              className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-accent hover:bg-accent/10 border border-accent/20 rounded-lg px-3 py-2 transition-colors"
+            >
+              <KeyRound size={12} />
+              Reset Password
+            </button>
+            <button
+              onClick={onToggleStatus}
+              className={`inline-flex items-center gap-1.5 text-[10px] font-semibold rounded-lg px-3 py-2 transition-colors ${
+                user.status === 'Active'
+                  ? 'text-amber-400 hover:bg-amber-500/10 border border-amber-500/20'
+                  : 'text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20'
+              }`}
+            >
+              {user.status === 'Active' ? <ShieldOff size={12} /> : <ShieldCheck size={12} />}
+              {user.status === 'Active' ? 'Suspend Account' : 'Activate Account'}
+            </button>
+            <button
+              onClick={onDelete}
+              className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-red-400 hover:bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 transition-colors"
+            >
+              <Trash2 size={12} />
+              Delete Account
+            </button>
+          </div>
         </div>
       </div>
     </ModalShell>
@@ -457,6 +802,7 @@ export default function AdminUsers() {
   useAdminAuth(); // ensures admin context is wired
 
   const [users, setUsers]   = useState<User[]>(SEED);
+  const [notesByUser, setNotesByUser] = useState<Record<string, string>>({});
   const [modal, setModal]   = useState<ModalMode>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('All');
@@ -501,17 +847,60 @@ export default function AdminUsers() {
     toast({ title: '✅ User Updated', description: 'User record saved successfully.' });
   }
 
-  function handleToggleStatus(user: User) {
+  async function handleToggleStatus(user: User) {
     const next: UserStatus = user.status === 'Active' ? 'Suspended' : 'Active';
-    setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, status: next } : u));
+    try {
+      await adminApiRequest(`/admin/users/${encodeURIComponent(user.id)}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: next }),
+      });
+      setUsers((prev) => prev.map((u) => u.id === user.id ? { ...u, status: next } : u));
+      setModal((current) => current?.kind === 'view'
+        ? { ...current, user: { ...current.user, status: next } }
+        : current);
+    } catch (error) {
+      toast({ title: 'Unable to update account', description: error instanceof Error ? error.message : 'Please try again.' });
+      return;
+    }
     toast({
       title: next === 'Suspended' ? '🚫 User Suspended' : '✅ User Activated',
       description: `${user.name}'s account has been ${next === 'Suspended' ? 'suspended' : 'reactivated'}.`,
     });
   }
 
-  function handleDelete(id: string) {
+  async function handleResetPassword(user: User) {
+    try {
+      await adminApiRequest(`/admin/users/${encodeURIComponent(user.id)}/password-reset`, { method: 'POST' });
+      toast({
+        title: '🔑 Password Reset Requested',
+        description: `A password reset link is ready for ${user.email}.`,
+      });
+    } catch (error) {
+      toast({ title: 'Unable to reset password', description: error instanceof Error ? error.message : 'Please try again.' });
+    }
+  }
+
+  async function handleSaveNotes(id: string, notes: string) {
+    try {
+      await adminApiRequest(`/admin/users/${encodeURIComponent(id)}/notes`, {
+        method: 'PUT',
+        body: JSON.stringify({ notes }),
+      });
+      setNotesByUser((prev) => ({ ...prev, [id]: notes }));
+      toast({ title: '📝 Private Notes Saved', description: 'The admin note was saved to this user profile.' });
+    } catch (error) {
+      toast({ title: 'Unable to save private notes', description: error instanceof Error ? error.message : 'Please try again.' });
+    }
+  }
+
+  async function handleDelete(id: string) {
     const u = users.find((u) => u.id === id);
+    try {
+      await adminApiRequest(`/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch (error) {
+      toast({ title: 'Unable to delete user', description: error instanceof Error ? error.message : 'Please try again.' });
+      return;
+    }
     setUsers((prev) => prev.filter((u) => u.id !== id));
     toast({ title: '🗑️ User Deleted', description: `${u?.name ?? id} has been removed.` });
   }
@@ -526,7 +915,17 @@ export default function AdminUsers() {
   return (
     <>
       {/* Modals */}
-      {modal?.kind === 'view'   && <ViewModal   user={modal.user} onClose={() => setModal(null)} />}
+      {modal?.kind === 'view'   && (
+        <ViewModal
+          user={modal.user}
+          notes={notesByUser[modal.user.id] ?? ''}
+          onClose={() => setModal(null)}
+          onSaveNotes={(notes) => handleSaveNotes(modal.user.id, notes)}
+          onResetPassword={() => handleResetPassword(modal.user)}
+          onToggleStatus={() => handleToggleStatus(modal.user)}
+          onDelete={() => setModal({ kind: 'delete', user: modal.user })}
+        />
+      )}
       {modal?.kind === 'edit'   && <EditModal   user={modal.user} onClose={() => setModal(null)} onSave={handleSave} />}
       {modal?.kind === 'delete' && <DeleteModal user={modal.user} onClose={() => setModal(null)} onConfirm={handleDelete} />}
 
