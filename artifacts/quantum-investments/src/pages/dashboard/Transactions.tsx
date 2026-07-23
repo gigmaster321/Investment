@@ -2,25 +2,18 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDownLeft, ArrowUpRight, Plus, Search, Download } from 'lucide-react';
 
-const mockTransactions = [
-  { id: 'TRX-9821', type: 'Profit', amount: '+$1,250.00', date: 'Oct 25, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9820', type: 'Deposit', amount: '+$25,000.00', date: 'Oct 24, 2023, 14:20 PM', status: 'Completed' },
-  { id: 'TRX-9819', type: 'Withdrawal', amount: '-$5,000.00', date: 'Oct 24, 2023, 11:30 AM', status: 'Completed' },
-  { id: 'TRX-9818', type: 'Profit', amount: '+$1,250.00', date: 'Oct 24, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9817', type: 'Profit', amount: '+$1,250.00', date: 'Oct 23, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9816', type: 'Deposit', amount: '+$10,000.00', date: 'Oct 20, 2023, 16:00 PM', status: 'Completed' },
-  { id: 'TRX-9815', type: 'Profit', amount: '+$1,100.00', date: 'Oct 22, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9814', type: 'Withdrawal', amount: '-$2,000.00', date: 'Oct 21, 2023, 10:15 AM', status: 'Completed' },
-  { id: 'TRX-9813', type: 'Profit', amount: '+$1,100.00', date: 'Oct 21, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9812', type: 'Deposit', amount: '+$50,000.00', date: 'Sep 15, 2023, 11:00 AM', status: 'Completed' },
-  { id: 'TRX-9811', type: 'Withdrawal', amount: '-$5,000.00', date: 'Sep 10, 2023, 13:45 PM', status: 'Processing' },
-  { id: 'TRX-9810', type: 'Profit', amount: '+$850.00', date: 'Sep 09, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9809', type: 'Profit', amount: '+$850.00', date: 'Sep 08, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9808', type: 'Profit', amount: '+$850.00', date: 'Sep 07, 2023, 09:41 AM', status: 'Completed' },
-  { id: 'TRX-9807', type: 'Deposit', amount: '+$10,000.00', date: 'Sep 05, 2023, 10:20 AM', status: 'Completed' },
-];
+type Transaction = {
+  id: string;
+  type: string;
+  amount: string;
+  date: string;
+  status: string;
+};
 
-function exportToCSV(rows: typeof mockTransactions) {
+// No real transactions API yet — will be populated from backend in a future release.
+const allTransactions: Transaction[] = [];
+
+function exportToCSV(rows: Transaction[]) {
   const headers = ['Transaction ID', 'Type', 'Amount', 'Date', 'Status'];
   const lines = [
     headers.join(','),
@@ -44,7 +37,7 @@ export default function Transactions() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const filtered = mockTransactions.filter(t => {
+  const filtered = allTransactions.filter(t => {
     if (filter !== 'All' && t.type !== filter) return false;
     if (search && !t.id.toLowerCase().includes(search.toLowerCase()) && !t.type.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -60,7 +53,7 @@ export default function Transactions() {
         <div className="flex gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input 
+            <input
               type="text"
               placeholder="Search ID or type..."
               value={search}
@@ -96,15 +89,15 @@ export default function Transactions() {
 
           <div className="flex items-center gap-2 w-full md:w-auto">
             <span className="text-sm text-muted-foreground">Date:</span>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={dateFrom}
               onChange={e => setDateFrom(e.target.value)}
               className="bg-background border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:outline-none focus:border-primary"
             />
             <span className="text-muted-foreground">–</span>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={dateTo}
               onChange={e => setDateTo(e.target.value)}
               className="bg-background border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:outline-none focus:border-primary"
@@ -125,11 +118,11 @@ export default function Transactions() {
             </thead>
             <tbody>
               {filtered.map((tx, i) => (
-                <motion.tr 
+                <motion.tr
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: (i % 10) * 0.05, duration: 0.2 }}
-                  key={tx.id} 
+                  key={tx.id}
                   className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
                 >
                   <td className="p-4 text-sm font-mono text-white/80">{tx.id}</td>
@@ -147,9 +140,9 @@ export default function Transactions() {
                   <td className="p-4 text-sm text-muted-foreground">{tx.date}</td>
                   <td className="p-4">
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-                      tx.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
-                      tx.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 
-                      tx.status === 'Processing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
+                      tx.status === 'Completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                      tx.status === 'Pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                      tx.status === 'Processing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
                       'bg-red-500/10 text-red-400 border-red-500/20'
                     }`}>
                       {tx.status}
@@ -161,7 +154,9 @@ export default function Transactions() {
           </table>
           {filtered.length === 0 && (
             <div className="p-12 text-center text-muted-foreground">
-              No transactions found matching your criteria.
+              {search || filter !== 'All'
+                ? 'No transactions found matching your criteria.'
+                : 'No transactions yet.'}
             </div>
           )}
         </div>

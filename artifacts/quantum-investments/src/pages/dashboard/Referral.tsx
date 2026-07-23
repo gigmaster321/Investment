@@ -1,28 +1,23 @@
 import { motion } from 'framer-motion';
-import { Copy, Share2, Users, UserPlus, DollarSign, Check } from 'lucide-react';
+import { Copy, Share2, Users, UserPlus, DollarSign } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { useToast } from '@/hooks/use-toast';
-
-const mockReferredUsers = [
-  { id: 1, name: 'J*** D***', date: 'Oct 15, 2023', invested: '$10,000.00', commission: '$500.00', status: 'Active' },
-  { id: 2, name: 'M*** S***', date: 'Oct 02, 2023', invested: '$5,000.00', commission: '$250.00', status: 'Active' },
-  { id: 3, name: 'A*** R***', date: 'Sep 28, 2023', invested: '$25,000.00', commission: '$1,250.00', status: 'Active' },
-  { id: 4, name: 'L*** P***', date: 'Sep 10, 2023', invested: '$0.00', commission: '$0.00', status: 'Inactive' },
-  { id: 5, name: 'D*** W***', date: 'Aug 22, 2023', invested: '$2,500.00', commission: '$125.00', status: 'Active' },
-  { id: 6, name: 'S*** B***', date: 'Aug 15, 2023', invested: '$500.00', commission: '$25.00', status: 'Active' },
-  { id: 7, name: 'C*** H***', date: 'Jul 30, 2023', invested: '$0.00', commission: '$0.00', status: 'Inactive' },
-  { id: 8, name: 'E*** C***', date: 'Jul 12, 2023', invested: '$15,000.00', commission: '$750.00', status: 'Active' },
-];
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Referral() {
   const { toast } = useToast();
-  const refLink = 'https://quantuminvestments.com/ref/john-doe-2024';
+  const { user } = useAuth();
+
+  const refLink = user
+    ? `${window.location.origin}/ref/${user.username}`
+    : '';
 
   const handleCopy = () => {
+    if (!refLink) return;
     navigator.clipboard.writeText(refLink);
     toast({
-      title: "Copied!",
-      description: "Referral link copied to clipboard.",
+      title: 'Copied!',
+      description: 'Referral link copied to clipboard.',
     });
   };
 
@@ -33,7 +28,7 @@ export default function Referral() {
         <p className="text-muted-foreground">Invite friends and earn up to 5% commission.</p>
       </header>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl p-6 md:p-8"
@@ -41,14 +36,16 @@ export default function Referral() {
         <h2 className="text-lg font-semibold text-white mb-4">Your Referral Link</h2>
         <div className="flex flex-col md:flex-row gap-4 items-center">
           <div className="flex-1 w-full relative">
-            <input 
-              readOnly 
-              value={refLink} 
+            <input
+              readOnly
+              value={refLink}
+              placeholder="Loading your referral link…"
               className="w-full bg-background border border-white/10 rounded-xl py-4 pl-4 pr-12 text-accent font-mono text-sm focus:outline-none"
             />
-            <button 
+            <button
               onClick={handleCopy}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-primary/20 text-primary rounded-lg hover:bg-primary hover:text-white transition-colors"
+              disabled={!refLink}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-primary/20 text-primary rounded-lg hover:bg-primary hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Copy size={16} />
             </button>
@@ -62,13 +59,13 @@ export default function Referral() {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard delay={0.1} title="Total Referrals" value="12" icon={Users} />
-        <StatCard delay={0.2} title="Active Referrals" value="8" icon={UserPlus} />
-        <StatCard delay={0.3} title="Referral Earnings" value="$3,400.00" icon={DollarSign} />
+        <StatCard delay={0.1} title="Total Referrals" value="0" icon={Users} />
+        <StatCard delay={0.2} title="Active Referrals" value="0" icon={UserPlus} />
+        <StatCard delay={0.3} title="Referral Earnings" value="$0.00" icon={DollarSign} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -100,7 +97,7 @@ export default function Referral() {
           </div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
@@ -121,28 +118,11 @@ export default function Referral() {
                 </tr>
               </thead>
               <tbody>
-                {mockReferredUsers.map((row, i) => (
-                  <motion.tr 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 + 0.6 }}
-                    key={row.id} 
-                    className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
-                  >
-                    <td className="p-4 font-mono text-white">{row.name}</td>
-                    <td className="p-4 text-muted-foreground">{row.date}</td>
-                    <td className="p-4 text-white">{row.invested}</td>
-                    <td className="p-4 text-accent font-semibold">{row.commission}</td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-                        row.status === 'Active' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
-                        'bg-red-500/10 text-red-400 border-red-500/20'
-                      }`}>
-                        {row.status}
-                      </span>
-                    </td>
-                  </motion.tr>
-                ))}
+                <tr>
+                  <td colSpan={5} className="p-12 text-center text-muted-foreground">
+                    No referrals yet.
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>

@@ -14,27 +14,12 @@ type CryptoOption = 'btc' | 'eth' | 'usdt';
 interface WithdrawalRecord {
   id: string;
   date: string;
-  method: string;        // e.g. "Crypto Withdrawal"
-  crypto: string;        // e.g. "BTC", "ETH", "USDT"
+  method: string;
+  crypto: string;
   amount: string;
   wallet: string;
   status: WithdrawalStatus;
 }
-
-// ─── Mock history (seed data) ─────────────────────────────────────────────────
-
-const SEED_HISTORY: WithdrawalRecord[] = [
-  { id: 'WDL-7201', date: 'Oct 24, 2023, 11:30 AM', method: 'Crypto Withdrawal', crypto: 'BTC',  amount: '$5,000.00', wallet: 'bc1q...x0wlh', status: 'Approved'  },
-  { id: 'WDL-7200', date: 'Oct 21, 2023, 10:15 AM', method: 'Crypto Withdrawal', crypto: 'ETH',  amount: '$2,000.00', wallet: '0x71...8976F', status: 'Approved'  },
-  { id: 'WDL-7199', date: 'Sep 10, 2023, 13:45 PM', method: 'Crypto Withdrawal', crypto: 'USDT', amount: '$5,000.00', wallet: 'TXLA...7m7X', status: 'Pending'   },
-  { id: 'WDL-7198', date: 'Aug 14, 2023, 16:20 PM', method: 'Crypto Withdrawal', crypto: 'BTC',  amount: '$1,500.00', wallet: 'bc1q...v2pq8', status: 'Approved'  },
-  { id: 'WDL-7197', date: 'Jul 05, 2023, 09:10 AM', method: 'Crypto Withdrawal', crypto: 'ETH',  amount: '$2,500.00', wallet: '0x88...1A49B', status: 'Approved'  },
-  { id: 'WDL-7196', date: 'Jun 12, 2023, 14:30 PM', method: 'Crypto Withdrawal', crypto: 'USDT', amount: '$1,000.00', wallet: 'TYH8...4G9L', status: 'Approved'  },
-  { id: 'WDL-7195', date: 'May 20, 2023, 11:45 AM', method: 'Crypto Withdrawal', crypto: 'BTC',  amount: '$500.00',   wallet: 'bc1q...a9x2m', status: 'Approved' },
-  { id: 'WDL-7194', date: 'Apr 18, 2023, 10:05 AM', method: 'Crypto Withdrawal', crypto: 'ETH',  amount: '$8,000.00', wallet: '0x12...9C33D', status: 'Rejected'  },
-  { id: 'WDL-7193', date: 'Mar 10, 2023, 15:50 PM', method: 'Crypto Withdrawal', crypto: 'USDT', amount: '$3,000.00', wallet: 'TKJ1...8Y4M', status: 'Approved'  },
-  { id: 'WDL-7192', date: 'Feb 22, 2023, 08:15 AM', method: 'Crypto Withdrawal', crypto: 'BTC',  amount: '$1,200.00', wallet: 'bc1q...o5r4t', status: 'Approved'  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -71,7 +56,7 @@ function nowLabel() {
 
 function nextId(history: WithdrawalRecord[]) {
   const nums = history.map((h) => parseInt(h.id.replace('WDL-', ''), 10));
-  const max = nums.length ? Math.max(...nums) : 7201;
+  const max = nums.length ? Math.max(...nums) : 7200;
   return `WDL-${max + 1}`;
 }
 
@@ -87,7 +72,8 @@ interface FormErrors {
 type PageView = 'form' | 'success' | 'history';
 
 export default function Withdrawals() {
-  const availableBalance = 28_430.5;
+  // No real balance available from API yet — admin credits funds which update the DB.
+  const availableBalance = 0;
 
   // Page view
   const [view, setView] = useState<PageView>('form');
@@ -98,8 +84,8 @@ export default function Withdrawals() {
   const [wallet, setWallet]   = useState('');
   const [errors, setErrors]   = useState<FormErrors>({});
 
-  // History state
-  const [history, setHistory]           = useState<WithdrawalRecord[]>(SEED_HISTORY);
+  // History state — starts empty; new requests are prepended locally after submission
+  const [history, setHistory]           = useState<WithdrawalRecord[]>([]);
   const [statusFilter, setStatusFilter] = useState<'All' | WithdrawalStatus>('All');
 
   // Last submitted record (for success screen)
@@ -141,7 +127,6 @@ export default function Withdrawals() {
       status: 'Pending',
     };
 
-    // Prepend to history (most-recent first)
     setHistory((prev) => [record, ...prev]);
     setLastRecord(record);
     setView('success');
@@ -513,7 +498,9 @@ export default function Withdrawals() {
 
                 {filtered.length === 0 && (
                   <div className="p-12 text-center text-muted-foreground">
-                    No {statusFilter !== 'All' ? statusFilter.toLowerCase() + ' ' : ''}withdrawals found.
+                    {statusFilter !== 'All'
+                      ? `No ${statusFilter.toLowerCase()} withdrawals found.`
+                      : 'No withdrawals yet.'}
                   </div>
                 )}
               </div>

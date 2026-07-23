@@ -1,26 +1,17 @@
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Wallet, Activity, TrendingUp, Download } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
-
-const chartData = [
-  { name: 'Jan', value: 120000 },
-  { name: 'Feb', value: 125000 },
-  { name: 'Mar', value: 122000 },
-  { name: 'Apr', value: 130000 },
-  { name: 'May', value: 138000 },
-  { name: 'Jun', value: 142854 },
-];
-
-const recentTransactions = [
-  { id: 1, type: 'Profit', amount: '+$1,250.00', date: 'Today, 09:41 AM', status: 'Completed' },
-  { id: 2, type: 'Deposit', amount: '+$25,000.00', date: 'Yesterday, 14:20 PM', status: 'Completed' },
-  { id: 3, type: 'Withdrawal', amount: '-$5,000.00', date: 'Oct 24, 11:30 AM', status: 'Completed' },
-  { id: 4, type: 'Profit', amount: '+$1,250.00', date: 'Oct 23, 09:41 AM', status: 'Completed' },
-  { id: 5, type: 'Deposit', amount: '+$10,000.00', date: 'Oct 20, 16:00 PM', status: 'Completed' },
-];
+import { useInvestments } from '@/lib/investments';
 
 export default function DashboardOverview() {
+  const { investments, loading } = useInvestments();
+
+  const activeInvestment = investments.find((inv) => inv.status === 'active');
+  const activeValue = activeInvestment
+    ? `$${Number(activeInvestment.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+    : '$0.00';
+  const activeSubtitle = activeInvestment?.plan_name ?? 'No active plan';
+
   return (
     <div className="space-y-8">
       <header>
@@ -29,15 +20,15 @@ export default function DashboardOverview() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard delay={0} title="Total Balance" value="$142,854.20" subtitle="+12.5% this month" icon={Wallet} href="/dashboard" />
-        <StatCard delay={0.1} title="Active Investment" value="$85,000.00" subtitle="Gold Plan" icon={Activity} href="/dashboard/investments" />
-        <StatCard delay={0.2} title="Total Profit" value="$28,430.50" subtitle="+$1,250.00 today" icon={TrendingUp} href="/dashboard/earnings" />
-        <StatCard delay={0.3} title="Total Withdrawals" value="$12,000.00" icon={Download} href="/dashboard/withdrawals" />
+        <StatCard delay={0} title="Total Balance" value="$0.00" subtitle="No balance yet" icon={Wallet} href="/dashboard" />
+        <StatCard delay={0.1} title="Active Investment" value={loading ? '…' : activeValue} subtitle={loading ? '' : activeSubtitle} icon={Activity} href="/dashboard/investments" />
+        <StatCard delay={0.2} title="Total Profit" value="$0.00" subtitle="No earnings yet" icon={TrendingUp} href="/dashboard/earnings" />
+        <StatCard delay={0.3} title="Total Withdrawals" value="$0.00" icon={Download} href="/dashboard/withdrawals" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Chart */}
-        <motion.div 
+        {/* Chart placeholder */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.4 }}
@@ -51,30 +42,14 @@ export default function DashboardOverview() {
               <span className="px-3 py-1 bg-white/5 rounded-full text-xs font-medium text-muted-foreground cursor-pointer hover:text-white transition-colors">1Y</span>
             </div>
           </div>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#1EA7FF" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#1EA7FF" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                <XAxis dataKey="name" stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="rgba(255,255,255,0.3)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val/1000}k`} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(11,42,111,0.9)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                  itemStyle={{ color: '#1EA7FF' }}
-                />
-                <Area type="monotone" dataKey="value" stroke="#1EA7FF" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="h-[300px] w-full flex flex-col items-center justify-center gap-3 text-center">
+            <TrendingUp size={40} className="text-white/10" />
+            <p className="text-muted-foreground text-sm">Performance history will appear once your account has activity.</p>
           </div>
         </motion.div>
 
-        {/* Recent Transactions */}
-        <motion.div 
+        {/* Recent Activity */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.4 }}
@@ -83,24 +58,9 @@ export default function DashboardOverview() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
           </div>
-          <div className="flex-1 flex flex-col gap-4">
-            {recentTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-default">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${tx.type === 'Withdrawal' ? 'bg-destructive/20 text-destructive' : 'bg-primary/20 text-accent'}`}>
-                    {tx.type === 'Withdrawal' ? <Download size={16} /> : <Activity size={16} />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">{tx.type}</p>
-                    <p className="text-xs text-muted-foreground">{tx.date}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-medium ${tx.type === 'Withdrawal' ? 'text-white' : 'text-accent'}`}>{tx.amount}</p>
-                  <p className="text-xs text-muted-foreground">{tx.status}</p>
-                </div>
-              </div>
-            ))}
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center py-8">
+            <Activity size={36} className="text-white/10" />
+            <p className="text-muted-foreground text-sm">No recent activity yet.</p>
           </div>
         </motion.div>
       </div>

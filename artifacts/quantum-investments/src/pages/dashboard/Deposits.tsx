@@ -55,28 +55,13 @@ const PAYMENT_METHODS = [
 
 type Method = (typeof PAYMENT_METHODS)[number];
 
-// ─── Mock history ─────────────────────────────────────────────────────────────
-
-const MOCK_HISTORY = [
-  { id: 'DEP-8492', amount: '$25,000.00', method: 'Bitcoin',       date: 'Oct 24, 2023, 14:20 PM', status: 'Completed' },
-  { id: 'DEP-8491', amount: '$10,000.00', method: 'Ethereum',      date: 'Oct 20, 2023, 16:00 PM', status: 'Completed' },
-  { id: 'DEP-8490', amount: '$50,000.00', method: 'Bank Transfer',  date: 'Sep 15, 2023, 11:00 AM', status: 'Completed' },
-  { id: 'DEP-8489', amount: '$10,000.00', method: 'USDT (TRC20)',   date: 'Sep 05, 2023, 10:20 AM', status: 'Completed' },
-  { id: 'DEP-8488', amount: '$5,000.00',  method: 'Bitcoin',       date: 'Aug 12, 2023, 09:15 AM', status: 'Completed' },
-  { id: 'DEP-8487', amount: '$15,000.00', method: 'Ethereum',      date: 'Jul 28, 2023, 13:40 PM', status: 'Completed' },
-  { id: 'DEP-8486', amount: '$2,500.00',  method: 'Bitcoin',       date: 'Jul 10, 2023, 08:30 AM', status: 'Completed' },
-  { id: 'DEP-8485', amount: '$1,000.00',  method: 'USDT (TRC20)',   date: 'Jun 22, 2023, 17:50 PM', status: 'Completed' },
-  { id: 'DEP-8484', amount: '$4,000.00',  method: 'Bank Transfer',  date: 'May 18, 2023, 14:10 PM', status: 'Completed' },
-  { id: 'DEP-8483', amount: '$2,500.00',  method: 'Bitcoin',       date: 'Apr 05, 2023, 11:25 AM', status: 'Completed' },
-];
-
 // ─── Payment URI builder ──────────────────────────────────────────────────────
 
 function buildPaymentUri(method: Method): string {
   switch (method.id) {
     case 'btc':  return `bitcoin:${method.address}`;
     case 'eth':  return `ethereum:${method.address}`;
-    case 'usdt': return method.address;            // TRON has no standard URI prefix
+    case 'usdt': return method.address;
     default:     throw new Error('Unsupported payment method');
   }
 }
@@ -90,7 +75,7 @@ function QrCodeCard({ method }: { method: Method }) {
   useEffect(() => {
     let cancelled = false;
     if (prevId.current !== method.id) {
-      setDataUrl(null);          // clear while regenerating
+      setDataUrl(null);
       prevId.current = method.id;
     }
     const uri = buildPaymentUri(method);
@@ -106,10 +91,7 @@ function QrCodeCard({ method }: { method: Method }) {
   }, [method]);
 
   return (
-    /* Premium glassmorphism container */
     <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm p-6 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
-
-      {/* Network + coin badge row */}
       <div className="flex items-center gap-2">
         <div
           className="flex items-center justify-center w-6 h-6 rounded-full"
@@ -125,7 +107,6 @@ function QrCodeCard({ method }: { method: Method }) {
         </span>
       </div>
 
-      {/* QR image — white card with rounded corners + shadow */}
       <div className="relative rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
         <AnimatePresence mode="wait">
           {dataUrl ? (
@@ -156,7 +137,6 @@ function QrCodeCard({ method }: { method: Method }) {
         </AnimatePresence>
       </div>
 
-      {/* Scan hint */}
       <p className="text-xs text-muted-foreground text-center leading-relaxed">
         Scan with your <span className="text-white/60 font-medium">{method.name}</span> wallet app
       </p>
@@ -223,9 +203,9 @@ export default function Deposits() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard delay={0}   title="Total Deposited"  value="$125,000.00" icon={ArrowDownToLine} />
-        <StatCard delay={0.1} title="Last Deposit"     value="$25,000.00"  icon={FileText} />
-        <StatCard delay={0.2} title="Pending Deposits" value="$0.00"       icon={Clock} />
+        <StatCard delay={0}   title="Total Deposited"  value="$0.00" icon={ArrowDownToLine} />
+        <StatCard delay={0.1} title="Last Deposit"     value="$0.00" icon={FileText} />
+        <StatCard delay={0.2} title="Pending Deposits" value="$0.00" icon={Clock} />
       </div>
 
       {/* Deposit form */}
@@ -276,7 +256,6 @@ export default function Deposits() {
                       <p className="text-sm font-semibold text-white">{m.name}</p>
                       <p className="text-xs text-muted-foreground">{m.network}</p>
                     </div>
-                    {/* Selected indicator */}
                     <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                       isSelected ? 'border-primary bg-primary' : 'border-white/20'
                     }`}>
@@ -314,7 +293,7 @@ export default function Deposits() {
 
         {/* Right — wallet address + QR + action */}
         <motion.div
-          key={method.id}                          // re-animate when coin changes
+          key={method.id}
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
@@ -355,7 +334,6 @@ export default function Deposits() {
               </motion.p>
             </AnimatePresence>
 
-            {/* Copy button */}
             <button
               onClick={handleCopy}
               className={`flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
@@ -422,31 +400,11 @@ export default function Deposits() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_HISTORY.map((row, i) => (
-                <motion.tr
-                  key={row.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 + 0.5 }}
-                  className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
-                >
-                  <td className="p-4 font-mono text-white/80">{row.id}</td>
-                  <td className="p-4 font-bold text-white">{row.amount}</td>
-                  <td className="p-4 text-white">{row.method}</td>
-                  <td className="p-4 text-muted-foreground">{row.date}</td>
-                  <td className="p-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-                      row.status === 'Completed'
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                        : row.status === 'Pending'
-                        ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                        : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                    }`}>
-                      {row.status}
-                    </span>
-                  </td>
-                </motion.tr>
-              ))}
+              <tr>
+                <td colSpan={5} className="p-12 text-center text-muted-foreground">
+                  No deposits yet.
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
