@@ -5,7 +5,6 @@ import {
   Search, Calendar, ChevronDown, Eye, X, Wallet,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { toast } from '@/hooks/use-toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -257,8 +256,7 @@ function FilterSelect({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminWithdrawals() {
-  const { user } = useAdminAuth();
-  const adminName = user?.name ?? 'Admin';
+  const adminName = 'Admin';
 
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>(SEED);
   const [detailItem, setDetailItem]   = useState<Withdrawal | null>(null);

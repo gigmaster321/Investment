@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, Shield, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const { login } = useAdminAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,12 +22,12 @@ export default function AdminLogin() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const ok = await login(email, password);
+    const ok = await login(password);
     setLoading(false);
     if (ok) {
       setLocation('/admin');
     } else {
-      setError('Invalid admin credentials or insufficient permissions.');
+      setError('Invalid password.');
     }
   };
 
@@ -95,23 +94,6 @@ export default function AdminLogin() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-white/60 text-[10px] uppercase tracking-widest font-semibold">
-                Admin Email
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                <Input
-                  type="email"
-                  placeholder="admin@quantuminvestments.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 bg-muted/40 border-white/10 focus-visible:ring-accent text-white placeholder:text-white/20"
-                />
-              </div>
-            </div>
-
             <div className="space-y-1.5">
               <Label className="text-white/60 text-[10px] uppercase tracking-widest font-semibold">
                 Password

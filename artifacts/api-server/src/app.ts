@@ -4,6 +4,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pinoHttp from "pino-http";
 import router from "./routes/index.js";
+import adminAuthRouter from "./routes/admin-auth.js";
 import adminUsersRouter from "./routes/admin-users.js";
 import plansRouter from "./routes/plans.js";
 import investmentsRouter from "./routes/investments.js";
@@ -74,6 +75,7 @@ app.use(
 );
 
 app.use("/api", router);
+app.use("/api/auth", adminAuthRouter);
 // WordPress-compatible REST namespace for external admin clients.
 app.use("/wp-json/quantum/v1/admin/users", adminUsersRouter);
 app.use("/wp-json/quantum/v1/plans", plansRouter);

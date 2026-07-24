@@ -55,7 +55,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
-  const { user, logout } = useAdminAuth();
+  const { logout } = useAdminAuth();
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? location === href : location.startsWith(href);
@@ -85,11 +85,11 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
         <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
           <Shield size={14} className="text-accent shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-white truncate">{user?.name ?? 'Admin'}</p>
-            <p className="text-[10px] text-muted-foreground truncate">{user?.email ?? ''}</p>
+            <p className="text-xs font-semibold text-white truncate">Administrator</p>
+            <p className="text-[10px] text-muted-foreground truncate">admin@quantuminvestments.com</p>
           </div>
           <span className="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider bg-accent/20 text-accent px-1.5 py-0.5 rounded-md">
-            {user?.role === 'super_admin' ? 'Super' : 'Admin'}
+            Admin
           </span>
         </div>
       </div>

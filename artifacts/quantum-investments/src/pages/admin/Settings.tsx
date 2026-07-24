@@ -22,7 +22,7 @@ export default function AdminSettings() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [saved, setSaved] = useState(false);
-  const { user, logout } = useAdminAuth();
+  const { logout } = useAdminAuth();
   const [, setLocation] = useLocation();
 
   const handleSave = (e: React.FormEvent) => {
@@ -93,7 +93,7 @@ export default function AdminSettings() {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white text-xl font-bold">
-                    {user?.name?.charAt(0) ?? 'A'}
+                    A
                   </div>
                   <button
                     type="button"
@@ -103,18 +103,18 @@ export default function AdminSettings() {
                   </button>
                 </div>
                 <div>
-                  <p className="text-white text-sm font-semibold">{user?.name}</p>
-                  <p className="text-muted-foreground text-xs">{user?.email}</p>
+                  <p className="text-white text-sm font-semibold">Administrator</p>
+                  <p className="text-muted-foreground text-xs">admin@quantuminvestments.com</p>
                   <span className="text-[10px] font-bold uppercase tracking-wider bg-accent/15 text-accent px-2 py-0.5 rounded-full mt-1 inline-block">
-                    {user?.role?.replace('_', ' ')}
+                    Admin
                   </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
-                  { label: 'Full Name', placeholder: user?.name ?? '', type: 'text' },
-                  { label: 'Email Address', placeholder: user?.email ?? '', type: 'email' },
+                  { label: 'Full Name', placeholder: 'Administrator', type: 'text' },
+                  { label: 'Email Address', placeholder: 'admin@quantuminvestments.com', type: 'email' },
                   { label: 'Phone Number', placeholder: '+1 (555) 000-0000', type: 'tel' },
                   { label: 'Timezone', placeholder: 'UTC+0 (London)', type: 'text' },
                 ].map((f) => (

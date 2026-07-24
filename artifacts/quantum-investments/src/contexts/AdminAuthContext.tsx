@@ -5,77 +5,63 @@ import {
   useEffect,
   ReactNode,
 } from 'react';
-import { authApi, AuthUser } from '@/lib/auth-api';
-
-export type AdminRole = 'super_admin' | 'admin';
-
-interface AdminUser {
-  id: number;
-  email: string;
-  name: string;
-  role: AdminRole;
-}
 
 interface AdminAuthContextValue {
   isAuthenticated: boolean;
-  user: AdminUser | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  login: (password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextValue | null>(null);
 
-function toAdminUser(apiUser: AuthUser): AdminUser {
-  return {
-    id: apiUser.id,
-    email: apiUser.email,
-    name: apiUser.full_name,
-    role: 'admin',
-  };
+const ADMIN_API = '/api/auth';
+
+async function apiFetch(path: string, options?: RequestInit) {
+  return fetch(`${ADMIN_API}${path}`, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    ...options,
+  });
 }
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AdminUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Restore admin session on mount
   useEffect(() => {
-    authApi
-      .me()
-      .then(({ user: apiUser }) => {
-        if (apiUser.role === 'admin') {
-          setUser(toAdminUser(apiUser));
-        }
+    apiFetch('/admin-me')
+      .then((res) => {
+        if (res.ok) setIsAuthenticated(true);
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (password: string): Promise<boolean> => {
     try {
-      const { user: apiUser } = await authApi.login(email, password);
-      if (apiUser.role !== 'admin') {
-        // Signed in but not an admin — log them back out
-        await authApi.logout().catch(() => {});
-        return false;
+      const res = await apiFetch('/admin-login', {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        setIsAuthenticated(true);
+        return true;
       }
-      setUser(toAdminUser(apiUser));
-      return true;
+      return false;
     } catch {
       return false;
     }
   };
 
   const logout = async () => {
-    await authApi.logout().catch(() => {});
-    setUser(null);
+    await apiFetch('/admin-logout', { method: 'POST' }).catch(() => {});
+    setIsAuthenticated(false);
   };
 
   return (
-    <AdminAuthContext.Provider
-      value={{ isAuthenticated: !!user, user, isLoading, login, logout }}
-    >
+    <AdminAuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
       {children}
     </AdminAuthContext.Provider>
   );

@@ -5,7 +5,6 @@ import {
   Eye, X, Calendar, ChevronDown, Wallet,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { toast } from '@/hooks/use-toast';
 import { depositApi, type DepositRequest } from '@/lib/deposit-api';
 
@@ -257,8 +256,7 @@ function FilterSelect({ value, options, onChange, icon: Icon }: {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminDeposits() {
-  const { user } = useAdminAuth();
-  const adminName = user?.name ?? 'Admin';
+  const adminName = 'Admin';
 
   const [deposits, setDeposits] = useState<DepositRequest[]>([]);
   const [loadingList, setLoadingList] = useState(true);
