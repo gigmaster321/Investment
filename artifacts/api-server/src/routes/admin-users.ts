@@ -2,7 +2,6 @@ import { Router, type IRouter } from "express";
 import { requireAdmin } from "../middleware/requireAuth.js";
 
 type UserStatus = "Active" | "Suspended";
-type UserPlan = "Starter" | "Silver" | "Gold" | "Platinum";
 
 // In-memory admin notes (ephemeral per-session — not part of persistent user data)
 const adminNotes = new Map<string, string>();
@@ -41,12 +40,9 @@ function toDbStatus(uiStatus: UserStatus): "active" | "suspended" {
   return uiStatus === "Active" ? "active" : "suspended";
 }
 
-/** Valid plan names the UI understands */
-const VALID_PLANS: UserPlan[] = ["Starter", "Silver", "Gold", "Platinum"];
-
-function toUiPlan(dbPlan: string | null | undefined): UserPlan {
-  if (dbPlan && VALID_PLANS.includes(dbPlan as UserPlan)) return dbPlan as UserPlan;
-  return "None";
+/** Pass through any plan name stored in DB, or 'None' when absent. */
+function toUiPlan(dbPlan: string | null | undefined): string {
+  return dbPlan ?? "None";
 }
 
 const router: IRouter = Router();
@@ -193,6 +189,41 @@ router.patch("/:userId/status", async (req, res) => {
     });
   } catch (_err) {
     res.status(500).json({ title: "Failed to update status", detail: "Internal server error." });
+  }
+});
+
+// ─── PATCH /:userId/plan — assign investment plan ────────────────────────────
+
+router.patch("/:userId/plan", async (req, res) => {
+  const plan = req.body?.plan;
+  if (typeof plan !== "string") {
+    res.status(400).json({ title: "Invalid plan", detail: "Plan must be a string." });
+    return;
+  }
+
+  const userId = String(req.params.userId);
+  const dbId = parseDbId(userId);
+
+  if (!dbId) {
+    res.status(404).json({ title: "User not found", detail: "Invalid user ID." });
+    return;
+  }
+
+  // "None" means no plan assigned
+  const dbPlan = plan === "None" ? null : plan;
+
+  try {
+    const { db, usersTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+
+    await db
+      .update(usersTable)
+      .set({ current_plan: dbPlan, updated_at: new Date() })
+      .where(eq(usersTable.id, dbId));
+
+    res.json({ userId, plan });
+  } catch (_err) {
+    res.status(500).json({ title: "Failed to update plan", detail: "Internal server error." });
   }
 });
 

@@ -14,15 +14,15 @@ interface AppNotification {
 }
 
 const initialNotifications: AppNotification[] = [
-  { id: '1', type: 'Investment', title: 'Profit Credited', description: '+$1,250.00 profit credited to your account from Gold Plan.', time: 'Today, 09:41 AM', read: false },
+  { id: '1', type: 'Investment', title: 'Profit Credited', description: '+$1,250.00 profit credited to your account from Growth AI.', time: 'Today, 09:41 AM', read: false },
   { id: '2', type: 'Deposit', title: 'Deposit Confirmed', description: '$25,000.00 deposit confirmed via Bitcoin network.', time: 'Yesterday, 14:20 PM', read: false },
   { id: '3', type: 'Withdrawal', title: 'Withdrawal Processed', description: '$5,000.00 withdrawal sent to your BTC wallet.', time: 'Oct 24, 11:30 AM', read: false },
-  { id: '4', type: 'System', title: 'New Plan Available', description: 'Platinum Elite plan now available for investments $100,000+.', time: 'Oct 22, 10:00 AM', read: false },
+  { id: '4', type: 'System', title: 'New Plan Available', description: 'Elite AI plan now available for investments $100,000+.', time: 'Oct 22, 10:00 AM', read: false },
   { id: '5', type: 'System', title: 'Security Alert', description: 'New login detected from Chrome on Windows.', time: 'Oct 20, 08:15 AM', read: true },
   { id: '6', type: 'Investment', title: 'ROI Milestone', description: 'Your portfolio crossed $140,000 total value. Keep it up!', time: 'Oct 18, 15:30 PM', read: true },
   { id: '7', type: 'Deposit', title: 'Deposit Confirmed', description: '$10,000.00 deposit confirmed via Ethereum network.', time: 'Oct 15, 09:20 AM', read: true },
   { id: '8', type: 'Withdrawal', title: 'Withdrawal Processed', description: '$2,000.00 withdrawal sent to your ETH wallet.', time: 'Oct 10, 14:45 PM', read: true },
-  { id: '9', type: 'Investment', title: 'Plan Expired', description: 'Your Starter Plan ($1,500) has completed its duration.', time: 'Sep 30, 00:00 AM', read: true },
+  { id: '9', type: 'Investment', title: 'Plan Completed', description: 'Your Starter AI investment ($1,500) has completed its duration.', time: 'Sep 30, 00:00 AM', read: true },
   { id: '10', type: 'Investment', title: 'Profit Credited', description: '+$850.00 profit credited to your account.', time: 'Sep 29, 09:41 AM', read: true },
   { id: '11', type: 'System', title: 'System Maintenance', description: 'Scheduled maintenance completed successfully.', time: 'Sep 25, 03:00 AM', read: true },
   { id: '12', type: 'Deposit', title: 'Deposit Confirmed', description: '$50,000.00 deposit confirmed via Bank Transfer.', time: 'Sep 15, 11:00 AM', read: true },

@@ -15,7 +15,6 @@ import { toast } from '@/hooks/use-toast';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type UserStatus = 'Active' | 'Suspended';
-type UserPlan   = 'None' | 'Starter' | 'Silver' | 'Gold' | 'Platinum';
 type ActivityStatus = 'Completed' | 'Pending' | 'Rejected' | 'Active';
 
 const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`;
@@ -47,7 +46,7 @@ interface User {
   registeredDate: string;   // "Jul 22, 2026"
   registeredIso: string;    // "2026-07-22" for sorting/filtering
   status: UserStatus;
-  plan: UserPlan;
+  plan: string;
   balance: string;
   balanceNum: number;
   totalDeposits: string;
@@ -106,13 +105,15 @@ const STATUS_STYLE: Record<UserStatus, { label: string; color: string; bg: strin
   Suspended: { label: 'Suspended', color: 'text-red-400',     bg: 'bg-red-500/10',     border: 'border-red-500/20'     },
 };
 
-const PLAN_STYLE: Record<UserPlan, { color: string; bg: string; border: string }> = {
-  None:     { color: 'text-white/30',   bg: 'bg-white/5',       border: 'border-white/10'      },
-  Starter:  { color: 'text-slate-300',  bg: 'bg-slate-500/10',  border: 'border-slate-500/20'  },
-  Silver:   { color: 'text-slate-200',  bg: 'bg-slate-400/10',  border: 'border-slate-400/20'  },
-  Gold:     { color: 'text-amber-300',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
-  Platinum: { color: 'text-cyan-300',   bg: 'bg-cyan-500/10',   border: 'border-cyan-500/20'   },
-};
+function getPlanStyle(plan: string): { color: string; bg: string; border: string } {
+  switch (plan) {
+    case 'None':       return { color: 'text-white/30',    bg: 'bg-white/5',          border: 'border-white/10'          };
+    case 'Starter AI': return { color: 'text-sky-300',     bg: 'bg-sky-500/10',       border: 'border-sky-500/20'        };
+    case 'Growth AI':  return { color: 'text-emerald-300', bg: 'bg-emerald-500/10',   border: 'border-emerald-500/20'    };
+    case 'Elite AI':   return { color: 'text-amber-300',   bg: 'bg-amber-500/10',     border: 'border-amber-500/20'      };
+    default:           return { color: 'text-violet-300',  bg: 'bg-violet-500/10',    border: 'border-violet-500/20'     };
+  }
+}
 
 const AVATAR_COLORS = [
   'bg-blue-600/30 text-blue-300 border-blue-500/30',
@@ -150,14 +151,12 @@ function activityForUser(user: User): UserActivity {
   const profit = amountNumber(user.totalProfit);
   const withdrawals = amountNumber(user.totalWithdrawals);
   const referral = Math.round(deposits * 0.015);
-  const coin = user.plan === 'Silver' ? 'USDT' : user.plan === 'None' ? 'BTC' : user.plan === 'Starter' ? 'BTC' : 'ETH';
-  const activeInvestments = user.status === 'Active' && user.plan !== 'None'
-    ? user.plan === 'Platinum' ? 3 : user.plan === 'Gold' ? 2 : 1
-    : 0;
+  const coin = 'BTC';
+  const activeInvestments = user.status === 'Active' && user.plan !== 'None' ? 1 : 0;
 
   return {
     investments: [{
-      planName: user.plan === 'None' ? 'No Active Plan' : `${user.plan} Plan`,
+      planName: user.plan === 'None' ? 'No Active Plan' : user.plan,
       amount: user.totalDeposits,
       profitPct: deposits ? `${((profit / deposits) * 100).toFixed(1)}%` : '0.0%',
       status: user.status === 'Active' ? 'Active' : 'Completed',
@@ -368,7 +367,7 @@ function ViewModal({
   onDelete: () => void;
 }) {
   const ss = STATUS_STYLE[user.status];
-  const ps = PLAN_STYLE[user.plan];
+  const ps = getPlanStyle(user.plan);
   const activity = activityForUser(user);
   const [draftNotes, setDraftNotes] = useState(notes);
 
@@ -408,7 +407,7 @@ function ViewModal({
           </span>
           <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${ps.bg} ${ps.border} ${ps.color}`}>
             <CreditCard size={10} />
-            {user.plan === 'None' ? 'No Plan' : `${user.plan} Plan`}
+            {user.plan === 'None' ? 'No Plan' : user.plan}
           </span>
         </div>
 
@@ -558,17 +557,23 @@ function ViewModal({
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
 
+interface PlanOption {
+  id: string;
+  name: string;
+}
+
 interface EditForm {
   name: string; username: string; email: string;
-  phone: string; status: UserStatus; plan: UserPlan;
+  phone: string; status: UserStatus; plan: string;
 }
 
 function EditModal({
-  user, onClose, onSave,
+  user, onClose, onSave, availablePlans,
 }: {
   user: User;
   onClose: () => void;
   onSave: (id: string, patch: Partial<User>) => void;
+  availablePlans: PlanOption[];
 }) {
   const [form, setForm] = useState<EditForm>({
     name:     user.name,
@@ -578,17 +583,32 @@ function EditModal({
     status:   user.status,
     plan:     user.plan,
   });
+  const [saving, setSaving] = useState(false);
 
-  function handleSave() {
-    onSave(user.id, {
-      name:     form.name.trim(),
-      username: form.username.trim(),
-      email:    form.email.trim(),
-      phone:    form.phone.trim(),
-      status:   form.status,
-      plan:     form.plan,
-    });
-    onClose();
+  async function handleSave() {
+    setSaving(true);
+    try {
+      // Persist plan change to DB if it changed
+      if (form.plan !== user.plan) {
+        await adminApiRequest(`/admin/users/${encodeURIComponent(user.id)}/plan`, {
+          method: 'PATCH',
+          body: JSON.stringify({ plan: form.plan }),
+        });
+      }
+      onSave(user.id, {
+        name:     form.name.trim(),
+        username: form.username.trim(),
+        email:    form.email.trim(),
+        phone:    form.phone.trim(),
+        status:   form.status,
+        plan:     form.plan,
+      });
+      onClose();
+    } catch (err) {
+      toast({ title: 'Unable to save changes', description: err instanceof Error ? err.message : 'Please try again.' });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const fieldCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-xs placeholder:text-white/20 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 transition-all';
@@ -657,11 +677,12 @@ function EditModal({
             <div className="relative">
               <select
                 value={form.plan}
-                onChange={(e) => setForm((f) => ({ ...f, plan: e.target.value as UserPlan }))}
+                onChange={(e) => setForm((f) => ({ ...f, plan: e.target.value }))}
                 className={selectCls}
               >
-                {(['None', 'Starter', 'Silver', 'Gold', 'Platinum'] as UserPlan[]).map((p) => (
-                  <option key={p} value={p}>{p === 'None' ? 'None (No Plan)' : p}</option>
+                <option value="None">None (No Plan)</option>
+                {availablePlans.map((p) => (
+                  <option key={p.id} value={p.name}>{p.name}</option>
                 ))}
               </select>
               <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
@@ -673,13 +694,15 @@ function EditModal({
       <div className="px-5 py-4 border-t border-white/5 flex gap-3">
         <button
           onClick={handleSave}
-          className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-[0_0_16px_rgba(21,101,232,0.25)]"
+          disabled={saving}
+          className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 disabled:opacity-60 text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-[0_0_16px_rgba(21,101,232,0.25)]"
         >
           <Save size={13} />
-          Save Changes
+          {saving ? 'Saving…' : 'Save Changes'}
         </button>
         <button
           onClick={onClose}
+          disabled={saving}
           className="flex-1 text-xs font-semibold text-muted-foreground hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl transition-colors"
         >
           Cancel
@@ -741,6 +764,7 @@ export default function AdminUsers() {
   const [modal, setModal]   = useState<ModalMode>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterKey>('All');
+  const [availablePlans, setAvailablePlans] = useState<PlanOption[]>([]);
 
   // Load real registered users from the API on mount.
   // Always replace state with whatever the API returns — no demo fallback.
@@ -751,6 +775,22 @@ export default function AdminUsers() {
         if (Array.isArray(data)) setUsers(data);
       })
       .catch(() => setUsers([]));
+  }, []);
+
+  // Load available investment plans from the same source as the public plans page.
+  useEffect(() => {
+    fetch(`${API_BASE}/plans`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
+      .then((data: Array<{ id: string; name: string; status: string }>) => {
+        if (Array.isArray(data)) {
+          setAvailablePlans(
+            data
+              .filter((p) => p.status === 'Active')
+              .map((p) => ({ id: p.id, name: p.name }))
+          );
+        }
+      })
+      .catch(() => {/* keep empty — dropdown still shows None */});
   }, []);
 
   // ── Counts for summary cards ───────────────────────────────────────────────
@@ -872,7 +912,7 @@ export default function AdminUsers() {
           onDelete={() => setModal({ kind: 'delete', user: modal.user })}
         />
       )}
-      {modal?.kind === 'edit'   && <EditModal   user={modal.user} onClose={() => setModal(null)} onSave={handleSave} />}
+      {modal?.kind === 'edit'   && <EditModal   user={modal.user} onClose={() => setModal(null)} onSave={handleSave} availablePlans={availablePlans} />}
       {modal?.kind === 'delete' && <DeleteModal user={modal.user} onClose={() => setModal(null)} onConfirm={handleDelete} />}
 
       <div className="space-y-6">
@@ -960,7 +1000,7 @@ export default function AdminUsers() {
               <tbody>
                 {rows.map((u) => {
                   const ss = STATUS_STYLE[u.status];
-                  const ps = PLAN_STYLE[u.plan];
+                  const ps = getPlanStyle(u.plan);
                   return (
                     <motion.tr
                       key={u.id}

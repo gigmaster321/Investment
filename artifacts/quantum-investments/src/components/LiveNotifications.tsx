@@ -50,7 +50,7 @@ interface Notif {
   plan?: string;
 }
 
-const PLANS = ['Starter Plan', 'Growth Plan', 'Premium Plan', 'Elite Plan'];
+const PLANS = ['Starter AI', 'Growth AI', 'Elite AI'];
 
 let _id = 0;
 function makeNotif(kind: NotifKind): Notif {

@@ -13,7 +13,7 @@ const faqs = [
   },
   {
     question: "What is the minimum investment amount?",
-    answer: "Our Starter Plan begins at just $100, making professional investment management accessible to everyone. Higher-tier plans offer increased daily returns for larger capital commitments."
+    answer: "Our Starter AI plan begins at just $1,000, making professional AI-driven investment management accessible to everyone. Higher-tier plans offer increased returns for larger capital commitments."
   },
   {
     question: "How are my funds protected?",
@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     question: "What returns can I expect?",
-    answer: "Returns vary by plan, ranging from 1.5% daily on our Starter Plan to 6.0% daily on our Platinum Plan. All returns are based on historical performance and are not guaranteed."
+    answer: "Returns vary by plan, ranging from 200% on our Starter AI plan to 700%+ on our Elite AI plan. All returns are based on historical backtesting and are not guaranteed."
   },
   {
     question: "How do I get started?",
