@@ -50,8 +50,10 @@ const PgSession = connectPgSimple(session);
 const sessionStore = process.env.DATABASE_URL
   ? new PgSession({
       conString: process.env.DATABASE_URL,
-      // Create the session table automatically if it does not exist yet.
-      createTableIfMissing: true,
+      // The session table is created at startup in index.ts with correct
+      // PG12+-compatible SQL. Do NOT use createTableIfMissing here — the
+      // bundled table.sql uses WITH (OIDS=FALSE) which is invalid on PG12+
+      // and permanently poisons the internal promise, breaking all session saves.
       // Prune expired sessions once per hour.
       pruneSessionInterval: 60 * 60,
     })
