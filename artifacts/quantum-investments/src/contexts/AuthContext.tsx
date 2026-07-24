@@ -25,6 +25,8 @@ interface AuthContextValue {
     password: string;
   }) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
+  /** Re-fetch the current user from the server (e.g. after balance update). */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -61,9 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refreshUser = async (): Promise<void> => {
+    try {
+      const { user: u } = await authApi.me();
+      setUser(u);
+    } catch {
+      // silently ignore — stale data is better than crashing
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}
+      value={{ user, isAuthenticated: !!user, isLoading, login, register, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

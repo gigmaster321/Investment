@@ -15,6 +15,10 @@ export interface AuthUser {
   role: "user" | "admin";
   email_verified: boolean;
   account_status: "active" | "suspended" | "blocked";
+  balance: string;
+  total_deposit: string;
+  total_withdrawal: string;
+  current_plan: string | null;
   created_at: string;
   updated_at: string;
 }
