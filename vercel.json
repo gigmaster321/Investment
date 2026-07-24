@@ -1,7 +1,7 @@
 {
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @workspace/quantum-investments run build",
-  "outputDirectory": "artifacts/quantum-investments/dist",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/(.*)",
