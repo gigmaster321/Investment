@@ -169,11 +169,17 @@ export async function seedAdminUser(): Promise<void> {
       .limit(1);
 
     if (existing) {
-      // Ensure the existing record has the right role/status in case it was
-      // created incorrectly before.
+      // Always reset credentials so the known password is guaranteed correct.
+      const hashed = await hashPassword(ADMIN_PASSWORD);
       await db
         .update(usersTable)
-        .set({ role: "admin", email_verified: true, account_status: "active", updated_at: new Date() })
+        .set({
+          password: hashed,
+          role: "admin",
+          email_verified: true,
+          account_status: "active",
+          updated_at: new Date(),
+        })
         .where(eq(usersTable.email, ADMIN_EMAIL));
       return;
     }

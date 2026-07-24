@@ -49,7 +49,8 @@ const PgSession = connectPgSimple(session);
 const sessionStore = process.env.DATABASE_URL
   ? new PgSession({
       conString: process.env.DATABASE_URL,
-      // Table was created via schema migration; no need for runtime auto-create.
+      // Create the session table automatically if it does not exist yet.
+      createTableIfMissing: true,
       // Prune expired sessions once per hour.
       pruneSessionInterval: 60 * 60,
     })
