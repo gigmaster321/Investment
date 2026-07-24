@@ -1,14 +1,56 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  createInvestment,
-  listInvestments,
-  updateInvestmentStatus,
-  type Investment,
-  type InvestmentInput,
-  type InvestmentStatusActionAction,
-} from "@workspace/api-client-react";
 
-const DEMO_USER_ID = "user-demo-001";
+const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    credentials: "include",
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    ...init,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? body?.message ?? body?.title ?? `Request failed (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export interface InvestmentPlanSnapshot {
+  id: string;
+  name: string;
+  executionCycle: string;
+}
+
+export interface InvestmentUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface Investment {
+  id: string;
+  user: InvestmentUser;
+  plan: InvestmentPlanSnapshot;
+  investmentAmount: number;
+  profitPercentage: number;
+  investmentDate: string;
+  maturityDate: string;
+  status: string;
+  isPaused: boolean;
+  expectedReturn: number;
+  remainingSeconds: number;
+  displayStatus: string;
+  /** Current accrued profit based on elapsed time */
+  currentProfit: number;
+  /** ROI progress 0–100 */
+  roiProgress: number;
+  /** ISO date of next profit credit */
+  nextProfitCreditDate: string;
+  /** Total profit for completed/cancelled investments */
+  totalProfitEarned: number | null;
+}
+
+export type InvestmentInput = { planId: string; amount: number };
 
 interface InvestmentsContextValue {
   investments: Investment[];
@@ -28,7 +70,7 @@ export function InvestmentsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const next = await listInvestments({ scope: "user", userId: DEMO_USER_ID });
+      const next = await apiFetch<Investment[]>("/investments");
       setInvestments(next);
       setError(null);
     } catch (cause) {
@@ -48,7 +90,10 @@ export function InvestmentsProvider({ children }: { children: ReactNode }) {
     error,
     refresh,
     async create(input) {
-      const investment = await createInvestment(input);
+      const investment = await apiFetch<Investment>("/investments", {
+        method: "POST",
+        body: JSON.stringify({ planId: input.planId, amount: input.amount }),
+      });
       setInvestments((current) => [investment, ...current]);
       return investment;
     },
@@ -61,13 +106,6 @@ export function useInvestments() {
   const context = useContext(InvestmentsContext);
   if (!context) throw new Error("useInvestments must be used inside InvestmentsProvider");
   return context;
-}
-
-export async function changeInvestmentStatus(
-  investmentId: string,
-  action: InvestmentStatusActionAction,
-) {
-  return updateInvestmentStatus(investmentId, { action });
 }
 
 export function formatInvestmentDate(value: string) {

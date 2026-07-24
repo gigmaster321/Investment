@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, TrendingUp, Clock, ShieldCheck, X, DollarSign } from 'lucide-react';
+import { CheckCircle2, TrendingUp, Clock, ShieldCheck, X, DollarSign, Calendar } from 'lucide-react';
 import { formatInvestmentAmount, useInvestmentPlans, type InvestmentPlan } from '@/lib/investment-plans';
-import { formatInvestmentDate, formatRemainingTime, useInvestments } from '@/lib/investments';
-import type { Investment } from '@workspace/api-client-react';
+import { formatInvestmentDate, formatRemainingTime, useInvestments, type Investment } from '@/lib/investments';
 import { toast } from '@/hooks/use-toast';
 
 interface BuyPlanModalProps {
@@ -122,7 +121,7 @@ function money(value: number) {
 function statusClass(status: string) {
   if (status === 'Completed') return 'bg-green-500/10 text-green-400 border-green-500/20';
   if (status === 'Active') return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-  if (status === 'Pending') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+  if (status === 'Expired') return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
   if (status === 'Cancelled') return 'bg-red-500/10 text-red-400 border-red-500/20';
   return 'bg-orange-500/10 text-orange-400 border-orange-500/20';
 }
@@ -133,8 +132,13 @@ export default function Investments() {
   const { plans, loading } = useInvestmentPlans();
   const { investments, loading: investmentsLoading, create } = useInvestments();
   const activePlans = plans.filter((plan) => plan.status === 'Active');
-  const activeInvestments = investments.filter((investment) => ['Pending', 'Active'].includes(investment.displayStatus));
-  const historyInvestments = investments.filter((investment) => ['Completed', 'Cancelled'].includes(investment.displayStatus));
+
+  // Active: only fully Active investments from DB (approved by admin)
+  const activeInvestments = investments.filter((investment) => investment.displayStatus === 'Active');
+  // History: completed, expired, or cancelled
+  const historyInvestments = investments.filter((investment) =>
+    ['Completed', 'Expired', 'Cancelled'].includes(investment.displayStatus)
+  );
 
   async function createUserInvestment(amount: number) {
     if (!selectedPlan) throw new Error('Select an investment plan first.');
@@ -159,27 +163,57 @@ export default function Investments() {
                 <div>
                   <div className="flex items-center gap-3 mb-2">
                     <span className="px-3 py-1 bg-accent/20 text-accent border border-accent/30 rounded-full text-xs font-bold uppercase tracking-wider">{investment.plan.name} Plan</span>
-                    <span className={`flex items-center gap-1 text-xs font-medium ${investment.displayStatus === 'Pending' ? 'text-amber-400' : investment.displayStatus === 'Paused' ? 'text-orange-400' : 'text-emerald-400'}`}><CheckCircle2 size={14} /> {investment.displayStatus}</span>
+                    <span className="flex items-center gap-1 text-xs font-medium text-emerald-400"><CheckCircle2 size={14} /> Active</span>
                   </div>
-                  <h2 className="text-4xl font-bold text-white mt-4">{money(investment.investmentAmount)}</h2><p className="text-muted-foreground mt-1">Investment Amount</p>
+                  <h2 className="text-4xl font-bold text-white mt-4">{money(investment.investmentAmount)}</h2>
+                  <p className="text-muted-foreground mt-1">Approved Investment Amount</p>
                 </div>
                 <div className="grid grid-cols-2 gap-x-12 gap-y-6">
                   <div><p className="text-sm text-muted-foreground mb-1 flex items-center gap-2"><TrendingUp size={16} /> Profit Percentage</p><p className="text-xl font-semibold text-white">{investment.profitPercentage}%</p></div>
                   <div><p className="text-sm text-muted-foreground mb-1 flex items-center gap-2"><Clock size={16} /> Execution Cycle</p><p className="text-xl font-semibold text-white">{investment.plan.executionCycle}</p></div>
-                  <div><p className="text-sm text-muted-foreground mb-1">Investment Date</p><p className="text-sm font-semibold text-white">{formatInvestmentDate(investment.investmentDate)}</p></div>
-                  <div><p className="text-sm text-muted-foreground mb-1">Maturity Date</p><p className="text-sm font-semibold text-white">{formatInvestmentDate(investment.maturityDate)}</p></div>
+                  <div><p className="text-sm text-muted-foreground mb-1 flex items-center gap-2"><Calendar size={14} /> Start Date</p><p className="text-sm font-semibold text-white">{formatInvestmentDate(investment.investmentDate)}</p></div>
+                  <div><p className="text-sm text-muted-foreground mb-1 flex items-center gap-2"><Calendar size={14} /> End Date</p><p className="text-sm font-semibold text-white">{formatInvestmentDate(investment.maturityDate)}</p></div>
                 </div>
               </div>
               <div className="mt-8 pt-8 border-t border-white/5 relative z-10">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-3">
-                  <div><p className="text-sm text-muted-foreground mb-1">Expected Return</p><p className="text-2xl font-bold text-accent">{money(investment.expectedReturn)}</p></div>
-                  <p className="text-sm font-medium text-white">{investment.displayStatus === 'Pending' ? 'Awaiting activation' : formatRemainingTime(investment.remainingSeconds)}</p>
+                  <div className="flex gap-8">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Current Profit</p>
+                      <p className="text-2xl font-bold text-accent">{money(investment.currentProfit)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Expected Return</p>
+                      <p className="text-2xl font-bold text-white">{money(investment.expectedReturn)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground mb-1">Next Profit Credit</p>
+                    <p className="text-sm font-semibold text-white">{formatInvestmentDate(investment.nextProfitCreditDate)}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{formatRemainingTime(investment.remainingSeconds)}</p>
+                  </div>
                 </div>
-                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden"><motion.div initial={{ width: 0 }} animate={{ width: investment.status === 'Pending' ? '0%' : investment.remainingSeconds > 0 ? '33%' : '100%' }} transition={{ duration: 1, delay: 0.5 }} className="h-full bg-accent rounded-full shadow-[0_0_10px_rgba(30,167,255,0.5)]" /></div>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${investment.roiProgress}%` }}
+                      transition={{ duration: 1, delay: 0.5 }}
+                      className="h-full bg-accent rounded-full shadow-[0_0_10px_rgba(30,167,255,0.5)]"
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground font-medium min-w-[40px] text-right">{investment.roiProgress.toFixed(1)}%</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">ROI Progress</p>
               </div>
             </motion.div>
           ))}
-          {!investmentsLoading && activeInvestments.length === 0 && <div className="bg-card/40 border border-white/5 rounded-2xl p-8 text-center"><p className="text-white font-semibold">No active investment plans yet.</p><p className="text-muted-foreground text-sm mt-1">Open the Plans tab to start a new investment.</p></div>}
+          {!investmentsLoading && activeInvestments.length === 0 && (
+            <div className="bg-card/40 border border-white/5 rounded-2xl p-8 text-center">
+              <p className="text-white font-semibold">No active investments yet.</p>
+              <p className="text-muted-foreground text-sm mt-1">Submit a deposit request and wait for admin approval to activate an investment.</p>
+            </div>
+          )}
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2"><ShieldCheck className="text-primary" /> Plan Benefits</h3>
@@ -196,15 +230,45 @@ export default function Investments() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left border-collapse">
-              <thead><tr className="bg-white/[0.02] border-b border-white/5 text-xs uppercase tracking-wider text-muted-foreground font-semibold"><th className="p-4">Plan</th><th className="p-4">Amount Invested</th><th className="p-4">Expected Return</th><th className="p-4">Start Date</th><th className="p-4">End Date</th><th className="p-4">Status</th></tr></thead>
+              <thead>
+                <tr className="bg-white/[0.02] border-b border-white/5 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                  <th className="p-4">Plan</th>
+                  <th className="p-4">Investment Amount</th>
+                  <th className="p-4">Total Profit Earned</th>
+                  <th className="p-4">Start Date</th>
+                  <th className="p-4">End Date</th>
+                  <th className="p-4">Final Status</th>
+                </tr>
+              </thead>
               <tbody>
-                {historyInvestments.map((investment, index) => <motion.tr initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} key={investment.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
-                  <td className="p-4 font-medium text-white">{investment.plan.name} Plan</td><td className="p-4 text-white">{money(investment.investmentAmount)}</td><td className="p-4 text-accent font-semibold">{money(investment.expectedReturn)}</td><td className="p-4 text-muted-foreground">{formatInvestmentDate(investment.investmentDate)}</td><td className="p-4 text-muted-foreground">{formatInvestmentDate(investment.maturityDate)}</td><td className="p-4"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${statusClass(investment.displayStatus)}`}>{investment.displayStatus}</span></td>
-                </motion.tr>)}
+                {historyInvestments.map((investment, index) => (
+                  <motion.tr
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    key={investment.id}
+                    className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
+                  >
+                    <td className="p-4 font-medium text-white">{investment.plan.name} Plan</td>
+                    <td className="p-4 text-white">{money(investment.investmentAmount)}</td>
+                    <td className="p-4 text-accent font-semibold">
+                      {investment.totalProfitEarned != null ? money(investment.totalProfitEarned) : money(investment.expectedReturn - investment.investmentAmount)}
+                    </td>
+                    <td className="p-4 text-muted-foreground">{formatInvestmentDate(investment.investmentDate)}</td>
+                    <td className="p-4 text-muted-foreground">{formatInvestmentDate(investment.maturityDate)}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${statusClass(investment.displayStatus)}`}>
+                        {investment.displayStatus}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
               </tbody>
             </table>
           </div>
-          {!investmentsLoading && historyInvestments.length === 0 && <p className="p-10 text-center text-sm text-muted-foreground">No completed or cancelled investments yet.</p>}
+          {!investmentsLoading && historyInvestments.length === 0 && (
+            <p className="p-10 text-center text-sm text-muted-foreground">No completed or cancelled investments yet.</p>
+          )}
         </motion.div>
       )}
 

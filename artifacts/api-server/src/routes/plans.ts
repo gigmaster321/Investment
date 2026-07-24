@@ -104,6 +104,14 @@ export function getInvestmentPlanById(id: string) {
   return plans.get(id);
 }
 
+export function parseCycleDaysFromCycle(cycle: string): number {
+  const match = cycle.match(/\d+/);
+  const num = match ? Number(match[0]) : 30;
+  const lower = cycle.toLowerCase();
+  if (lower.includes("hour")) return Math.max(1 / 24, num / 24);
+  return num > 0 ? num : 30;
+}
+
 export function recordPlanInvestment(id: string, amount: number) {
   const plan = plans.get(id);
   if (!plan) return;

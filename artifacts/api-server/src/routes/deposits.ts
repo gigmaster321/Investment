@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth, requireAdmin } from "../middleware/requireAuth.js";
 import { logger } from "../lib/logger.js";
+import { getInvestmentPlanById, parseCycleDaysFromCycle } from "./plans.js";
 
 const router = Router();
 
@@ -91,7 +92,7 @@ router.get("/", requireAuth, async (req, res) => {
 
 // GET /api/deposits/:id — single deposit
 router.get("/:id", requireAuth, async (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "INVALID_ID" });
     return;
@@ -145,7 +146,7 @@ router.get("/:id", requireAuth, async (req, res) => {
 
 // PATCH /api/deposits/:id/approve — admin approves a pending deposit
 router.patch("/:id/approve", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "INVALID_ID" });
     return;
@@ -216,6 +217,29 @@ router.patch("/:id/approve", requireAdmin, async (req, res) => {
       status: "Completed",
     });
 
+    // 4. Auto-create active investment from the approved deposit
+    const { investmentsTable } = await getDb();
+    const plan = existing.plan_id ? getInvestmentPlanById(existing.plan_id) : null;
+    const executionCycle = plan?.executionCycle ?? "30 Days";
+    const profitPercentage = plan?.profitPercentage ?? 100;
+    const cycleDays = parseCycleDaysFromCycle(executionCycle);
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + cycleDays);
+
+    await db.insert(investmentsTable).values({
+      user_id: existing.user_id,
+      deposit_request_id: existing.id,
+      plan_id: existing.plan_id,
+      plan_name: existing.plan_name ?? (plan?.name ?? "Investment"),
+      plan_execution_cycle: executionCycle,
+      investment_amount: approvedAmount.toFixed(2),
+      profit_percentage: String(profitPercentage),
+      start_date: startDate,
+      end_date: endDate,
+      status: "Active",
+    });
+
     res.json(updated);
   } catch (err) {
     logger.error({ err }, "Failed to approve deposit");
@@ -225,7 +249,7 @@ router.patch("/:id/approve", requireAdmin, async (req, res) => {
 
 // PATCH /api/deposits/:id/reject — admin rejects a pending deposit
 router.patch("/:id/reject", requireAdmin, async (req, res) => {
-  const id = parseInt(req.params.id, 10);
+  const id = parseInt(String(req.params.id), 10);
   if (isNaN(id)) {
     res.status(400).json({ error: "INVALID_ID" });
     return;
