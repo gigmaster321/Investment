@@ -48,7 +48,7 @@ router.get("/", requireAuth, async (req, res) => {
     const { db, depositRequestsTable, usersTable } = await getDb();
     const { eq, desc } = await import("drizzle-orm");
 
-    const isAdmin = req.session.userRole === "admin";
+    const isAdmin = req.session.userRole === "admin" || req.session.isAdmin === true;
 
     if (isAdmin) {
       const rows = await db
@@ -101,7 +101,7 @@ router.get("/:id", requireAuth, async (req, res) => {
     const { db, depositRequestsTable, usersTable } = await getDb();
     const { eq, and } = await import("drizzle-orm");
 
-    const isAdmin = req.session.userRole === "admin";
+    const isAdmin = req.session.userRole === "admin" || req.session.isAdmin === true;
 
     const [row] = await db
       .select({

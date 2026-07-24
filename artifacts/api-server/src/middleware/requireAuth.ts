@@ -1,12 +1,20 @@
 import type { Request, Response, NextFunction } from "express";
 
-/** Rejects requests that have no active session. */
+/** Returns true when the request belongs to an authenticated admin session. */
+function isAdminSession(req: Request): boolean {
+  return (
+    req.session.isAdmin === true ||
+    (!!req.session.userId && req.session.userRole === "admin")
+  );
+}
+
+/** Rejects requests that have no active session (user or admin). */
 export function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  if (!req.session.userId) {
+  if (!req.session.userId && !req.session.isAdmin) {
     res
       .status(401)
       .json({ error: "UNAUTHENTICATED", message: "Please log in to continue." });
@@ -21,13 +29,13 @@ export function requireAdmin(
   res: Response,
   next: NextFunction,
 ): void {
-  if (!req.session.userId) {
-    res
-      .status(401)
-      .json({ error: "UNAUTHENTICATED", message: "Please log in to continue." });
-    return;
-  }
-  if (req.session.userRole !== "admin") {
+  if (!isAdminSession(req)) {
+    if (!req.session.userId && !req.session.isAdmin) {
+      res
+        .status(401)
+        .json({ error: "UNAUTHENTICATED", message: "Please log in to continue." });
+      return;
+    }
     res.status(403).json({ error: "UNAUTHORIZED", message: "Unauthorized Access" });
     return;
   }

@@ -29,76 +29,7 @@ interface Withdrawal {
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 
-const SEED: Withdrawal[] = [
-  {
-    id: '#W-0381', userName: 'James Thornton', username: 'james_t',
-    email: 'j.thornton@email.com', method: 'Crypto Withdrawal', crypto: 'BTC',
-    amount: '$4,200.00', amountUsd: 4200,
-    walletAddress: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-    date: '2026-07-23 09:14', status: 'Pending',
-  },
-  {
-    id: '#W-0380', userName: 'Priya Sharma', username: 'priya_sh',
-    email: 'p.sharma@email.com', method: 'Crypto Withdrawal', crypto: 'ETH',
-    amount: '$12,800.00', amountUsd: 12800,
-    walletAddress: '0x71C7656EC7ab88b098defB751B7401B5f6d8976F',
-    date: '2026-07-23 07:52', status: 'Pending',
-  },
-  {
-    id: '#W-0379', userName: 'Elena Volkov', username: 'elena_v',
-    email: 'e.volkov@email.com', method: 'Crypto Withdrawal', crypto: 'USDT',
-    amount: '$950.00', amountUsd: 950,
-    walletAddress: 'TRX7k2mJNp9LqVuQdSxZ3Yb8P1eWcRf6D',
-    date: '2026-07-22 22:30', status: 'Pending',
-  },
-  {
-    id: '#W-0378', userName: 'David Osei', username: 'david_o',
-    email: 'd.osei@email.com', method: 'Crypto Withdrawal', crypto: 'BTC',
-    amount: '$2,100.00', amountUsd: 2100,
-    walletAddress: '3FZbgi29cpjq2GjdwV8eyHuJJnkLtktZc5',
-    date: '2026-07-22 18:05', status: 'Pending',
-  },
-  {
-    id: '#W-0377', userName: 'Lin Wei', username: 'lin_wei',
-    email: 'l.wei@email.com', method: 'Crypto Withdrawal', crypto: 'ETH',
-    amount: '$8,500.00', amountUsd: 8500,
-    walletAddress: '0x89205A3A3b2A69De6Dbf7f476598cd8A1a5A4e5',
-    date: '2026-07-22 14:20', status: 'Approved',
-    approvedBy: 'Super Admin', processedAt: '2026-07-22 15:00',
-  },
-  {
-    id: '#W-0376', userName: 'Carlos Rivera', username: 'carlos_r',
-    email: 'c.rivera@email.com', method: 'Crypto Withdrawal', crypto: 'USDT',
-    amount: '$1,800.00', amountUsd: 1800,
-    walletAddress: 'TXqR5mJb2jPnVkLuNdSxZ3Yb8P1eWcRf9',
-    date: '2026-07-21 10:44', status: 'Approved',
-    approvedBy: 'Super Admin', processedAt: '2026-07-21 11:30',
-  },
-  {
-    id: '#W-0375', userName: 'Sofia Becker', username: 'sofia_b',
-    email: 's.becker@email.com', method: 'Crypto Withdrawal', crypto: 'BTC',
-    amount: '$3,400.00', amountUsd: 3400,
-    walletAddress: 'bc1q9r5k2j3h7g4f8d2s6p1n0m9l8k7j6h5g4f3',
-    date: '2026-07-20 16:12', status: 'Approved',
-    approvedBy: 'Super Admin', processedAt: '2026-07-20 17:00',
-  },
-  {
-    id: '#W-0374', userName: 'Amir Hassan', username: 'amir_h',
-    email: 'a.hassan@email.com', method: 'Crypto Withdrawal', crypto: 'BTC',
-    amount: '$6,000.00', amountUsd: 6000,
-    walletAddress: 'Unknown / Unverified',
-    date: '2026-07-20 09:00', status: 'Rejected',
-    approvedBy: 'Super Admin', processedAt: '2026-07-20 10:15',
-  },
-  {
-    id: '#W-0373', userName: 'Test Account', username: 'test_user',
-    email: 'test@test.com', method: 'Crypto Withdrawal', crypto: 'ETH',
-    amount: '$15,000.00', amountUsd: 15000,
-    walletAddress: 'Unverified — flagged by system',
-    date: '2026-07-19 11:00', status: 'Rejected',
-    approvedBy: 'Super Admin', processedAt: '2026-07-19 12:00',
-  },
-];
+const SEED: Withdrawal[] = [];
 
 // ─── Style maps ───────────────────────────────────────────────────────────────
 

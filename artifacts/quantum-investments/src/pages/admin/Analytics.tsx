@@ -1,36 +1,39 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend, LineChart, Line,
+  Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, BarChart2, Activity } from 'lucide-react';
+import { TrendingUp, BarChart2, Activity, Users } from 'lucide-react';
 
-const monthlyData = [
-  { month: 'Jan', deposits: 320000, withdrawals: 110000, users: 2400, earnings: 48000 },
-  { month: 'Feb', deposits: 410000, withdrawals: 130000, users: 2800, earnings: 61500 },
-  { month: 'Mar', deposits: 480000, withdrawals: 155000, users: 3100, earnings: 72000 },
-  { month: 'Apr', deposits: 560000, withdrawals: 170000, users: 3400, earnings: 84000 },
-  { month: 'May', deposits: 620000, withdrawals: 200000, users: 3700, earnings: 93000 },
-  { month: 'Jun', deposits: 710000, withdrawals: 240000, users: 4100, earnings: 106500 },
-  { month: 'Jul', deposits: 840000, withdrawals: 280000, users: 4821, earnings: 126000 },
-];
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-const dailyDeposits = [
-  { day: 'Mon', amount: 42000 },
-  { day: 'Tue', amount: 38000 },
-  { day: 'Wed', amount: 61000 },
-  { day: 'Thu', amount: 55000 },
-  { day: 'Fri', amount: 78000 },
-  { day: 'Sat', amount: 29000 },
-  { day: 'Sun', amount: 21000 },
-];
+interface DepositRequest {
+  status: 'Pending' | 'Approved' | 'Rejected';
+  amount: string;
+  approved_amount: string | null;
+  created_at: string;
+  plan_name: string | null;
+}
 
-const planDistribution = [
-  { plan: 'Starter', investors: 1842, deposits: 284100 },
-  { plan: 'Silver', investors: 1203, deposits: 3600000 },
-  { plan: 'Gold', investors: 614, deposits: 18200000 },
-  { plan: 'Platinum', investors: 162, deposits: 47800000 },
-];
+interface AdminUser {
+  plan: string;
+  totalDeposits: string;
+  registeredDate: string;
+  registeredIso: string;
+}
+
+interface MonthPoint {
+  month: string;
+  deposits: number;
+  users: number;
+}
+
+interface PlanPoint {
+  plan: string;
+  investors: number;
+  deposits: number;
+}
 
 const CHART_TOOLTIP_STYLE = {
   contentStyle: {
@@ -43,10 +46,99 @@ const CHART_TOOLTIP_STYLE = {
 };
 
 const GRID_PROPS = { strokeDasharray: '3 3', stroke: 'rgba(255,255,255,0.04)' };
-const AXIS_TICK = { fill: 'rgba(255,255,255,0.35)', fontSize: 11 };
-const AXIS_LINE = { axisLine: false, tickLine: false };
+const AXIS_TICK  = { fill: 'rgba(255,255,255,0.35)', fontSize: 11 };
+const AXIS_LINE  = { axisLine: false as const, tickLine: false as const };
+
+function fmt(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n.toFixed(0)}`;
+}
+
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export default function AdminAnalytics() {
+  const [monthlyData, setMonthlyData]     = useState<MonthPoint[]>([]);
+  const [planData, setPlanData]           = useState<PlanPoint[]>([]);
+  const [totalRevenue, setTotalRevenue]   = useState(0);
+  const [totalUsers, setTotalUsers]       = useState(0);
+  const [loading, setLoading]             = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [usersRes, depositsRes] = await Promise.all([
+          fetch('/api/admin/users', { credentials: 'include' }),
+          fetch('/api/deposits',    { credentials: 'include' }),
+        ]);
+
+        const users: AdminUser[]         = usersRes.ok    ? await usersRes.json()    : [];
+        const deposits: DepositRequest[] = depositsRes.ok ? await depositsRes.json() : [];
+
+        // Monthly aggregation — by calendar month of created_at
+        const monthlyMap = new Map<string, { deposits: number; userSet: Set<string> }>();
+        deposits.forEach((d) => {
+          if (d.status !== 'Approved') return;
+          const dt    = new Date(d.created_at);
+          const key   = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+          const label = `${MONTH_LABELS[dt.getMonth()]} '${String(dt.getFullYear()).slice(2)}`;
+          if (!monthlyMap.has(key)) monthlyMap.set(key, { deposits: 0, userSet: new Set() });
+          monthlyMap.get(key)!.deposits += parseFloat(d.approved_amount ?? d.amount);
+        });
+        users.forEach((u) => {
+          const dt    = new Date(u.registeredIso ?? u.registeredDate);
+          const key   = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+          if (!monthlyMap.has(key)) monthlyMap.set(key, { deposits: 0, userSet: new Set() });
+          monthlyMap.get(key)!.userSet.add(u.registeredDate + u.totalDeposits);
+        });
+
+        const sortedKeys = [...monthlyMap.keys()].sort();
+        const monthly: MonthPoint[] = sortedKeys.map((key) => {
+          const [yr, mo] = key.split('-');
+          const label    = `${MONTH_LABELS[Number(mo) - 1]} '${yr.slice(2)}`;
+          const entry    = monthlyMap.get(key)!;
+          return { month: label, deposits: entry.deposits, users: entry.userSet.size };
+        });
+
+        // Plan distribution
+        const planMap = new Map<string, { investors: number; deposits: number }>();
+        users.forEach((u) => {
+          const plan = u.plan || 'None';
+          if (!planMap.has(plan)) planMap.set(plan, { investors: 0, deposits: 0 });
+          planMap.get(plan)!.investors += 1;
+          planMap.get(plan)!.deposits  += parseFloat(u.totalDeposits.replace(/[$,]/g, '')) || 0;
+        });
+        const plans: PlanPoint[] = [...planMap.entries()]
+          .filter(([k]) => k !== 'None')
+          .map(([plan, v]) => ({ plan, ...v }));
+
+        const revenue = deposits
+          .filter((d) => d.status === 'Approved')
+          .reduce((s, d) => s + parseFloat(d.approved_amount ?? d.amount), 0);
+
+        setMonthlyData(monthly);
+        setPlanData(plans);
+        setTotalRevenue(revenue);
+        setTotalUsers(users.length);
+      } catch {
+        // leave empty
+      } finally {
+        setLoading(false);
+      }
+    }
+    void load();
+  }, []);
+
+  const hasMonthly = monthlyData.length > 0;
+  const hasPlan    = planData.length > 0;
+
+  const kpis = [
+    { label: 'Total Deposits',  value: fmt(totalRevenue),        sub: 'Approved only',        icon: TrendingUp },
+    { label: 'Total Users',     value: totalUsers.toLocaleString(), sub: 'Registered accounts', icon: Users      },
+    { label: 'Deposit Growth',  value: hasMonthly ? `${monthlyData.length} mo` : '—', sub: 'Months with data', icon: BarChart2  },
+    { label: 'Plan Types',      value: hasPlan ? String(planData.length) : '—',       sub: 'Active plan tiers', icon: Activity   },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
@@ -56,121 +148,90 @@ export default function AdminAnalytics() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Revenue', value: '$591K', sub: 'All-time earnings', icon: TrendingUp },
-          { label: 'Deposit Growth', value: '+162%', sub: 'Jan → Jul 2026', icon: BarChart2 },
-          { label: 'User Growth', value: '+101%', sub: 'Jan → Jul 2026', icon: Activity },
-          { label: 'Withdrawal Rate', value: '33.3%', sub: 'Of total deposits', icon: BarChart2 },
-        ].map((k) => (
+        {kpis.map((k) => (
           <div key={k.label} className="bg-card/40 border border-white/5 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-muted-foreground text-[11px]">{k.label}</p>
               <k.icon size={14} className="text-accent/60" />
             </div>
-            <p className="text-white font-bold text-xl">{k.value}</p>
-            <p className="text-muted-foreground text-[10px] mt-0.5">{k.sub}</p>
+            {loading ? (
+              <div className="h-7 bg-white/5 rounded animate-pulse" />
+            ) : (
+              <>
+                <p className="text-white font-bold text-xl">{k.value}</p>
+                <p className="text-muted-foreground text-[10px] mt-0.5">{k.sub}</p>
+              </>
+            )}
           </div>
         ))}
       </div>
 
-      {/* Growth chart */}
+      {/* Monthly Deposits Chart */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
         className="bg-card/40 border border-white/5 rounded-xl p-6"
       >
-        <h2 className="text-sm font-semibold text-white mb-1">Platform Growth</h2>
-        <p className="text-xs text-muted-foreground mb-5">Deposits vs withdrawals vs user growth over 7 months</p>
-        <ResponsiveContainer width="100%" height={240}>
-          <AreaChart data={monthlyData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="depGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1EA7FF" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#1EA7FF" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="wdGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="earnGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#34d399" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid {...GRID_PROPS} />
-            <XAxis dataKey="month" tick={AXIS_TICK} {...AXIS_LINE} />
-            <YAxis tick={AXIS_TICK} {...AXIS_LINE} width={50} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => `$${v.toLocaleString()}`} />
-            <Legend wrapperStyle={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }} />
-            <Area type="monotone" dataKey="deposits" stroke="#1EA7FF" strokeWidth={2} fill="url(#depGrad)" name="Deposits" />
-            <Area type="monotone" dataKey="withdrawals" stroke="#a78bfa" strokeWidth={2} fill="url(#wdGrad)" name="Withdrawals" />
-            <Area type="monotone" dataKey="earnings" stroke="#34d399" strokeWidth={2} fill="url(#earnGrad)" name="Earnings" />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="mb-5">
+          <h2 className="text-base font-semibold text-white">Monthly Deposits</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Approved deposit volume by month</p>
+        </div>
+        {loading ? (
+          <div className="h-48 bg-white/3 rounded-lg animate-pulse" />
+        ) : !hasMonthly ? (
+          <div className="flex flex-col items-center gap-2 py-14 text-muted-foreground/40">
+            <BarChart2 size={32} strokeWidth={1.2} />
+            <p className="text-sm">No deposit data yet.</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={monthlyData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id="depGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#1EA7FF" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#1EA7FF" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...GRID_PROPS} />
+              <XAxis dataKey="month" tick={AXIS_TICK} {...AXIS_LINE} />
+              <YAxis tick={AXIS_TICK} {...AXIS_LINE} width={48} tickFormatter={(v) => fmt(v)} />
+              <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => [fmt(v), 'Deposits']} />
+              <Area type="monotone" dataKey="deposits" stroke="#1EA7FF" strokeWidth={2} fill="url(#depGrad)" name="Deposits" />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </motion.div>
 
-      {/* Bottom row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Daily deposits bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.4 }}
-          className="bg-card/40 border border-white/5 rounded-xl p-6"
-        >
-          <h2 className="text-sm font-semibold text-white mb-1">Daily Deposit Volume</h2>
-          <p className="text-xs text-muted-foreground mb-5">This week</p>
-          <ResponsiveContainer width="100%" height={190}>
-            <BarChart data={dailyDeposits} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-              <CartesianGrid {...GRID_PROPS} />
-              <XAxis dataKey="day" tick={AXIS_TICK} {...AXIS_LINE} />
-              <YAxis tick={AXIS_TICK} {...AXIS_LINE} width={45} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => `$${v.toLocaleString()}`} />
-              <Bar dataKey="amount" fill="#1565D8" radius={[4, 4, 0, 0]} name="Deposits" />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-
-        {/* Plan distribution line */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.4 }}
-          className="bg-card/40 border border-white/5 rounded-xl p-6"
-        >
-          <h2 className="text-sm font-semibold text-white mb-1">Deposits by Plan</h2>
-          <p className="text-xs text-muted-foreground mb-5">Total deposited per investment tier</p>
-          <ResponsiveContainer width="100%" height={190}>
-            <BarChart data={planDistribution} layout="vertical" margin={{ top: 4, right: 24, bottom: 0, left: 0 }}>
-              <CartesianGrid {...GRID_PROPS} horizontal={false} />
-              <XAxis type="number" tick={AXIS_TICK} {...AXIS_LINE} tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} />
-              <YAxis type="category" dataKey="plan" tick={AXIS_TICK} {...AXIS_LINE} width={56} />
-              <Tooltip {...CHART_TOOLTIP_STYLE} formatter={(v: number) => `$${v.toLocaleString()}`} />
-              <Bar dataKey="deposits" fill="#1EA7FF" radius={[0, 4, 4, 0]} name="Total Deposited" />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </div>
-
-      {/* User growth line chart */}
+      {/* Plan Distribution */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35, duration: 0.4 }}
+        transition={{ delay: 0.15, duration: 0.4 }}
         className="bg-card/40 border border-white/5 rounded-xl p-6"
       >
-        <h2 className="text-sm font-semibold text-white mb-1">User Growth Curve</h2>
-        <p className="text-xs text-muted-foreground mb-5">Cumulative registered users per month</p>
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={monthlyData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-            <CartesianGrid {...GRID_PROPS} />
-            <XAxis dataKey="month" tick={AXIS_TICK} {...AXIS_LINE} />
-            <YAxis tick={AXIS_TICK} {...AXIS_LINE} width={45} />
-            <Tooltip {...CHART_TOOLTIP_STYLE} />
-            <Line type="monotone" dataKey="users" stroke="#34d399" strokeWidth={2.5} dot={{ r: 4, fill: '#34d399' }} name="Users" />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="mb-5">
+          <h2 className="text-base font-semibold text-white">Plan Distribution</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Users by investment plan</p>
+        </div>
+        {loading ? (
+          <div className="h-48 bg-white/3 rounded-lg animate-pulse" />
+        ) : !hasPlan ? (
+          <div className="flex flex-col items-center gap-2 py-14 text-muted-foreground/40">
+            <Activity size={32} strokeWidth={1.2} />
+            <p className="text-sm">No investment plans active yet.</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={planData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+              <CartesianGrid {...GRID_PROPS} />
+              <XAxis dataKey="plan" tick={AXIS_TICK} {...AXIS_LINE} />
+              <YAxis tick={AXIS_TICK} {...AXIS_LINE} width={36} />
+              <Tooltip {...CHART_TOOLTIP_STYLE} />
+              <Bar dataKey="investors" fill="#1EA7FF" radius={[4, 4, 0, 0]} name="Investors" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </motion.div>
     </div>
   );
