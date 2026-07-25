@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowDownCircle, Clock, CheckCircle, XCircle,
@@ -6,6 +6,12 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
+import {
+  withdrawalApi,
+  WithdrawalRequest,
+  formatWithdrawalDateAdmin,
+  formatMoney,
+} from '@/lib/withdrawal-api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,12 +19,13 @@ type WithdrawalStatus = 'Pending' | 'Approved' | 'Rejected';
 
 interface Withdrawal {
   id: string;
+  rawId: number;
   userName: string;
   username: string;
   email: string;
-  method: string;       // "Crypto Withdrawal"
-  crypto: string;       // "BTC" | "ETH" | "USDT"
-  amount: string;       // "$4,200.00"
+  method: string;
+  crypto: string;
+  amount: string;
   amountUsd: number;
   walletAddress: string;
   date: string;
@@ -27,9 +34,26 @@ interface Withdrawal {
   processedAt?: string;
 }
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
+// ─── Mapping helper ───────────────────────────────────────────────────────────
 
-const SEED: Withdrawal[] = [];
+function toWithdrawal(w: WithdrawalRequest): Withdrawal {
+  return {
+    id:           `WDL-${w.id}`,
+    rawId:        w.id,
+    userName:     w.user_full_name ?? 'Unknown',
+    username:     w.user_username ?? '',
+    email:        w.user_email ?? '',
+    method:       w.method,
+    crypto:       w.crypto,
+    amount:       formatMoney(w.amount),
+    amountUsd:    parseFloat(w.amount),
+    walletAddress: w.wallet_address,
+    date:         formatWithdrawalDateAdmin(w.created_at),
+    status:       w.status as WithdrawalStatus,
+    approvedBy:   w.reviewed_by ?? undefined,
+    processedAt:  w.reviewed_at ? formatWithdrawalDateAdmin(w.reviewed_at) : undefined,
+  };
+}
 
 // ─── Style maps ───────────────────────────────────────────────────────────────
 
@@ -50,10 +74,6 @@ const STATUSES: Array<'All' | WithdrawalStatus> = ['All', 'Pending', 'Approved',
 
 function truncate(s: string, n = 22) {
   return s.length > n ? s.slice(0, n) + '…' : s;
-}
-
-function nowStr() {
-  return new Date().toISOString().replace('T', ' ').slice(0, 16);
 }
 
 // ─── Details Modal ────────────────────────────────────────────────────────────
@@ -187,9 +207,8 @@ function FilterSelect({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminWithdrawals() {
-  const adminName = 'Admin';
-
-  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>(SEED);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [loading, setLoading]         = useState(true);
   const [detailItem, setDetailItem]   = useState<Withdrawal | null>(null);
 
   // Filters
@@ -197,6 +216,24 @@ export default function AdminWithdrawals() {
   const [statusFilter, setStatus]  = useState<string>('All');
   const [methodFilter, setMethod]  = useState<string>('All');
   const [dateFilter,   setDate]    = useState<string>('');
+
+  // ── Load from API ──────────────────────────────────────────────────────────
+
+  const loadWithdrawals = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await withdrawalApi.list();
+      setWithdrawals(data.map(toWithdrawal));
+    } catch {
+      // show empty state
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadWithdrawals();
+  }, [loadWithdrawals]);
 
   // Summary counts
   const counts = useMemo(() => ({
@@ -223,33 +260,48 @@ export default function AdminWithdrawals() {
   }, [withdrawals, search, statusFilter, methodFilter, dateFilter]);
 
   // ── Approve ───────────────────────────────────────────────────────────────
-  function handleApprove(id: string) {
-    setWithdrawals((prev) =>
-      prev.map((w) =>
-        w.id === id
-          ? { ...w, status: 'Approved', approvedBy: adminName, processedAt: nowStr() }
-          : w,
-      ),
-    );
-    toast({
-      title: '✅ Withdrawal Approved',
-      description: `Withdrawal ${id} approved. Amount deducted from user balance and transaction logged.`,
-    });
+
+  async function handleApprove(id: string, rawId: number) {
+    try {
+      const updated = await withdrawalApi.approve(rawId);
+      setWithdrawals((prev) =>
+        prev.map((w) => w.id === id ? toWithdrawal(updated) : w),
+      );
+      // Close detail modal if it was showing this item
+      setDetailItem((d) => (d?.id === id ? toWithdrawal(updated) : d));
+      toast({
+        title: '✅ Withdrawal Approved',
+        description: `Withdrawal ${id} approved. Amount deducted from user balance and transaction logged.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Approval failed',
+        description: err?.message ?? 'Could not approve withdrawal.',
+        variant: 'destructive',
+      });
+    }
   }
 
   // ── Reject ────────────────────────────────────────────────────────────────
-  function handleReject(id: string) {
-    setWithdrawals((prev) =>
-      prev.map((w) =>
-        w.id === id
-          ? { ...w, status: 'Rejected', approvedBy: adminName, processedAt: nowStr() }
-          : w,
-      ),
-    );
-    toast({
-      title: '❌ Withdrawal Rejected',
-      description: `Withdrawal ${id} rejected. User's balance remains unchanged.`,
-    });
+
+  async function handleReject(id: string, rawId: number) {
+    try {
+      const updated = await withdrawalApi.reject(rawId);
+      setWithdrawals((prev) =>
+        prev.map((w) => w.id === id ? toWithdrawal(updated) : w),
+      );
+      setDetailItem((d) => (d?.id === id ? toWithdrawal(updated) : d));
+      toast({
+        title: '❌ Withdrawal Rejected',
+        description: `Withdrawal ${id} rejected. User's balance remains unchanged.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Rejection failed',
+        description: err?.message ?? 'Could not reject withdrawal.',
+        variant: 'destructive',
+      });
+    }
   }
 
   const COLS = [
@@ -345,147 +397,153 @@ export default function AdminWithdrawals() {
 
           {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[960px]">
-              <thead>
-                <tr className="border-b border-white/5">
-                  {COLS.map((h) => (
-                    <th
-                      key={h}
-                      className="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-4 py-3 whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((w) => {
-                  const s = STATUS_STYLE[w.status];
-                  return (
-                    <motion.tr
-                      key={w.id}
-                      layout
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors"
-                    >
-                      {/* User */}
-                      <td className="px-4 py-3.5">
-                        <p className="text-white text-xs font-medium whitespace-nowrap">{w.userName}</p>
-                        <p className="text-muted-foreground text-[10px] font-mono">{w.id}</p>
-                      </td>
+            {loading ? (
+              <div className="px-5 py-14 text-center text-muted-foreground/50 text-sm">
+                Loading withdrawals…
+              </div>
+            ) : (
+              <table className="w-full text-sm min-w-[960px]">
+                <thead>
+                  <tr className="border-b border-white/5">
+                    {COLS.map((h) => (
+                      <th
+                        key={h}
+                        className="text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 px-4 py-3 whitespace-nowrap"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((w) => {
+                    const s = STATUS_STYLE[w.status];
+                    return (
+                      <motion.tr
+                        key={w.id}
+                        layout
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors"
+                      >
+                        {/* User */}
+                        <td className="px-4 py-3.5">
+                          <p className="text-white text-xs font-medium whitespace-nowrap">{w.userName}</p>
+                          <p className="text-muted-foreground text-[10px] font-mono">{w.id}</p>
+                        </td>
 
-                      {/* Username */}
-                      <td className="px-4 py-3.5 text-muted-foreground text-xs font-mono">
-                        @{w.username}
-                      </td>
+                        {/* Username */}
+                        <td className="px-4 py-3.5 text-muted-foreground text-xs font-mono">
+                          @{w.username}
+                        </td>
 
-                      {/* Email */}
-                      <td className="px-4 py-3.5 text-muted-foreground text-[10px] whitespace-nowrap">
-                        {w.email}
-                      </td>
+                        {/* Email */}
+                        <td className="px-4 py-3.5 text-muted-foreground text-[10px] whitespace-nowrap">
+                          {w.email}
+                        </td>
 
-                      {/* Method */}
-                      <td className="px-4 py-3.5">
-                        <p className="text-white text-xs whitespace-nowrap">{w.method}</p>
-                        <p className={`text-[10px] font-semibold ${CRYPTO_COLOR[w.crypto] ?? 'text-muted-foreground'}`}>
-                          {w.crypto}
-                        </p>
-                      </td>
+                        {/* Method */}
+                        <td className="px-4 py-3.5">
+                          <p className="text-white text-xs whitespace-nowrap">{w.method}</p>
+                          <p className={`text-[10px] font-semibold ${CRYPTO_COLOR[w.crypto] ?? 'text-muted-foreground'}`}>
+                            {w.crypto}
+                          </p>
+                        </td>
 
-                      {/* Amount */}
-                      <td className="px-4 py-3.5 text-white text-xs font-bold whitespace-nowrap">
-                        {w.amount}
-                      </td>
+                        {/* Amount */}
+                        <td className="px-4 py-3.5 text-white text-xs font-bold whitespace-nowrap">
+                          {w.amount}
+                        </td>
 
-                      {/* Wallet */}
-                      <td className="px-4 py-3.5">
-                        <span
-                          title={w.walletAddress}
-                          className="text-[10px] font-mono text-muted-foreground cursor-help"
-                        >
-                          {truncate(w.walletAddress)}
-                        </span>
-                      </td>
-
-                      {/* Date */}
-                      <td className="px-4 py-3.5 text-muted-foreground text-[10px] whitespace-nowrap">
-                        {w.date}
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex flex-col gap-0.5">
+                        {/* Wallet */}
+                        <td className="px-4 py-3.5">
                           <span
-                            className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color} w-fit whitespace-nowrap`}
+                            title={w.walletAddress}
+                            className="text-[10px] font-mono text-muted-foreground cursor-help"
                           >
-                            <s.Icon size={9} />
-                            {w.status}
+                            {truncate(w.walletAddress)}
                           </span>
-                          {w.approvedBy && (
-                            <span className="text-[9px] text-muted-foreground/50">
-                              by {w.approvedBy}
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* View */}
-                          <button
-                            onClick={() => setDetailItem(w)}
-                            className="flex items-center gap-1 text-[10px] font-semibold text-accent hover:text-accent/70 border border-accent/20 hover:border-accent/40 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
-                          >
-                            <Eye size={10} />
-                            Details
-                          </button>
+                        {/* Date */}
+                        <td className="px-4 py-3.5 text-muted-foreground text-[10px] whitespace-nowrap">
+                          {w.date}
+                        </td>
 
-                          {w.status === 'Pending' && (
-                            <>
-                              <button
-                                onClick={() => handleApprove(w.id)}
-                                className="text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleReject(w.id)}
-                                className="text-[10px] font-semibold text-red-400 hover:bg-red-500/15 border border-red-500/20 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-
-                          {w.status !== 'Pending' && (
-                            <span className="text-[10px] text-muted-foreground/40 italic">
+                        {/* Status */}
+                        <td className="px-4 py-3.5">
+                          <div className="flex flex-col gap-0.5">
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.bg} ${s.border} ${s.color} w-fit whitespace-nowrap`}
+                            >
+                              <s.Icon size={9} />
                               {w.status}
                             </span>
-                          )}
+                            {w.approvedBy && (
+                              <span className="text-[9px] text-muted-foreground/50">
+                                by {w.approvedBy}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* View */}
+                            <button
+                              onClick={() => setDetailItem(w)}
+                              className="flex items-center gap-1 text-[10px] font-semibold text-accent hover:text-accent/70 border border-accent/20 hover:border-accent/40 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
+                            >
+                              <Eye size={10} />
+                              Details
+                            </button>
+
+                            {w.status === 'Pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApprove(w.id, w.rawId)}
+                                  className="text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(w.id, w.rawId)}
+                                  className="text-[10px] font-semibold text-red-400 hover:bg-red-500/15 border border-red-500/20 rounded-md px-2 py-1 transition-colors whitespace-nowrap"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+
+                            {w.status !== 'Pending' && (
+                              <span className="text-[10px] text-muted-foreground/40 italic">
+                                {w.status}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+
+                  {rows.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="px-5 py-14 text-center">
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
+                          <ArrowDownCircle size={28} strokeWidth={1.2} />
+                          <p className="text-sm">No withdrawals match your filters.</p>
                         </div>
                       </td>
-                    </motion.tr>
-                  );
-                })}
-
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="px-5 py-14 text-center">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground/50">
-                        <ArrowDownCircle size={28} strokeWidth={1.2} />
-                        <p className="text-sm">No withdrawals match your filters.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Footer */}
-          {rows.length > 0 && (
+          {!loading && rows.length > 0 && (
             <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
               <p className="text-[10px] text-muted-foreground/50">
                 Showing {rows.length} of {withdrawals.length} requests

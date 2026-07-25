@@ -3,3 +3,4 @@
 - [Investment plan persistence](investment-plan-persistence.md) — plan CRUD currently uses an in-memory API adapter while preserving a WordPress-ready contract.
 - [Investment assignment snapshots](investment-assignment-snapshots.md) — investment records retain the plan terms captured at creation time.
 - [Vercel monorepo deployment](vercel-monorepo-deployment.md) — the active Vite app builds from the repository root into the nested quantum-investments output directory.
+- [Withdrawal system](withdrawal-system.md) — full withdrawal flow: DB table, migration, API routes, frontend API client, and both dashboard/admin pages all wired to PostgreSQL.

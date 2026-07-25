@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wallet, ArrowRight, ShieldAlert, ArrowUpFromLine,
   Clock, FileText, CheckCircle, ChevronDown,
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  withdrawalApi,
+  WithdrawalRequest,
+  formatWithdrawalDate,
+  formatMoney,
+} from '@/lib/withdrawal-api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type WithdrawalStatus = 'Pending' | 'Approved' | 'Rejected';
-type CryptoOption = 'btc' | 'eth' | 'usdt';
+type CryptoOption = 'BTC' | 'ETH' | 'USDT';
 
 interface WithdrawalRecord {
   id: string;
@@ -24,21 +31,15 @@ interface WithdrawalRecord {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const CRYPTO_LABELS: Record<CryptoOption, string> = {
-  btc:  'Bitcoin (BTC)',
-  eth:  'Ethereum (ERC20)',
-  usdt: 'USDT (TRC20)',
-};
-
-const CRYPTO_TICKERS: Record<CryptoOption, string> = {
-  btc:  'BTC',
-  eth:  'ETH',
-  usdt: 'USDT',
+  BTC:  'Bitcoin (BTC)',
+  ETH:  'Ethereum (ERC20)',
+  USDT: 'USDT (TRC20)',
 };
 
 const CRYPTO_PLACEHOLDERS: Record<CryptoOption, string> = {
-  btc:  'Enter your BTC wallet address (starts with 1, 3 or bc1…)',
-  eth:  'Enter your ETH wallet address (starts with 0x…)',
-  usdt: 'Enter your TRC20 wallet address (starts with T…)',
+  BTC:  'Enter your BTC wallet address (starts with 1, 3 or bc1…)',
+  ETH:  'Enter your ETH wallet address (starts with 0x…)',
+  USDT: 'Enter your TRC20 wallet address (starts with T…)',
 };
 
 const STATUS_STYLE: Record<WithdrawalStatus, string> = {
@@ -47,17 +48,16 @@ const STATUS_STYLE: Record<WithdrawalStatus, string> = {
   Rejected: 'bg-red-500/10   text-red-400    border-red-500/20',
 };
 
-function nowLabel() {
-  return new Date().toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-function nextId(history: WithdrawalRecord[]) {
-  const nums = history.map((h) => parseInt(h.id.replace('WDL-', ''), 10));
-  const max = nums.length ? Math.max(...nums) : 7200;
-  return `WDL-${max + 1}`;
+function toRecord(w: WithdrawalRequest): WithdrawalRecord {
+  return {
+    id:     `WDL-${w.id}`,
+    date:   formatWithdrawalDate(w.created_at),
+    method: w.method,
+    crypto: w.crypto,
+    amount: formatMoney(w.amount),
+    wallet: w.wallet_address,
+    status: w.status as WithdrawalStatus,
+  };
 }
 
 // ─── Validation errors type ───────────────────────────────────────────────────
@@ -72,24 +72,45 @@ interface FormErrors {
 type PageView = 'form' | 'success' | 'history';
 
 export default function Withdrawals() {
-  // No real balance available from API yet — admin credits funds which update the DB.
-  const availableBalance = 0;
+  const { user, refreshUser } = useAuth();
+  const availableBalance = user ? Number(user.balance) : 0;
 
   // Page view
   const [view, setView] = useState<PageView>('form');
 
   // Form state
-  const [amount, setAmount]   = useState('');
-  const [crypto, setCrypto]   = useState<CryptoOption>('btc');
-  const [wallet, setWallet]   = useState('');
-  const [errors, setErrors]   = useState<FormErrors>({});
+  const [amount, setAmount]     = useState('');
+  const [crypto, setCrypto]     = useState<CryptoOption>('BTC');
+  const [wallet, setWallet]     = useState('');
+  const [errors, setErrors]     = useState<FormErrors>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // History state — starts empty; new requests are prepended locally after submission
+  // History state — loaded from API
   const [history, setHistory]           = useState<WithdrawalRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'All' | WithdrawalStatus>('All');
 
   // Last submitted record (for success screen)
   const [lastRecord, setLastRecord] = useState<WithdrawalRecord | null>(null);
+
+  // ── Load withdrawal history ─────────────────────────────────────────────────
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const data = await withdrawalApi.list();
+      setHistory(data.map(toRecord));
+    } catch {
+      // non-fatal — show empty state
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
 
   // ── Validation ─────────────────────────────────────────────────────────────
 
@@ -113,33 +134,44 @@ export default function Withdrawals() {
 
   // ── Submit ──────────────────────────────────────────────────────────────────
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
 
-    const record: WithdrawalRecord = {
-      id:     nextId(history),
-      date:   nowLabel(),
-      method: 'Crypto Withdrawal',
-      crypto: CRYPTO_TICKERS[crypto],
-      amount: `$${parseFloat(amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-      wallet: wallet.trim(),
-      status: 'Pending',
-    };
+    setSubmitting(true);
+    setSubmitError(null);
 
-    setHistory((prev) => [record, ...prev]);
-    setLastRecord(record);
-    setView('success');
+    try {
+      const created = await withdrawalApi.create({
+        amount: parseFloat(amount),
+        method: 'Crypto Withdrawal',
+        crypto,
+        wallet_address: wallet.trim(),
+      });
+
+      const record = toRecord(created);
+      setHistory((prev) => [record, ...prev]);
+      setLastRecord(record);
+      setView('success');
+
+      // Refresh session user so balance is up-to-date after next approve
+      await refreshUser();
+    } catch (err: any) {
+      setSubmitError(err?.message ?? 'Failed to submit withdrawal request. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // ── Reset form ──────────────────────────────────────────────────────────────
 
   function resetForm() {
     setAmount('');
-    setCrypto('btc');
+    setCrypto('BTC');
     setWallet('');
     setErrors({});
     setLastRecord(null);
+    setSubmitError(null);
   }
 
   // ── Filtered history ────────────────────────────────────────────────────────
@@ -351,9 +383,9 @@ export default function Withdrawals() {
                       }}
                       className="w-full bg-background border border-white/10 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none"
                     >
-                      <option value="btc">Bitcoin (BTC)</option>
-                      <option value="eth">Ethereum (ERC20)</option>
-                      <option value="usdt">USDT (TRC20)</option>
+                      <option value="BTC">Bitcoin (BTC)</option>
+                      <option value="ETH">Ethereum (ERC20)</option>
+                      <option value="USDT">USDT (TRC20)</option>
                     </select>
                     <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                   </div>
@@ -384,6 +416,13 @@ export default function Withdrawals() {
                 </div>
               </div>
 
+              {/* ── API error ───────────────────────────────────────────── */}
+              {submitError && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-400">
+                  {submitError}
+                </div>
+              )}
+
               {/* ── Security notice ─────────────────────────────────────── */}
               <div className="flex items-start gap-3 bg-white/[0.02] p-4 rounded-lg border border-white/5">
                 <ShieldAlert className="text-yellow-500 shrink-0 mt-0.5" size={18} />
@@ -395,9 +434,10 @@ export default function Withdrawals() {
               {/* ── Submit ─────────────────────────────────────────────── */}
               <button
                 type="submit"
-                className="w-full bg-primary hover:bg-primary/90 text-white py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(21,101,232,0.3)] mt-4"
+                disabled={submitting}
+                className="w-full bg-primary hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed text-white py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(21,101,232,0.3)] mt-4"
               >
-                Submit Withdrawal Request <ArrowRight size={18} />
+                {submitting ? 'Submitting…' : (<>Submit Withdrawal Request <ArrowRight size={18} /></>)}
               </button>
             </form>
 
@@ -456,47 +496,51 @@ export default function Withdrawals() {
 
               {/* Table */}
               <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left border-collapse">
-                  <thead>
-                    <tr className="bg-white/[0.02] border-b border-white/5 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Method</th>
-                      <th className="p-4">Amount</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4">Wallet</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((row, i) => (
-                      <motion.tr
-                        key={row.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.04 }}
-                        className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
-                      >
-                        <td className="p-4 text-muted-foreground text-sm whitespace-nowrap">
-                          {row.date}
-                        </td>
-                        <td className="p-4">
-                          <p className="text-white text-sm font-medium whitespace-nowrap">{row.method}</p>
-                          <p className="text-muted-foreground text-xs">{row.crypto}</p>
-                        </td>
-                        <td className="p-4 font-bold text-white whitespace-nowrap">{row.amount}</td>
-                        <td className="p-4">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLE[row.status]}`}>
-                            {row.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-muted-foreground font-mono text-xs">
-                          {row.wallet.length > 24 ? row.wallet.slice(0, 24) + '…' : row.wallet}
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
+                {historyLoading ? (
+                  <div className="p-12 text-center text-muted-foreground text-sm">Loading…</div>
+                ) : (
+                  <table className="w-full text-sm text-left border-collapse">
+                    <thead>
+                      <tr className="bg-white/[0.02] border-b border-white/5 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+                        <th className="p-4">Date</th>
+                        <th className="p-4">Method</th>
+                        <th className="p-4">Amount</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4">Wallet</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((row, i) => (
+                        <motion.tr
+                          key={row.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="border-b border-white/5 hover:bg-white/[0.03] transition-colors"
+                        >
+                          <td className="p-4 text-muted-foreground text-sm whitespace-nowrap">
+                            {row.date}
+                          </td>
+                          <td className="p-4">
+                            <p className="text-white text-sm font-medium whitespace-nowrap">{row.method}</p>
+                            <p className="text-muted-foreground text-xs">{row.crypto}</p>
+                          </td>
+                          <td className="p-4 font-bold text-white whitespace-nowrap">{row.amount}</td>
+                          <td className="p-4">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${STATUS_STYLE[row.status]}`}>
+                              {row.status}
+                            </span>
+                          </td>
+                          <td className="p-4 text-muted-foreground font-mono text-xs">
+                            {row.wallet.length > 24 ? row.wallet.slice(0, 24) + '…' : row.wallet}
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
 
-                {filtered.length === 0 && (
+                {!historyLoading && filtered.length === 0 && (
                   <div className="p-12 text-center text-muted-foreground">
                     {statusFilter !== 'All'
                       ? `No ${statusFilter.toLowerCase()} withdrawals found.`
