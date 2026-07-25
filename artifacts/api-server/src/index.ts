@@ -46,17 +46,20 @@ async function ensureSessionTable(): Promise<void> {
   `);
 
   // Ensure chat tables exist (idempotent — safe to run on every startup).
+  // No REFERENCES clauses here: this runs before migrations so the referenced
+  // tables (users) may not exist yet. FKs are enforced by the Drizzle schema
+  // once migrations are applied properly.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS "chat_conversations" (
       "id"         serial       PRIMARY KEY,
-      "user_id"    integer      NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+      "user_id"    integer      NOT NULL,
       "created_at" timestamp    NOT NULL DEFAULT now(),
       "updated_at" timestamp    NOT NULL DEFAULT now()
     );
 
     CREATE TABLE IF NOT EXISTS "chat_messages" (
       "id"              serial      PRIMARY KEY,
-      "conversation_id" integer     NOT NULL REFERENCES "chat_conversations"("id") ON DELETE CASCADE,
+      "conversation_id" integer     NOT NULL,
       "sender_type"     text        NOT NULL,
       "sender_id"       integer     NOT NULL,
       "message"         text        NOT NULL,
