@@ -1,0 +1,77 @@
+services:
+
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: qinvest_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: qinvest_db
+      POSTGRES_USER: qinvest_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qinvest_user -d qinvest_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    networks:
+      - qinvest_net
+
+  # ─── Express API Server ───────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      target: app
+    image: quantum-investments-app
+    container_name: qinvest_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Built from POSTGRES_PASSWORD so the password is only set once in .env
+      DATABASE_URL: postgresql://qinvest_user:${POSTGRES_PASSWORD}@postgres:5432/qinvest_db
+      SESSION_SECRET: ${SESSION_SECRET}
+      PORT: "8080"
+      NODE_ENV: production
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@example.com}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    expose:
+      - "8080"
+    networks:
+      - qinvest_net
+
+  # ─── Nginx (static files + reverse proxy) ────────────────────────────────────
+  nginx:
+    build:
+      context: .
+      target: nginx-stage
+    image: quantum-investments-nginx
+    container_name: qinvest_nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Active nginx config — swap to nginx/ssl.conf after SSL is provisioned
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Let's Encrypt certificates (populated by the certbot one-liner below)
+      - ./certbot/conf:/etc/letsencrypt:ro
+      # ACME challenge directory used by certbot --webroot
+      - ./certbot/www:/var/www/certbot:ro
+    networks:
+      - qinvest_net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  qinvest_net:
+    driver: bridge

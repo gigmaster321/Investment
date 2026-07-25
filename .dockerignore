@@ -1,0 +1,42 @@
+# ── Dependencies (never copy into Docker — installed fresh) ───────────────────
+node_modules
+**/node_modules
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist
+artifacts/api-server/dist
+artifacts/quantum-investments/dist
+
+# ── Replit-specific ───────────────────────────────────────────────────────────
+.migration-backup
+.agents
+.local
+.replit
+replit.nix
+
+# ── Deployment artifacts (generated on Replit, not needed in Docker) ──────────
+quantum-investments-deploy/
+quantum-investments-deploy.zip
+
+# ── Secrets and environment ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Certbot (generated on the VPS, not part of the repo) ─────────────────────
+certbot/
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Editor files ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
