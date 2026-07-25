@@ -1,5 +1,5 @@
 import { Link } from 'wouter';
-import { Mail, Phone, MapPin, ShieldCheck, Lock, Twitter, Linkedin, Facebook, Instagram } from 'lucide-react';
+import { Mail, Phone, ShieldCheck, Lock, Twitter, Linkedin, Facebook, Instagram } from 'lucide-react';
 // @ts-ignore
 import logoPath from '@assets/Quantum_Investment_1784717259991.jpeg';
 
@@ -76,25 +76,15 @@ export function SiteFooter() {
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="w-4 h-4 text-primary shrink-0" />
-                <a href="mailto:support@quantuminvestments.com" className="text-muted-foreground hover:text-accent transition-colors">
-                  support@quantuminvestments.com
+                <a href="mailto:r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8@gmail.com" className="text-muted-foreground hover:text-accent transition-colors">
+                  r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8@gmail.com
                 </a>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Phone className="w-4 h-4 text-primary shrink-0" />
-                <a href="tel:+18005550192" className="text-muted-foreground hover:text-accent transition-colors">
-                  +1 (800) 555-0192
+                <a href="tel:+13152391895" className="text-muted-foreground hover:text-accent transition-colors">
+                  +1 (315) 239-1895
                 </a>
-              </div>
-              <div className="flex items-start gap-3 text-sm">
-                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <span className="text-muted-foreground leading-relaxed">
-                  350 Fifth Avenue<br />
-                  New York, NY 10118
-                </span>
-              </div>
-              <div className="pt-2 text-sm text-muted-foreground">
-                <span className="text-white font-medium">Hours:</span> Mon–Fri, 9:00 AM – 6:00 PM EST
               </div>
             </div>
           </div>
