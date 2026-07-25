@@ -99,11 +99,6 @@ export async function loginUser(
       code: "INVALID_PASSWORD",
     });
 
-  if (!user.email_verified)
-    throw Object.assign(new Error("EMAIL_NOT_VERIFIED"), {
-      code: "EMAIL_NOT_VERIFIED",
-    });
-
   if (user.account_status !== "active")
     throw Object.assign(new Error("ACCOUNT_INACTIVE"), {
       code: "ACCOUNT_INACTIVE",

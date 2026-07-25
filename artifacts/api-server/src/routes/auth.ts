@@ -132,13 +132,6 @@ router.post("/login", async (req, res) => {
       res.status(401).json({ error: "INVALID_PASSWORD", message: "Incorrect password. Please try again." });
       return;
     }
-    if (err.code === "EMAIL_NOT_VERIFIED") {
-      res.status(403).json({
-        error: "EMAIL_NOT_VERIFIED",
-        message: "Please verify your email address before logging in.",
-      });
-      return;
-    }
     if (err.code === "ACCOUNT_INACTIVE") {
       res.status(403).json({
         error: "ACCOUNT_INACTIVE",
