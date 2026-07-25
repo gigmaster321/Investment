@@ -1,0 +1,16 @@
+{
+  "name": "quantum-investments",
+  "version": "1.0.0",
+  "description": "Quantum Investments – Full Stack Investment Platform",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "start": "node server/index.mjs",
+    "migrate": "node migrate.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.22.0"
+  }
+}
