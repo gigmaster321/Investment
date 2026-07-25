@@ -219,7 +219,7 @@ router.patch("/:id/approve", requireAdmin, async (req, res) => {
 
     // 4. Auto-create active investment from the approved deposit
     const { investmentsTable } = await getDb();
-    const plan = existing.plan_id ? getInvestmentPlanById(existing.plan_id) : null;
+    const plan = existing.plan_id ? await getInvestmentPlanById(existing.plan_id) : null;
     const executionCycle = plan?.executionCycle ?? "30 Days";
     const profitPercentage = plan?.profitPercentage ?? 100;
     const cycleDays = parseCycleDaysFromCycle(executionCycle);

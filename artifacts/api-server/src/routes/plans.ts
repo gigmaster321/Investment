@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import { requireAdmin } from "../middleware/requireAuth.js";
+import { logger } from "../lib/logger.js";
 
 export type PlanStatus = "Active" | "Disabled";
 
@@ -20,90 +21,67 @@ export interface InvestmentPlan {
   totalDeposited: number;
 }
 
-type PlanInput = Omit<
-  InvestmentPlan,
-  "id" | "investors" | "totalDeposited"
->;
+type PlanInput = Omit<InvestmentPlan, "id" | "investors" | "totalDeposited">;
 
-const plans = new Map<string, InvestmentPlan>([
-  [
-    "starter-ai",
-    {
-      id: "starter-ai",
-      name: "Starter AI",
-      minInvestment: 1000,
-      maxInvestment: 10000,
-      profitPercentage: 200,
-      returnRange: "200% – 350%",
-      executionCycle: "24 Hours",
-      description: "Based on historical backtesting and volatility-adjusted strategy modeling.",
-      overview: "Designed for new investors seeking structured exposure to innovation-focused equities with automated risk controls.",
-      features: [
-        "Automated trade execution",
-        "Risk-adjusted capital deployment",
-        "Portfolio rebalancing",
-        "Monthly performance reporting",
-      ],
-      status: "Active",
-      displayOrder: 1,
-      investors: 1842,
-      totalDeposited: 284100,
-    },
-  ],
-  [
-    "growth-ai",
-    {
-      id: "growth-ai",
-      name: "Growth AI",
-      minInvestment: 10000,
-      maxInvestment: 100000,
-      profitPercentage: 350,
-      returnRange: "350% – 550%",
-      executionCycle: "3 Days",
-      description: "Advanced signal detection with volatility-aware execution framework.",
-      overview: "Enhanced AI signal modeling focused on high-growth innovation sectors and dynamic capital rotation.",
-      features: [
-        "High-frequency signal detection",
-        "Sector rotation strategy",
-        "Volatility hedging logic",
-        "Weekly analytics dashboard",
-      ],
-      status: "Active",
-      displayOrder: 2,
-      investors: 1203,
-      totalDeposited: 3600000,
-    },
-  ],
-  [
-    "elite-ai",
-    {
-      id: "elite-ai",
-      name: "Elite AI",
-      minInvestment: 100000,
-      maxInvestment: null,
-      profitPercentage: 700,
-      returnRange: "+700%",
-      executionCycle: "5 Days",
-      description: "Multi-layered AI execution across diversified innovation assets.",
-      overview: "Designed for large capital deployment with structured downside protection and dynamic reallocation systems.",
-      features: [
-        "Cross-sector AI allocation engine",
-        "Downside risk containment protocol",
-        "Real-time capital rebalancing",
-        "Dedicated strategy oversight",
-      ],
-      status: "Active",
-      displayOrder: 3,
-      investors: 614,
-      totalDeposited: 18200000,
-    },
-  ],
-]);
-
-export function getInvestmentPlanById(id: string) {
-  return plans.get(id);
+async function getDb() {
+  return import("@workspace/db");
 }
 
+// ── DB row → API shape ────────────────────────────────────────────────────────
+
+function rowToPlan(row: {
+  id: string;
+  name: string;
+  min_investment: string;
+  max_investment: string | null;
+  profit_percentage: string;
+  return_range: string | null;
+  execution_cycle: string;
+  description: string;
+  overview: string | null;
+  features: string[];
+  status: string;
+  display_order: number;
+  investors: number;
+  total_deposited: string;
+}): InvestmentPlan {
+  return {
+    id: row.id,
+    name: row.name,
+    minInvestment: Number(row.min_investment),
+    maxInvestment: row.max_investment != null ? Number(row.max_investment) : null,
+    profitPercentage: Number(row.profit_percentage),
+    returnRange: row.return_range ?? undefined,
+    executionCycle: row.execution_cycle,
+    description: row.description,
+    overview: row.overview ?? undefined,
+    features: row.features,
+    status: row.status as PlanStatus,
+    displayOrder: row.display_order,
+    investors: row.investors,
+    totalDeposited: Number(row.total_deposited),
+  };
+}
+
+// ── Exported helpers (used by investments.ts and deposits.ts) ─────────────────
+
+export async function getInvestmentPlanById(id: string): Promise<InvestmentPlan | undefined> {
+  try {
+    const { db, investmentPlansTable } = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db
+      .select()
+      .from(investmentPlansTable)
+      .where(eq(investmentPlansTable.id, id))
+      .limit(1);
+    return row ? rowToPlan(row) : undefined;
+  } catch (err) {
+    logger.error({ err }, "getInvestmentPlanById failed");
+    return undefined;
+  }
+}
+
+/** Pure helper — kept sync so existing callers need no change. */
 export function parseCycleDaysFromCycle(cycle: string): number {
   const match = cycle.match(/\d+/);
   const num = match ? Number(match[0]) : 30;
@@ -112,15 +90,7 @@ export function parseCycleDaysFromCycle(cycle: string): number {
   return num > 0 ? num : 30;
 }
 
-export function recordPlanInvestment(id: string, amount: number) {
-  const plan = plans.get(id);
-  if (!plan) return;
-  plans.set(id, {
-    ...plan,
-    investors: plan.investors + 1,
-    totalDeposited: plan.totalDeposited + amount,
-  });
-}
+// ── Validation ────────────────────────────────────────────────────────────────
 
 function validatePlanInput(value: unknown): value is PlanInput {
   if (!value || typeof value !== "object") return false;
@@ -138,7 +108,7 @@ function validatePlanInput(value: unknown): value is PlanInput {
     input.executionCycle.trim().length > 0 &&
     typeof input.description === "string" &&
     Array.isArray(input.features) &&
-    input.features.every((feature) => typeof feature === "string" && feature.trim().length > 0) &&
+    input.features.every((f) => typeof f === "string" && f.trim().length > 0) &&
     (input.status === "Active" || input.status === "Disabled") &&
     typeof input.displayOrder === "number" &&
     Number.isInteger(input.displayOrder) &&
@@ -146,101 +116,209 @@ function validatePlanInput(value: unknown): value is PlanInput {
   );
 }
 
-function orderedPlans() {
-  return [...plans.values()].sort((a, b) => a.displayOrder - b.displayOrder);
-}
-
 function badRequest(res: Parameters<IRouter["post"]>[1] extends never ? never : any, detail: string) {
   res.status(400).json({ title: "Invalid plan", detail });
 }
 
+/** Generate a unique slug from a plan name. */
+async function generateId(name: string): Promise<string> {
+  const { db, investmentPlansTable } = await getDb();
+  const { eq } = await import("drizzle-orm");
+
+  const baseId = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "plan";
+  let id = baseId;
+  let suffix = 2;
+  while (true) {
+    const [existing] = await db
+      .select({ id: investmentPlansTable.id })
+      .from(investmentPlansTable)
+      .where(eq(investmentPlansTable.id, id))
+      .limit(1);
+    if (!existing) return id;
+    id = `${baseId}-${suffix++}`;
+  }
+}
+
+// ── Router ────────────────────────────────────────────────────────────────────
+
 const router: IRouter = Router();
 
-router.get("/", (_req, res) => {
-  res.json(orderedPlans());
-});
-
-router.get("/:planId", (req, res) => {
-  const plan = plans.get(String(req.params.planId));
-  if (!plan) {
-    res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
-    return;
+// GET /api/plans
+router.get("/", async (_req, res) => {
+  try {
+    const { db, investmentPlansTable } = await getDb();
+    const { asc } = await import("drizzle-orm");
+    const rows = await db
+      .select()
+      .from(investmentPlansTable)
+      .orderBy(asc(investmentPlansTable.display_order));
+    res.json(rows.map(rowToPlan));
+  } catch (err) {
+    logger.error({ err }, "Failed to list plans");
+    res.status(500).json({ error: "SERVER_ERROR" });
   }
-  res.json(plan);
 });
 
-router.post("/", requireAdmin, (req, res) => {
+// GET /api/plans/:planId
+router.get("/:planId", async (req, res) => {
+  try {
+    const plan = await getInvestmentPlanById(String(req.params.planId));
+    if (!plan) {
+      res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
+      return;
+    }
+    res.json(plan);
+  } catch (err) {
+    logger.error({ err }, "Failed to fetch plan");
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
+// POST /api/plans — create plan (admin)
+router.post("/", requireAdmin, async (req, res) => {
   if (!validatePlanInput(req.body)) {
     badRequest(res, "Provide a name, valid investment range, profit percentage, execution cycle, description, features, status, and display order.");
     return;
   }
 
-  const baseId = req.body.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "plan";
-  let id = baseId;
-  let suffix = 2;
-  while (plans.has(id)) id = `${baseId}-${suffix++}`;
+  try {
+    const { db, investmentPlansTable } = await getDb();
+    const id = await generateId(req.body.name);
 
-  const plan: InvestmentPlan = {
-    ...req.body,
-    id,
-    name: req.body.name.trim(),
-    executionCycle: req.body.executionCycle.trim(),
-    description: req.body.description.trim(),
-    features: req.body.features.map((feature: string) => feature.trim()).filter(Boolean),
-    investors: 0,
-    totalDeposited: 0,
-  };
-  plans.set(id, plan);
-  res.status(201).json(plan);
+    const [row] = await db
+      .insert(investmentPlansTable)
+      .values({
+        id,
+        name: req.body.name.trim(),
+        min_investment: req.body.minInvestment.toFixed(2),
+        max_investment: req.body.maxInvestment != null ? req.body.maxInvestment.toFixed(2) : null,
+        profit_percentage: String(req.body.profitPercentage),
+        return_range: req.body.returnRange ?? null,
+        execution_cycle: req.body.executionCycle.trim(),
+        description: req.body.description.trim(),
+        overview: req.body.overview ?? null,
+        features: req.body.features.map((f: string) => f.trim()).filter(Boolean),
+        status: req.body.status,
+        display_order: req.body.displayOrder,
+        investors: 0,
+        total_deposited: "0",
+      })
+      .returning();
+
+    res.status(201).json(rowToPlan(row));
+  } catch (err) {
+    logger.error({ err }, "Failed to create plan");
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
 });
 
-router.put("/:planId", requireAdmin, (req, res) => {
-  const existing = plans.get(String(req.params.planId));
-  if (!existing) {
-    res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
-    return;
-  }
+// PUT /api/plans/:planId — replace plan (admin)
+router.put("/:planId", requireAdmin, async (req, res) => {
   if (!validatePlanInput(req.body)) {
     badRequest(res, "Provide all required plan fields with valid values.");
     return;
   }
 
-  const plan: InvestmentPlan = {
-    ...req.body,
-    id: existing.id,
-    name: req.body.name.trim(),
-    executionCycle: req.body.executionCycle.trim(),
-    description: req.body.description.trim(),
-    features: req.body.features.map((feature: string) => feature.trim()).filter(Boolean),
-    investors: existing.investors,
-    totalDeposited: existing.totalDeposited,
-  };
-  plans.set(existing.id, plan);
-  res.json(plan);
+  try {
+    const { db, investmentPlansTable } = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const planId = String(req.params.planId);
+
+    const [existing] = await db
+      .select({ investors: investmentPlansTable.investors, total_deposited: investmentPlansTable.total_deposited })
+      .from(investmentPlansTable)
+      .where(eq(investmentPlansTable.id, planId))
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
+      return;
+    }
+
+    const [row] = await db
+      .update(investmentPlansTable)
+      .set({
+        name: req.body.name.trim(),
+        min_investment: req.body.minInvestment.toFixed(2),
+        max_investment: req.body.maxInvestment != null ? req.body.maxInvestment.toFixed(2) : null,
+        profit_percentage: String(req.body.profitPercentage),
+        return_range: req.body.returnRange ?? null,
+        execution_cycle: req.body.executionCycle.trim(),
+        description: req.body.description.trim(),
+        overview: req.body.overview ?? null,
+        features: req.body.features.map((f: string) => f.trim()).filter(Boolean),
+        status: req.body.status,
+        display_order: req.body.displayOrder,
+        updated_at: new Date(),
+      })
+      .where(eq(investmentPlansTable.id, planId))
+      .returning();
+
+    res.json(rowToPlan(row));
+  } catch (err) {
+    logger.error({ err }, "Failed to update plan");
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
 });
 
-router.patch("/:planId/status", requireAdmin, (req, res) => {
-  const existing = plans.get(String(req.params.planId));
-  if (!existing) {
-    res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
-    return;
-  }
+// PATCH /api/plans/:planId/status — toggle status (admin)
+router.patch("/:planId/status", requireAdmin, async (req, res) => {
   if (req.body?.status !== "Active" && req.body?.status !== "Disabled") {
     badRequest(res, 'Status must be either "Active" or "Disabled".');
     return;
   }
-  const plan = { ...existing, status: req.body.status as PlanStatus };
-  plans.set(existing.id, plan);
-  res.json(plan);
+
+  try {
+    const { db, investmentPlansTable } = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const planId = String(req.params.planId);
+
+    const [existing] = await db
+      .select({ id: investmentPlansTable.id })
+      .from(investmentPlansTable)
+      .where(eq(investmentPlansTable.id, planId))
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
+      return;
+    }
+
+    const [row] = await db
+      .update(investmentPlansTable)
+      .set({ status: req.body.status as PlanStatus, updated_at: new Date() })
+      .where(eq(investmentPlansTable.id, planId))
+      .returning();
+
+    res.json(rowToPlan(row));
+  } catch (err) {
+    logger.error({ err }, "Failed to update plan status");
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
 });
 
-router.delete("/:planId", requireAdmin, (req, res) => {
-  const id = String(req.params.planId);
-  if (!plans.delete(id)) {
-    res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
-    return;
+// DELETE /api/plans/:planId (admin)
+router.delete("/:planId", requireAdmin, async (req, res) => {
+  try {
+    const { db, investmentPlansTable } = await getDb();
+    const { eq } = await import("drizzle-orm");
+    const planId = String(req.params.planId);
+
+    const [deleted] = await db
+      .delete(investmentPlansTable)
+      .where(eq(investmentPlansTable.id, planId))
+      .returning({ id: investmentPlansTable.id });
+
+    if (!deleted) {
+      res.status(404).json({ title: "Plan not found", detail: "The requested investment plan does not exist." });
+      return;
+    }
+
+    res.json({ success: true, message: `Plan ${planId} deleted.` });
+  } catch (err) {
+    logger.error({ err }, "Failed to delete plan");
+    res.status(500).json({ error: "SERVER_ERROR" });
   }
-  res.json({ success: true, message: `Plan ${id} deleted.` });
 });
 
 export default router;

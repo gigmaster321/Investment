@@ -117,7 +117,7 @@ interface InvestmentPlansContextValue {
 const InvestmentPlansContext = createContext<InvestmentPlansContextValue | null>(null);
 
 export function InvestmentPlansProvider({ children }: { children: ReactNode }) {
-  const [plans, setPlans] = useState<InvestmentPlan[]>(DEFAULT_PLANS);
+  const [plans, setPlans] = useState<InvestmentPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

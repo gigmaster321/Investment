@@ -258,7 +258,7 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  const plan = getInvestmentPlanById(planId);
+  const plan = await getInvestmentPlanById(planId);
   if (!plan) {
     res.status(404).json({ title: "Plan not found", detail: "The selected investment plan does not exist." });
     return;
