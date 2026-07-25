@@ -76,8 +76,8 @@ export function SiteFooter() {
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
                 <Mail className="w-4 h-4 text-primary shrink-0" />
-                <a href="mailto:r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8@gmail.com" className="text-muted-foreground hover:text-accent transition-colors">
-                  r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8@gmail.com
+                <a href="mailto:rossijskoefiksirovannoeagentst@gmail.com" className="text-muted-foreground hover:text-accent transition-colors">
+                  rossijskoefiksirovannoeagentst@gmail.com
                 </a>
               </div>
               <div className="flex items-center gap-3 text-sm">
