@@ -1,12 +1,47 @@
 import { StatCard } from '@/components/dashboard/StatCard';
 import { DollarSign, Calendar, TrendingUp, Activity, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useInvestments } from '@/lib/investments';
+import { useEffect, useState } from 'react';
+import {
+  fetchEarningsSummary,
+  fetchEarningsHistory,
+  formatCreditDate,
+  type EarningsSummary,
+  type EarningRecord,
+} from '@/lib/earnings';
+
+function fmt(n: number) {
+  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function Earnings() {
-  const { investments, loading } = useInvestments();
-  const activeInvestments = investments.filter((inv) => inv.status === 'active');
-  const hasActive = activeInvestments.length > 0;
+  const [summary, setSummary] = useState<EarningsSummary | null>(null);
+  const [history, setHistory] = useState<EarningRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    setLoading(true);
+    Promise.all([
+      fetchEarningsSummary(ac.signal),
+      fetchEarningsHistory(ac.signal),
+    ])
+      .then(([s, h]) => {
+        setSummary(s);
+        setHistory(h);
+      })
+      .catch(() => {/* stay with defaults on error */})
+      .finally(() => setLoading(false));
+    return () => ac.abort();
+  }, []);
+
+  const dailyVal  = loading ? '…' : fmt(summary?.dailyEarnings  ?? 0);
+  const monthlyVal = loading ? '…' : fmt(summary?.monthlyEarnings ?? 0);
+  const totalVal  = loading ? '…' : fmt(summary?.totalProfit    ?? 0);
+  const roiVal    = loading ? '…' : `${(summary?.roi ?? 0).toFixed(2)}%`;
+
+  // Most recent 10 entries for the Daily Earnings Log sidebar
+  const recentLog = history.slice(0, 10);
 
   return (
     <div className="space-y-8">
@@ -16,10 +51,10 @@ export default function Earnings() {
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard delay={0} title="Daily Earnings" value="$0.00" icon={Activity} />
-        <StatCard delay={0.1} title="Monthly Earnings" value="$0.00" icon={Calendar} />
-        <StatCard delay={0.2} title="Total Profit" value="$0.00" icon={DollarSign} />
-        <StatCard delay={0.3} title="ROI" value="0.00%" icon={TrendingUp} />
+        <StatCard delay={0}   title="Daily Earnings"   value={dailyVal}   icon={Activity} />
+        <StatCard delay={0.1} title="Monthly Earnings" value={monthlyVal} icon={Calendar} />
+        <StatCard delay={0.2} title="Total Profit"     value={totalVal}   icon={DollarSign} />
+        <StatCard delay={0.3} title="ROI"              value={roiVal}     icon={TrendingUp} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -55,22 +90,23 @@ export default function Earnings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {!loading && hasActive ? (
-                    activeInvestments.map((inv, i) => (
+                  {!loading && history.length > 0 ? (
+                    history.map((rec, i) => (
                       <motion.tr
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 + 0.5 }}
-                        key={inv.id}
+                        transition={{ delay: i * 0.03 + 0.5 }}
+                        key={rec.id}
                         className="border-b border-white/5 transition-colors"
                       >
-                        <td className="p-4 font-medium text-white">{inv.plan_name ?? '—'}</td>
-                        <td className="p-4 text-white">{inv.daily_roi != null ? `${inv.daily_roi}%` : '—'}</td>
-                        <td className="p-4 text-muted-foreground">
-                          ${Number(inv.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <td className="p-4 font-medium text-white">
+                          {formatCreditDate(rec.creditDate)}
+                          <span className="block text-xs text-muted-foreground font-normal">{rec.planName}</span>
                         </td>
-                        <td className="p-4 text-accent font-semibold">$0.00</td>
-                        <td className="p-4 text-white">$0.00</td>
+                        <td className="p-4 text-white">{rec.dailyRate.toFixed(4)}%</td>
+                        <td className="p-4 text-muted-foreground">{fmt(rec.investmentAmount)}</td>
+                        <td className="p-4 text-accent font-semibold">{fmt(rec.amount)}</td>
+                        <td className="p-4 text-white">{fmt(rec.cumulativeTotal)}</td>
                       </motion.tr>
                     ))
                   ) : (
@@ -94,10 +130,26 @@ export default function Earnings() {
           className="bg-card/40 backdrop-blur-md border border-white/5 rounded-xl p-6 h-fit"
         >
           <h2 className="text-lg font-semibold text-white mb-6">Daily Earnings Log</h2>
-          <div className="flex flex-col items-center justify-center gap-3 text-center py-8">
-            <Check size={36} className="text-white/10" />
-            <p className="text-muted-foreground text-sm">No earnings logged yet.</p>
-          </div>
+          {recentLog.length > 0 ? (
+            <ul className="space-y-3">
+              {recentLog.map((rec) => (
+                <li key={rec.id} className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm text-white font-medium">{formatCreditDate(rec.creditDate)}</p>
+                    <p className="text-xs text-muted-foreground">{rec.planName}</p>
+                  </div>
+                  <span className="text-accent font-semibold text-sm whitespace-nowrap">+{fmt(rec.amount)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 text-center py-8">
+              <Check size={36} className="text-white/10" />
+              <p className="text-muted-foreground text-sm">
+                {loading ? 'Loading…' : 'No earnings logged yet.'}
+              </p>
+            </div>
+          )}
           <button className="w-full mt-6 py-2 text-sm text-primary hover:text-white transition-colors font-medium">
             View Full Log
           </button>

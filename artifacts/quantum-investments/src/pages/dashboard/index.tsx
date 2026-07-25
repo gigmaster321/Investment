@@ -3,10 +3,21 @@ import { Wallet, Activity, TrendingUp, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useInvestments } from '@/lib/investments';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from 'react';
+import { fetchEarningsSummary, type EarningsSummary } from '@/lib/earnings';
 
 export default function DashboardOverview() {
   const { user } = useAuth();
   const { investments, loading } = useInvestments();
+  const [earningsSummary, setEarningsSummary] = useState<EarningsSummary | null>(null);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchEarningsSummary(ac.signal)
+      .then(setEarningsSummary)
+      .catch(() => {/* keep null on error */});
+    return () => ac.abort();
+  }, []);
 
   const activeInvestment = investments.find((inv) => inv.displayStatus === 'Active' || inv.displayStatus === 'Pending');
   const activeValue = activeInvestment
@@ -18,6 +29,13 @@ export default function DashboardOverview() {
   const balanceSubtitle = user?.current_plan ? `Plan: ${user.current_plan}` : 'No active plan';
   const totalWithdrawal = user ? `$${Number(user.total_withdrawal).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '$0.00';
 
+  const totalProfit = earningsSummary != null
+    ? `$${earningsSummary.totalProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : '$0.00';
+  const profitSubtitle = earningsSummary != null && earningsSummary.totalProfit > 0
+    ? `ROI: ${earningsSummary.roi.toFixed(2)}%`
+    : 'No earnings yet';
+
   return (
     <div className="space-y-8">
       <header>
@@ -28,7 +46,7 @@ export default function DashboardOverview() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard delay={0}   title="Total Balance"      value={balance}        subtitle={balanceSubtitle}                              icon={Wallet}    href="/dashboard" />
         <StatCard delay={0.1} title="Active Investment"  value={loading ? '…' : activeValue} subtitle={loading ? '' : activeSubtitle}   icon={Activity}  href="/dashboard/investments" />
-        <StatCard delay={0.2} title="Total Profit"       value="$0.00"          subtitle="No earnings yet"                              icon={TrendingUp} href="/dashboard/earnings" />
+        <StatCard delay={0.2} title="Total Profit"       value={totalProfit}    subtitle={profitSubtitle}                               icon={TrendingUp} href="/dashboard/earnings" />
         <StatCard delay={0.3} title="Total Withdrawals"  value={totalWithdrawal}                                                        icon={Download}  href="/dashboard/withdrawals" />
       </div>
 

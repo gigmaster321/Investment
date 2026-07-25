@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedAdminUser } from "./services/auth.js";
+import { startEarningsCron } from "./services/earningsCron.js";
 
 const rawPort = process.env["PORT"];
 
@@ -59,6 +60,9 @@ ensureSessionTable()
       seedAdminUser()
         .then(() => logger.info("Admin account ready."))
         .catch((err) => logger.error({ err }, "Failed to seed admin account."));
+
+      // Start the earnings cron — credits daily profit for active investments.
+      startEarningsCron();
     });
   })
   .catch((err) => {
