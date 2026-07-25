@@ -8,6 +8,7 @@ import transactionsRouter from "./transactions.js";
 import withdrawalsRouter from "./withdrawals.js";
 import authRouter from "./auth.js";
 import earningsRouter from "./earnings.js";
+import chatRouter from "./chat.js";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,7 @@ router.use("/deposits", depositsRouter);
 router.use("/transactions", transactionsRouter);
 router.use("/withdrawals", withdrawalsRouter);
 router.use("/earnings", earningsRouter);
+router.use("/chat", chatRouter);
 // Keep the same JSON contract available to WordPress-style REST clients.
 router.use("/wp-json/quantum/v1/admin/users", adminUsersRouter);
 

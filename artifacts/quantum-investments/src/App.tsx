@@ -22,6 +22,7 @@ import Earnings from '@/pages/dashboard/Earnings';
 import Referral from '@/pages/dashboard/Referral';
 import Notifications from '@/pages/dashboard/Notifications';
 import Profile from '@/pages/dashboard/Profile';
+import Chat from '@/pages/dashboard/Chat';
 
 // Admin
 import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
@@ -37,6 +38,7 @@ import AdminDeposits from '@/pages/admin/Deposits';
 import { InvestmentPlansProvider } from '@/lib/investment-plans';
 import { InvestmentsProvider } from '@/lib/investments';
 import AdminInvestments from '@/pages/admin/Investments';
+import AdminChat from '@/pages/admin/Chat';
 
 const queryClient = new QueryClient();
 
@@ -94,6 +96,11 @@ function Router() {
           <DashboardLayout><Profile /></DashboardLayout>
         </ProtectedRoute>
       </Route>
+      <Route path="/dashboard/chat">
+        <ProtectedRoute>
+          <DashboardLayout><Chat /></DashboardLayout>
+        </ProtectedRoute>
+      </Route>
 
       {/* Admin panel — public login page */}
       <Route path="/admin/login" component={AdminLogin} />
@@ -122,6 +129,9 @@ function Router() {
       </Route>
       <Route path="/admin/settings">
         <AdminLayout><AdminSettings /></AdminLayout>
+      </Route>
+      <Route path="/admin/chat">
+        <AdminLayout><AdminChat /></AdminLayout>
       </Route>
 
       <Route component={NotFound} />

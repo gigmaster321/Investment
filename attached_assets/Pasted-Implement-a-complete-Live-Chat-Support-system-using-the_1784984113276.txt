@@ -1,0 +1,85 @@
+Implement a complete Live Chat Support system using the existing PostgreSQL database, Drizzle ORM, Express backend, and current authentication.
+
+Do NOT redesign any UI.
+Do NOT modify unrelated code.
+Do NOT refactor existing features.
+Implement only the Live Chat feature.
+
+Requirements:
+
+1. Database
+- Create permanent chat tables.
+- Store every message permanently.
+- Nothing should be lost after refresh, logout/login, server restart, or deployment.
+
+Store:
+- Conversation ID
+- User ID
+- Admin ID
+- Sender (User/Admin)
+- Message
+- Timestamp
+- Read Status
+
+2. User Side
+- Add a Live Chat page using the existing design system.
+- User can start a conversation with Admin.
+- User can send unlimited messages.
+- User can view complete chat history.
+- Messages should load from the database.
+- Show timestamps.
+- Show message delivery/read status.
+
+3. Admin Side
+- Add Live Chat management inside the Admin Panel.
+- Display all conversations.
+- Show unread message count.
+- Open any conversation.
+- Reply instantly.
+- View complete conversation history.
+- Mark messages as read automatically.
+
+4. Real-Time Updates
+- Implement real-time messaging using WebSockets (Socket.IO or the existing realtime solution if already available).
+- New messages should appear instantly for both User and Admin without page refresh.
+- If real-time is unavailable, implement automatic polling every few seconds as a fallback.
+
+5. Notifications
+- Show unread message badge for both User and Admin.
+- Remove badge automatically after messages are read.
+
+6. Security
+- Users can access only their own conversations.
+- Admin can access all conversations.
+- Validate authentication and authorization on every endpoint.
+- Prevent unauthorized access.
+
+7. APIs
+Implement all required APIs:
+- Create Conversation
+- Get Conversations
+- Get Messages
+- Send Message
+- Mark Messages Read
+- Get Unread Count
+
+8. Performance
+- Load newest messages efficiently.
+- Order messages correctly by timestamp.
+- Prevent duplicate messages.
+
+9. Final Verification
+Before finishing:
+- Test complete User → Admin → User conversation.
+- Verify messages are stored permanently in PostgreSQL.
+- Verify chat survives refresh, logout/login, server restart, and deployment.
+- Verify authorization and permissions.
+- Verify no mock data or in-memory storage is used.
+
+IMPORTANT:
+- Reuse the existing authentication system.
+- Reuse the existing PostgreSQL database.
+- Reuse the existing UI components.
+- Do not change any existing functionality.
+- Do not introduce breaking changes.
+- Keep implementation production-ready, secure, and fully functional.

@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Users, ArrowDownCircle, TrendingUp,
   BarChart2, Settings, LogOut, X, Shield,
-  CreditCard, Bell, DollarSign,
+  CreditCard, Bell, DollarSign, MessageCircle,
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { chatApi } from '@/lib/chat-api';
+
+const POLL_INTERVAL = 10_000;
 
 // @ts-ignore
 import logoPath from '@assets/Quantum_Investment_1784716537861.jpeg';
@@ -22,7 +25,7 @@ interface NavSection {
   items: NavItem[];
 }
 
-const NAV_SECTIONS: NavSection[] = [
+const BASE_NAV_SECTIONS: NavSection[] = [
   {
     label: 'Main',
     items: [
@@ -37,6 +40,7 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/admin/withdrawals', label: 'Withdrawals', icon: ArrowDownCircle },
       { href: '/admin/plans', label: 'Investment Plans', icon: CreditCard },
       { href: '/admin/investments', label: 'Investment Assignments', icon: TrendingUp },
+      { href: '/admin/chat', label: 'Live Chat', icon: MessageCircle },
     ],
   },
   {
@@ -56,6 +60,22 @@ const NAV_SECTIONS: NavSection[] = [
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { logout } = useAdminAuth();
+  const [chatUnread, setChatUnread] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetch = async () => {
+      try {
+        const { count } = await chatApi.getUnreadCount();
+        if (mounted) setChatUnread(count);
+      } catch {
+        // non-critical
+      }
+    };
+    fetch();
+    const timer = setInterval(fetch, POLL_INTERVAL);
+    return () => { mounted = false; clearInterval(timer); };
+  }, []);
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? location === href : location.startsWith(href);
@@ -96,7 +116,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-5">
-        {NAV_SECTIONS.map((section) => (
+        {BASE_NAV_SECTIONS.map((section) => (
           <div key={section.label}>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 px-3 mb-2">
               {section.label}
@@ -104,6 +124,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             <div className="flex flex-col gap-0.5">
               {section.items.map((item) => {
                 const active = isActive(item.href, item.exact);
+                const badge = item.href === '/admin/chat' ? chatUnread : 0;
                 return (
                   <Link key={item.href} href={item.href}>
                     <div
@@ -115,7 +136,12 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
                       }`}
                     >
                       <item.icon size={17} className={active ? 'text-accent' : ''} />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {badge > 0 && (
+                        <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-[10px] font-bold text-white flex items-center justify-center">
+                          {badge > 99 ? '99+' : badge}
+                        </span>
+                      )}
                     </div>
                   </Link>
                 );

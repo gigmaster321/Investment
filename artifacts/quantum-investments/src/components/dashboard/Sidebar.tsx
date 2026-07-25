@@ -1,20 +1,45 @@
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Users, Bell } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Users, Bell, MessageCircle } from 'lucide-react';
+import { chatApi } from '@/lib/chat-api';
 
-const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/investments', label: 'Investments', icon: TrendingUp },
-  { href: '/dashboard/deposits', label: 'Deposits', icon: Download },
-  { href: '/dashboard/withdrawals', label: 'Withdrawals', icon: Upload },
-  { href: '/dashboard/earnings', label: 'Earnings', icon: DollarSign },
-  { href: '/dashboard/transactions', label: 'Transactions', icon: Clock },
-  { href: '/dashboard/referral', label: 'Referral', icon: Users },
-  { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
-  { href: '/dashboard/profile', label: 'Profile', icon: User },
-];
+const POLL_INTERVAL = 10_000;
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
+  const [chatUnread, setChatUnread] = useState(0);
+
+  // Poll unread count every 10 seconds
+  useEffect(() => {
+    let mounted = true;
+    const fetch = async () => {
+      try {
+        const { count } = await chatApi.getUnreadCount();
+        if (mounted) setChatUnread(count);
+      } catch {
+        // silently ignore — sidebar badge is non-critical
+      }
+    };
+    fetch();
+    const timer = setInterval(fetch, POLL_INTERVAL);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
+  }, []);
+
+  const NAV_ITEMS = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
+    { href: '/dashboard/investments', label: 'Investments', icon: TrendingUp, badge: 0 },
+    { href: '/dashboard/deposits', label: 'Deposits', icon: Download, badge: 0 },
+    { href: '/dashboard/withdrawals', label: 'Withdrawals', icon: Upload, badge: 0 },
+    { href: '/dashboard/earnings', label: 'Earnings', icon: DollarSign, badge: 0 },
+    { href: '/dashboard/transactions', label: 'Transactions', icon: Clock, badge: 0 },
+    { href: '/dashboard/referral', label: 'Referral', icon: Users, badge: 0 },
+    { href: '/dashboard/notifications', label: 'Notifications', icon: Bell, badge: 0 },
+    { href: '/dashboard/chat', label: 'Live Chat', icon: MessageCircle, badge: chatUnread },
+    { href: '/dashboard/profile', label: 'Profile', icon: User, badge: 0 },
+  ];
 
   const handleLogout = () => {
     onClose?.();
@@ -53,7 +78,12 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
                 onClick={() => onClose?.()}
               >
                 <item.icon size={20} className={isActive ? 'text-accent' : 'text-muted-foreground'} />
-                <span className="font-medium text-sm">{item.label}</span>
+                <span className="font-medium text-sm flex-1">{item.label}</span>
+                {item.badge > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-[10px] font-bold text-white flex items-center justify-center">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </div>
             </Link>
           );

@@ -44,6 +44,31 @@ async function ensureSessionTable(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
   `);
+
+  // Ensure chat tables exist (idempotent — safe to run on every startup).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "chat_conversations" (
+      "id"         serial       PRIMARY KEY,
+      "user_id"    integer      NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+      "created_at" timestamp    NOT NULL DEFAULT now(),
+      "updated_at" timestamp    NOT NULL DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS "chat_messages" (
+      "id"              serial      PRIMARY KEY,
+      "conversation_id" integer     NOT NULL REFERENCES "chat_conversations"("id") ON DELETE CASCADE,
+      "sender_type"     text        NOT NULL,
+      "sender_id"       integer     NOT NULL,
+      "message"         text        NOT NULL,
+      "is_read"         boolean     NOT NULL DEFAULT false,
+      "created_at"      timestamp   NOT NULL DEFAULT now()
+    );
+
+    CREATE INDEX IF NOT EXISTS "idx_chat_messages_conversation_id"
+      ON "chat_messages" ("conversation_id");
+    CREATE INDEX IF NOT EXISTS "idx_chat_messages_is_read"
+      ON "chat_messages" ("is_read");
+  `);
 }
 
 ensureSessionTable()
