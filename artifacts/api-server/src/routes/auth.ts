@@ -8,6 +8,7 @@ import {
   markEmailVerified,
 } from "../services/auth.js";
 import { createOtp, verifyOtp, getResendCooldownSeconds } from "../services/otp.js";
+import { sendOtpEmail } from "../services/email.js";
 
 const router = Router();
 
