@@ -19,6 +19,13 @@ Deep navy theme (`--background: 224 70% 10%`), primary blue (`--primary: 215 82%
 - `/dashboard` — User dashboard (investments, deposits, withdrawals, transactions, earnings, referral, notifications, profile)
 - `/admin/login`, `/admin` — Admin panel (users, withdrawals, plans, analytics, settings)
 
+## Running on Replit
+
+- Frontend workflow: `PORT=5173 pnpm --filter @workspace/quantum-investments run dev`
+- API workflow: `PORT=8080 pnpm --filter @workspace/api-server run dev`
+- Install dependencies after importing: `pnpm install --frozen-lockfile`
+- The API expects the database schema to be present when `DATABASE_URL` is configured.
+
 ## User preferences
 
 - Port existing app as-is; visual and functional parity is the priority.
