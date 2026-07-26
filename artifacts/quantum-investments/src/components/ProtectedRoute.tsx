@@ -7,28 +7,21 @@ interface ProtectedRouteProps {
 }
 
 /**
- * Guards routes that require authentication AND a verified email.
+ * Guards routes that require authentication.
  *
  * - Not authenticated → redirect to /login
- * - Authenticated but email not verified → redirect to /verify-email
- * - Authenticated and verified → render children
+ * - Authenticated → render children
  */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (isLoading) return;
-
     if (!isAuthenticated) {
       setLocation('/login');
-      return;
     }
-
-    if (user && !user.email_verified) {
-      setLocation(`/verify-email?email=${encodeURIComponent(user.email)}`);
-    }
-  }, [isLoading, isAuthenticated, user, setLocation]);
+  }, [isLoading, isAuthenticated, setLocation]);
 
   if (isLoading) {
     return (
@@ -38,7 +31,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!isAuthenticated || (user && !user.email_verified)) {
+  if (!isAuthenticated) {
     return null;
   }
 

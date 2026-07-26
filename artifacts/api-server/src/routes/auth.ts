@@ -4,11 +4,7 @@ import {
   registerUser,
   loginUser,
   getUserById,
-  getUserRowByEmail,
-  markEmailVerified,
 } from "../services/auth.js";
-import { createOtp, verifyOtp, getResendCooldownSeconds } from "../services/otp.js";
-import { sendOtpEmail } from "../services/email.js";
 
 const router = Router();
 
@@ -35,15 +31,6 @@ const loginSchema = z.object({
   rememberMe: z.boolean().optional().default(false),
 });
 
-const verifyEmailSchema = z.object({
-  email: z.string().email(),
-  code: z.string().length(6, "Code must be 6 digits").regex(/^\d+$/, "Code must be numeric"),
-});
-
-const resendOtpSchema = z.object({
-  email: z.string().email(),
-});
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function setSession(
@@ -67,8 +54,8 @@ function dbError(res: any, err: any) {
 
 /**
  * POST /api/auth/register
- * Creates account, sends OTP, does NOT create a session.
- * User must verify email before they can log in.
+ * Creates account and immediately marks email as verified.
+ * User can log in right away — no OTP step required.
  */
 router.post("/register", async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
@@ -100,7 +87,7 @@ router.post("/register", async (req, res) => {
 
 /**
  * POST /api/auth/login
- * Requires email_verified = true before creating a session.
+ * Authenticates with email + password and creates a session.
  */
 router.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
@@ -134,20 +121,14 @@ router.post("/login", async (req, res) => {
       return;
     }
     if (err.code === "ACCOUNT_INACTIVE") {
-      res.status(403).json({
-        error: "ACCOUNT_INACTIVE",
-        message:
-          (err as any).status === "suspended"
-            ? "Your account has been suspended. Please contact support."
-            : "Your account has been blocked. Please contact support.",
-      });
+      res.status(403).json({ error: "ACCOUNT_INACTIVE", message: err.message || "Your account has been suspended." });
       return;
     }
     res.status(500).json({ error: "INTERNAL_ERROR", message: "Login failed. Please try again." });
   }
 });
 
-/** POST /api/auth/logout */
+/** POST /api/auth/logout — destroys the current session */
 router.post("/logout", (req, res) => {
   req.session.destroy(() => {
     res.clearCookie("qinvest.sid");
@@ -173,111 +154,6 @@ router.get("/me", async (req, res) => {
   } catch (err: any) {
     if (dbError(res, err)) return;
     res.status(500).json({ error: "INTERNAL_ERROR" });
-  }
-});
-
-/**
- * POST /api/auth/verify-email
- * Verifies OTP code, marks email_verified = true.
- * Does NOT create a session — user must log in after verification.
- */
-router.post("/verify-email", async (req, res) => {
-  const parsed = verifyEmailSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({
-      error: "VALIDATION_ERROR",
-      details: parsed.error.flatten().fieldErrors,
-    });
-    return;
-  }
-
-  const { email, code } = parsed.data;
-
-  try {
-    const userRow = await getUserRowByEmail(email);
-    if (!userRow) {
-      res.status(404).json({ error: "USER_NOT_FOUND", message: "No account found with this email." });
-      return;
-    }
-
-    if (userRow.email_verified) {
-      res.json({ verified: true, alreadyVerified: true });
-      return;
-    }
-
-    const result = await verifyOtp(userRow.id, code);
-
-    if (!result.ok) {
-      const messages: Record<string, string> = {
-        INVALID_OTP: "Invalid verification code. Please check and try again.",
-        OTP_EXPIRED: "This code has expired. Please request a new one.",
-        OTP_USED: "This code has already been used. Please request a new one.",
-        NO_OTP: "No verification code found. Please request a new one.",
-      };
-      res.status(400).json({
-        error: result.error,
-        message: messages[result.error!] ?? "Verification failed.",
-      });
-      return;
-    }
-
-    await markEmailVerified(userRow.id);
-    res.json({ verified: true });
-  } catch (err: any) {
-    if (dbError(res, err)) return;
-    res.status(500).json({ error: "INTERNAL_ERROR", message: "Verification failed. Please try again." });
-  }
-});
-
-/**
- * POST /api/auth/resend-otp
- * Generates a new OTP and sends it. Enforces a 60-second cooldown.
- */
-router.post("/resend-otp", async (req, res) => {
-  const parsed = resendOtpSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "VALIDATION_ERROR" });
-    return;
-  }
-
-  const { email } = parsed.data;
-
-  try {
-    const userRow = await getUserRowByEmail(email);
-    if (!userRow) {
-      // Don't reveal whether an account exists
-      res.json({ sent: true });
-      return;
-    }
-
-    if (userRow.email_verified) {
-      res.status(400).json({ error: "ALREADY_VERIFIED", message: "This email is already verified." });
-      return;
-    }
-
-    const cooldown = await getResendCooldownSeconds(userRow.id);
-    if (cooldown > 0) {
-      res.status(429).json({
-        error: "COOLDOWN",
-        message: `Please wait ${cooldown} seconds before requesting a new code.`,
-        retryAfterSeconds: cooldown,
-      });
-      return;
-    }
-
-    const code = await createOtp(userRow.id);
-    const emailResult = await sendOtpEmail(userRow.email, userRow.full_name, code);
-
-    const response: Record<string, unknown> = { sent: true };
-    if (emailResult.devOtp) {
-      response.devOtp = emailResult.devOtp;
-      response.devNote = "RESEND_API_KEY not configured — use this code to verify.";
-    }
-
-    res.json(response);
-  } catch (err: any) {
-    if (dbError(res, err)) return;
-    res.status(500).json({ error: "INTERNAL_ERROR", message: "Failed to send code. Please try again." });
   }
 });
 

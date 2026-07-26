@@ -39,7 +39,6 @@ export default function Login() {
         USER_NOT_FOUND: 'No account found with this email address.',
         INVALID_PASSWORD: 'Incorrect password. Please try again.',
         ACCOUNT_INACTIVE: err?.message || 'Your account has been suspended. Please contact support.',
-        EMAIL_NOT_VERIFIED: 'Your email is not verified. Please contact support.',
       };
       setError(messages[code] ?? err?.message ?? 'Login failed. Please try again.');
     } finally {

@@ -1,7 +1,6 @@
 /**
  * Auth API client.
  * Uses relative paths — the Replit proxy routes /api/* to the API server.
- * WordPress-ready: swap API_BASE to the WP REST endpoint when migrating.
  */
 
 const API_BASE = "/api/auth";
@@ -28,10 +27,8 @@ export interface AuthResponse {
 }
 
 export interface RegisterResponse {
-  requiresVerification: boolean;
-  /** Only present in development when RESEND_API_KEY is not configured. */
-  devOtp?: string;
-  devNote?: string;
+  success: boolean;
+  userId: number;
 }
 
 export interface AuthError {
@@ -39,7 +36,6 @@ export interface AuthError {
   error: string;
   message?: string;
   details?: Record<string, string[]>;
-  retryAfterSeconds?: number;
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -65,7 +61,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const authApi = {
   /**
    * Register a new user account.
-   * Does NOT start a session — user must verify email, then log in.
+   * Account is immediately active — user can log in right away.
    */
   register: (data: {
     full_name: string;
@@ -79,7 +75,7 @@ export const authApi = {
       body: JSON.stringify(data),
     }),
 
-  /** Log in with email + password. Requires email to be verified. */
+  /** Log in with email + password. */
   login: (email: string, password: string, rememberMe = false) =>
     request<AuthResponse>("/login", {
       method: "POST",
@@ -92,18 +88,4 @@ export const authApi = {
 
   /** Fetch the currently authenticated user (session check). */
   me: () => request<AuthResponse>("/me"),
-
-  /** Verify a 6-digit OTP code sent to the user's email. */
-  verifyEmail: (email: string, code: string) =>
-    request<{ verified: boolean; alreadyVerified?: boolean }>("/verify-email", {
-      method: "POST",
-      body: JSON.stringify({ email, code }),
-    }),
-
-  /** Request a new OTP be sent (60-second cooldown enforced by server). */
-  resendOtp: (email: string) =>
-    request<{ sent: boolean; devOtp?: string; devNote?: string }>("/resend-otp", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    }),
 };
