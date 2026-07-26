@@ -10,6 +10,8 @@
  * idempotent: concurrent or repeated runs never double-credit.
  */
 
+import { db, earningsTable, investmentsTable, transactionsTable, usersTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 
 /** Mirrors the helper in routes/investments.ts — no shared dep needed. */
@@ -36,9 +38,6 @@ async function creditEarningsForInvestment(investment: {
   start_date: Date;
   end_date: Date;
 }): Promise<void> {
-  const { db, earningsTable, transactionsTable, usersTable } = await import("@workspace/db");
-  const { eq, sql } = await import("drizzle-orm");
-
   const cycleDays = parseCycleDays(investment.plan_execution_cycle);
   const dailyEarning = (
     (Number(investment.investment_amount) * Number(investment.profit_percentage)) /
@@ -130,9 +129,6 @@ async function creditEarningsForInvestment(investment: {
 
 async function runCreditCycle(): Promise<void> {
   try {
-    const { db, investmentsTable } = await import("@workspace/db");
-    const { eq } = await import("drizzle-orm");
-
     const active = await db
       .select()
       .from(investmentsTable)
