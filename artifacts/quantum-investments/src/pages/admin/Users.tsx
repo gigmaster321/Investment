@@ -21,6 +21,7 @@ const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`;
 
 async function adminApiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
+    credentials: 'include',
     ...init,
     headers: {
       'Content-Type': 'application/json',

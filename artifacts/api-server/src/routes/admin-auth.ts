@@ -29,7 +29,17 @@ router.post("/admin-login", (req, res) => {
   // Persistent session: 30 days
   req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
 
-  res.json({ success: true });
+  // Explicitly flush the session to the store BEFORE sending the response.
+  // Without this, express-session auto-saves asynchronously after the response
+  // is flushed. The browser immediately fires the next request (e.g. /api/admin/users)
+  // and it can arrive before the PostgreSQL write completes, causing a 401 race.
+  req.session.save((err) => {
+    if (err) {
+      res.status(500).json({ error: "SESSION_ERROR", message: "Failed to save session." });
+      return;
+    }
+    res.json({ success: true });
+  });
 });
 
 /**
