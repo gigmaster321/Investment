@@ -35,6 +35,9 @@ module.exports = {
       env_production: {
         NODE_ENV: "production",
         PORT: "8080",
+        // The PM2 process is the public-domain server behind Nginx.
+        // Use an absolute path so the SPA is found regardless of PM2's cwd.
+        FRONTEND_DIST_DIR: path.join(__dirname, "dist"),
 
         // DATABASE_URL, SESSION_SECRET, RESEND_API_KEY, EMAIL_FROM, LOG_LEVEL
         // are loaded from .env by deploy.sh before PM2 starts.

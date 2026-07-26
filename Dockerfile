@@ -3,7 +3,9 @@
 # Installs all workspace dependencies and compiles both the React frontend
 # and the Express backend bundle.
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM node:20-alpine AS builder
+# Use the glibc-based image because the workspace lockfile includes Rollup's
+# linux-x64-gnu native binary and intentionally excludes the musl variant.
+FROM node:20-bookworm-slim AS builder
 
 # Install the same pnpm major version used in development
 RUN npm install -g pnpm@10
@@ -13,6 +15,7 @@ WORKDIR /app
 # Copy workspace manifests first — maximises Docker layer cache.
 # If only source files change, this layer (pnpm install) is reused.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY tsconfig.base.json tsconfig.json ./
 
 # Copy every package.json in the workspace so pnpm can resolve the graph
 # before any source code is present.
@@ -41,12 +44,16 @@ RUN pnpm --filter @workspace/api-server run build
 # Stage 2 — App
 # Minimal production image that runs database migrations then starts Express.
 # ═══════════════════════════════════════════════════════════════════════════════
-FROM node:20-alpine AS app
+FROM node:20-bookworm-slim AS app
 
 WORKDIR /app
 
 # Copy the esbuild-bundled server files (all deps are inlined)
 COPY --from=builder /app/artifacts/api-server/dist ./server
+
+# The production domain is proxied to Express, so the API image also needs the
+# compiled SPA that Express serves for / and client-side routes.
+COPY --from=builder /app/dist ./dist
 
 # Copy the migration runner — it imports pg directly, so pg must be installed
 COPY --from=builder /app/lib/db/src/migrate.mjs ./migrate.mjs

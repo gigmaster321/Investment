@@ -1,3 +1,5 @@
+import path from "node:path";
+import { existsSync } from "node:fs";
 import express, { type Express } from "express";
 import cors from "cors";
 import session from "express-session";
@@ -82,5 +84,29 @@ app.use("/api/auth", adminAuthRouter);
 app.use("/wp-json/quantum/v1/admin/users", adminUsersRouter);
 app.use("/wp-json/quantum/v1/plans", plansRouter);
 app.use("/wp-json/quantum/v1/investments", investmentsRouter);
+
+// The production deployment sends the public domain to this Express process.
+// Serve the Vite build after the API mounts so API responses and API 404s are
+// never replaced with the SPA document. FRONTEND_DIST_DIR is configurable for
+// Docker/PM2 deployments; the repository-root dist/ is the default.
+const frontendDistCandidates = [
+  process.env.FRONTEND_DIST_DIR,
+  path.resolve(process.cwd(), "dist"),
+  path.resolve(process.cwd(), "../../dist"),
+].filter((candidate): candidate is string => Boolean(candidate));
+const frontendDist = frontendDistCandidates.find((candidate) =>
+  existsSync(path.join(candidate, "index.html")),
+);
+
+if (frontendDist) {
+  app.use(express.static(frontendDist, { index: false }));
+
+  // Vite builds a client-side SPA, so direct visits to routes such as
+  // /login and /dashboard must receive index.html for the client router.
+  app.get(
+    /^(?!\/(?:api|wp-json)(?:\/|$)).*/,
+    (_req, res) => res.sendFile(path.join(frontendDist, "index.html")),
+  );
+}
 
 export default app;
