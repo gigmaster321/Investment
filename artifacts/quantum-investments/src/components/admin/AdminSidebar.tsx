@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Users, ArrowDownCircle, TrendingUp,
   BarChart2, Settings, LogOut, X, Shield,
-  CreditCard, Bell, DollarSign, MessageCircle,
+  CreditCard, Bell, DollarSign, MessageCircle, Wallet,
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { chatApi } from '@/lib/chat-api';
@@ -40,6 +40,7 @@ const BASE_NAV_SECTIONS: NavSection[] = [
       { href: '/admin/withdrawals', label: 'Withdrawals', icon: ArrowDownCircle },
       { href: '/admin/plans', label: 'Investment Plans', icon: CreditCard },
       { href: '/admin/investments', label: 'Investment Assignments', icon: TrendingUp },
+      { href: '/admin/wallets', label: 'Deposit Wallets', icon: Wallet },
       { href: '/admin/chat', label: 'Live Chat', icon: MessageCircle },
     ],
   },

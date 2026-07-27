@@ -12,10 +12,25 @@ import QRCode from 'qrcode';
 import { useAuth } from '@/contexts/AuthContext';
 import { useInvestmentPlans } from '@/lib/investment-plans';
 import { depositApi, fileToBase64, type DepositRequest } from '@/lib/deposit-api';
+import { walletApi } from '@/lib/wallet-api';
 
 // ─── Wallet configuration ─────────────────────────────────────────────────────
 
-const PAYMENT_METHODS = [
+interface PaymentMethod {
+  id: string;
+  name: string;
+  ticker: string;
+  network: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  bgGlow: string;
+  address: string;
+  confirmations: string;
+  minDeposit: string;
+}
+
+/** Static UI config — addresses are loaded dynamically from the API. */
+const PAYMENT_METHODS_BASE: Omit<PaymentMethod, 'address'>[] = [
   {
     id: 'btc',
     name: 'Bitcoin',
@@ -24,7 +39,6 @@ const PAYMENT_METHODS = [
     icon: FaBitcoin,
     color: 'text-[#F7931A]',
     bgGlow: 'rgba(247,147,26,0.15)',
-    address: '1MNj9kLqBH5Hb2vyRJkVvebfwKdxsD3yFK',
     confirmations: '3 network confirmations (~30 min)',
     minDeposit: '$100',
   },
@@ -36,32 +50,42 @@ const PAYMENT_METHODS = [
     icon: FaEthereum,
     color: 'text-[#627EEA]',
     bgGlow: 'rgba(98,126,234,0.15)',
-    address: '0x0f6d68e8471a9d9a97c1a8268c1fec08f50d0076',
     confirmations: '12 network confirmations (~3 min)',
     minDeposit: '$100',
   },
   {
-    id: 'usdt',
-    name: 'USDT',
+    id: 'usdt_trc20',
+    name: 'USDT (TRC20)',
     ticker: 'TRC20',
     network: 'TRC20 (TRON)',
     icon: SiTether,
     color: 'text-[#26A17B]',
     bgGlow: 'rgba(38,161,123,0.15)',
-    address: 'TFpKuiUfgU32CLAxxvFZArpBYoysU1pjq',
     confirmations: '20 network confirmations (~1 min)',
     minDeposit: '$100',
   },
-] as const;
+  {
+    id: 'usdt_erc20',
+    name: 'USDT (ERC20)',
+    ticker: 'ERC20',
+    network: 'ERC20 (Ethereum)',
+    icon: SiTether,
+    color: 'text-[#26A17B]',
+    bgGlow: 'rgba(38,161,123,0.15)',
+    confirmations: '12 network confirmations (~3 min)',
+    minDeposit: '$100',
+  },
+];
 
-type Method = (typeof PAYMENT_METHODS)[number];
+type Method = PaymentMethod;
 
 function buildPaymentUri(method: Method): string {
   switch (method.id) {
-    case 'btc':  return `bitcoin:${method.address}`;
-    case 'eth':  return `ethereum:${method.address}`;
-    case 'usdt': return method.address;
-    default:     throw new Error('Unsupported payment method');
+    case 'btc':       return method.address ? `bitcoin:${method.address}` : '';
+    case 'eth':       return method.address ? `ethereum:${method.address}` : '';
+    case 'usdt_trc20':
+    case 'usdt_erc20':
+    default:          return method.address;
   }
 }
 
@@ -292,11 +316,12 @@ function SubmitForm({ prefillAmount, selectedMethod, onSuccess, onBack }: Submit
 export default function Deposits() {
   const { user, refreshUser } = useAuth();
   const [amount,    setAmount]    = useState('');
-  const [method,    setMethod]    = useState<Method>(PAYMENT_METHODS[0]);
+  const [method,    setMethod]    = useState<Method>({ ...PAYMENT_METHODS_BASE[0], address: '' });
   const [copied,    setCopied]    = useState(false);
   const [step,      setStep]      = useState<'form' | 'submit' | 'success'>('form');
   const [deposits,  setDeposits]  = useState<DepositRequest[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [walletAddresses, setWalletAddresses] = useState<Record<string, string>>({});
 
   const loadDeposits = useCallback(async () => {
     setLoadingHistory(true);
@@ -310,10 +335,37 @@ export default function Deposits() {
     }
   }, []);
 
+  // Load wallet addresses from the database
+  useEffect(() => {
+    walletApi.list()
+      .then((ws) => {
+        const map: Record<string, string> = {};
+        ws.forEach((w) => { map[w.coin_id] = w.address; });
+        setWalletAddresses(map);
+      })
+      .catch(() => {}); // non-critical — show empty address on error
+  }, []);
+
   useEffect(() => { void loadDeposits(); }, [loadDeposits]);
 
+  // Build the full payment methods list with live addresses from DB
+  const paymentMethods: Method[] = PAYMENT_METHODS_BASE.map((m) => ({
+    ...m,
+    address: walletAddresses[m.id] ?? '',
+  }));
+
+  // The currently selected method with its live address
+  const methodWithAddress: Method = {
+    ...method,
+    address: walletAddresses[method.id] ?? '',
+  };
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(method.address);
+    if (!methodWithAddress.address) {
+      toast({ title: 'No address configured', description: 'Contact support.' });
+      return;
+    }
+    navigator.clipboard.writeText(methodWithAddress.address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
     toast({ title: 'Wallet address copied.' });
@@ -411,7 +463,7 @@ export default function Deposits() {
           <div>
             <label className="block text-sm font-medium text-white mb-3">Select Cryptocurrency</label>
             <div className="flex flex-col gap-3">
-              {PAYMENT_METHODS.map((m) => {
+              {paymentMethods.map((m) => {
                 const isSelected = method.id === m.id;
                 return (
                   <button key={m.id} onClick={() => setMethod(m)}
@@ -469,15 +521,15 @@ export default function Deposits() {
             </div>
           </div>
 
-          <QrCodeCard method={method} />
+          <QrCodeCard method={methodWithAddress} />
 
           {/* Wallet address */}
           <div className="bg-background/70 border border-white/8 rounded-xl p-4">
             <p className="text-xs text-muted-foreground mb-2 font-medium">{method.name} Deposit Address</p>
             <AnimatePresence mode="wait">
-              <motion.p key={method.address} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }} className="text-sm font-mono text-white break-all leading-relaxed mb-3 select-all">
-                {method.address}
+              <motion.p key={methodWithAddress.address || method.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }} className={`text-sm font-mono break-all leading-relaxed mb-3 select-all ${methodWithAddress.address ? 'text-white' : 'text-muted-foreground/50 italic'}`}>
+                {methodWithAddress.address || 'Address not configured — contact support'}
               </motion.p>
             </AnimatePresence>
             <button onClick={handleCopy}
