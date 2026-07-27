@@ -102,6 +102,11 @@ function QrCodeCard({ method }: { method: Method }) {
       prevId.current = method.id;
     }
     const uri = buildPaymentUri(method);
+    // Do not call QRCode with an empty string — it throws "No input text"
+    if (!uri) {
+      setDataUrl(null);
+      return;
+    }
     QRCode.toDataURL(uri, {
       width: 220, margin: 2,
       color: { dark: '#000000', light: '#ffffff' },
@@ -109,6 +114,8 @@ function QrCodeCard({ method }: { method: Method }) {
     }).then((url) => { if (!cancelled) setDataUrl(url); });
     return () => { cancelled = true; };
   }, [method]);
+
+  const hasAddress = Boolean(method.address);
 
   return (
     <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm p-6 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
@@ -125,16 +132,27 @@ function QrCodeCard({ method }: { method: Method }) {
             <motion.img key={method.id} src={dataUrl} alt={`${method.name} QR`} width={180} height={180}
               initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
               transition={{ duration: 0.2 }} className="block w-[180px] h-[180px] rounded-2xl" draggable={false} />
-          ) : (
+          ) : hasAddress ? (
             <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="w-[180px] h-[180px] bg-white/5 rounded-2xl flex items-center justify-center">
               <QrCode className="w-8 h-8 text-white/20 animate-pulse" />
+            </motion.div>
+          ) : (
+            <motion.div key="no-address" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="w-[180px] h-[180px] bg-white/5 rounded-2xl flex flex-col items-center justify-center gap-2 px-3">
+              <AlertCircle className="w-8 h-8 text-white/20" />
+              <p className="text-[10px] text-white/30 text-center leading-relaxed">
+                Wallet address not configured. Contact support.
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
       <p className="text-xs text-muted-foreground text-center leading-relaxed">
-        Scan with your <span className="text-white/60 font-medium">{method.name}</span> wallet app
+        {hasAddress
+          ? <>Scan with your <span className="text-white/60 font-medium">{method.name}</span> wallet app</>
+          : <span className="text-white/30">Wallet address not configured. Contact support.</span>
+        }
       </p>
     </div>
   );

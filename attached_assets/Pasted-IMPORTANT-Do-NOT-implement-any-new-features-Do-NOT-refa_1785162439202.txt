@@ -1,0 +1,154 @@
+IMPORTANT:
+
+Do NOT implement any new features.
+
+Do NOT refactor unrelated code.
+
+ONLY fix the Deposit page runtime error and fully verify it.
+
+Current issue:
+
+When I click "Deposit" in the User Dashboard, the page crashes with:
+
+[plugin:runtime-error-plugin]
+No input text
+
+File:
+
+artifacts/quantum-investments/src/pages/dashboard/Deposits.tsx
+
+around line 105
+
+QRCode.toDataURL(uri,...)
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 1 — ROOT CAUSE ANALYSIS
+
+Trace the entire flow step by step.
+
+Wallet API
+↓
+
+GET /api/wallets
+
+↓
+
+Frontend wallet fetch
+
+↓
+
+Wallet state
+
+↓
+
+Selected wallet
+
+↓
+
+buildPaymentUri()
+
+↓
+
+QRCode.toDataURL()
+
+Print and verify:
+
+- API response
+- wallet object
+- selected wallet
+- wallet address
+- generated payment URI
+- QRCode input
+
+Find the EXACT reason why QRCode receives an empty string.
+
+Do NOT guess.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 2 — FIX
+
+Fix ONLY this issue.
+
+Requirements:
+
+✓ Never call QRCode.toDataURL() with an empty string.
+
+✓ Wait until wallet data has finished loading.
+
+✓ If no wallet address exists, show:
+
+"Wallet address not configured. Contact support."
+
+instead of crashing.
+
+✓ Generate the QR code ONLY after a valid payment URI exists.
+
+Do not modify unrelated files.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 3 — TESTING
+
+After fixing:
+
+Start both services.
+
+Ensure both workflows are running.
+
+Frontend Preview must open successfully.
+
+Then manually test:
+
+✓ BTC
+
+✓ ETH
+
+✓ USDT TRC20
+
+✓ USDT ERC20
+
+For each wallet verify:
+
+- API returns address
+- Address is displayed
+- Copy button works
+- QR code generates
+- Deposit page does NOT crash
+
+Also check the browser console.
+
+There must be:
+
+- No runtime errors
+- No React errors
+- No console errors
+- No failed API requests
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 4 — FINAL VERIFICATION
+
+Open the Replit Preview automatically.
+
+Leave both frontend and backend running.
+
+Provide the Preview after everything is working so I can manually test it myself.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+FINAL REPORT
+
+Report:
+
+1. Root cause
+2. Exact file modified
+3. Exact line(s) changed
+4. Why the bug occurred
+5. How it was fixed
+6. Confirmation that Deposit page opens without errors
+7. Confirmation that all four wallets display correctly
+8. Confirmation that Preview is running and ready for manual testing
+
+Do not finish until the Preview is running and the Deposit page works without crashing.
