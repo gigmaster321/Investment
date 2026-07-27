@@ -84,6 +84,7 @@ async function creditEarningsForInvestment(investment: {
               investment_id: investment.id,
               amount: amountStr,
               credit_date: dateStr,
+              source: "auto",
             })
             .onConflictDoNothing()
             .returning({ id: earningsTable.id });

@@ -6,7 +6,7 @@ import {
   Phone, Mail, MapPin, Calendar, CreditCard,
   Wallet, ArrowDownLeft, ArrowUpRight, BadgeCheck,
   ShieldOff, ShieldCheck, AlertTriangle, KeyRound,
-  NotebookPen, Activity,
+  NotebookPen, Activity, DollarSign, Loader2,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
@@ -358,6 +358,7 @@ function ViewModal({
   onResetPassword,
   onToggleStatus,
   onDelete,
+  onUpdateProfit,
 }: {
   user: User;
   onClose: () => void;
@@ -366,6 +367,7 @@ function ViewModal({
   onResetPassword: () => void;
   onToggleStatus: () => void;
   onDelete: () => void;
+  onUpdateProfit: () => void;
 }) {
   const ss = STATUS_STYLE[user.status];
   const ps = getPlanStyle(user.plan);
@@ -524,6 +526,13 @@ function ViewModal({
         <div className="border border-white/5 rounded-xl p-4 space-y-3">
           <SectionTitle>Account Management</SectionTitle>
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={onUpdateProfit}
+              className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 transition-colors"
+            >
+              <DollarSign size={12} />
+              Update Profit
+            </button>
             <button
               onClick={onResetPassword}
               className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-accent hover:bg-accent/10 border border-accent/20 rounded-lg px-3 py-2 transition-colors"
@@ -713,6 +722,211 @@ function EditModal({
   );
 }
 
+// ─── Manual Profit Modal ──────────────────────────────────────────────────────
+
+interface ActiveInvestment {
+  id: number;
+  planName: string;
+  investmentAmount: string;
+  profitPercentage: string;
+  totalProfit: string;
+  startDate: string;
+  status: string;
+}
+
+function ManualProfitModal({
+  user,
+  onClose,
+  onSuccess,
+}: {
+  user: User;
+  onClose: () => void;
+  onSuccess: (updatedBalance: string) => void;
+}) {
+  const [investments, setInvestments] = useState<ActiveInvestment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedInvestmentId, setSelectedInvestmentId] = useState<number | ''>('');
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    setLoading(true);
+    adminApiRequest<ActiveInvestment[]>(`/admin/manual-profit/user/${encodeURIComponent(user.id)}/investments`)
+      .then((data) => {
+        setInvestments(data);
+        if (data.length === 1) setSelectedInvestmentId(data[0].id);
+      })
+      .catch(() => setInvestments([]))
+      .finally(() => setLoading(false));
+  }, [user.id]);
+
+  const selectedInv = investments.find((inv) => inv.id === selectedInvestmentId) ?? null;
+
+  async function handleSubmit() {
+    if (!selectedInvestmentId) {
+      toast({ title: 'Select an investment', description: 'Choose an active investment to credit.' });
+      return;
+    }
+    const amountNum = parseFloat(amount);
+    if (!amount || isNaN(amountNum) || amountNum <= 0) {
+      toast({ title: 'Invalid amount', description: 'Enter a valid profit amount greater than $0.' });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const result = await adminApiRequest<{ success: boolean; amount: string; message: string }>(
+        '/admin/manual-profit/credit',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            userId: user.id,
+            investmentId: selectedInvestmentId,
+            amount: amountNum,
+            note: note.trim(),
+          }),
+        },
+      );
+      toast({ title: '✅ Profit Credited', description: result.message });
+      onSuccess(result.amount);
+      onClose();
+    } catch (err) {
+      toast({
+        title: 'Failed to credit profit',
+        description: err instanceof Error ? err.message : 'Please try again.',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const fieldCls = 'w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-xs placeholder:text-white/20 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30 transition-all';
+  const labelCls = 'block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 mb-1.5';
+  const selectCls = 'w-full bg-[hsl(221,70%,8%)] border border-white/10 rounded-xl py-2.5 px-3.5 text-white text-xs focus:outline-none focus:border-accent/50 transition-all appearance-none';
+
+  return (
+    <ModalShell onClose={onClose}>
+      <ModalHeader
+        title="Update Profit"
+        subtitle={`Manually credit profit for ${user.name}`}
+        user={user}
+        onClose={onClose}
+      />
+
+      <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+        {/* Read-only user info */}
+        <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+          <SectionTitle>User Details</SectionTitle>
+          <InfoRow icon={BadgeCheck} label="User" value={user.name} />
+          <InfoRow icon={Wallet} label="Current Balance" value={user.balance} accent />
+          <InfoRow icon={TrendingUp} label="Total Profit" value={user.totalProfit} />
+        </div>
+
+        {/* Investment selector */}
+        <div>
+          <label className={labelCls}>Active Investment</label>
+          {loading ? (
+            <div className="flex items-center gap-2 text-muted-foreground/60 text-xs py-3">
+              <Loader2 size={13} className="animate-spin" />
+              Loading investments…
+            </div>
+          ) : investments.length === 0 ? (
+            <div className="text-xs text-amber-400/80 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
+              No active investments found for this user. Approve a deposit first.
+            </div>
+          ) : (
+            <div className="relative">
+              <select
+                value={selectedInvestmentId}
+                onChange={(e) => setSelectedInvestmentId(e.target.value === '' ? '' : Number(e.target.value))}
+                className={selectCls}
+              >
+                <option value="">Select investment…</option>
+                {investments.map((inv) => (
+                  <option key={inv.id} value={inv.id}>
+                    {inv.planName} — {inv.investmentAmount}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 pointer-events-none" />
+            </div>
+          )}
+        </div>
+
+        {/* Selected investment summary */}
+        {selectedInv && (
+          <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-xl p-3 space-y-2">
+            <SectionTitle>Investment Summary</SectionTitle>
+            <InfoRow label="Plan" value={selectedInv.planName} />
+            <InfoRow label="Invested" value={selectedInv.investmentAmount} />
+            <InfoRow label="Profit %" value={`${selectedInv.profitPercentage}%`} />
+            <InfoRow label="Total Profit So Far" value={selectedInv.totalProfit} accent />
+            <InfoRow label="Start Date" value={selectedInv.startDate} />
+          </div>
+        )}
+
+        {/* Profit amount */}
+        <div>
+          <label className={labelCls}>Profit Amount to Credit (USD)</label>
+          <div className="relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 text-xs font-bold">$</span>
+            <input
+              type="number"
+              min="0.01"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className={`${fieldCls} pl-7`}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        {/* Optional note */}
+        <div>
+          <label className={labelCls}>Note (optional)</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className={fieldCls}
+            placeholder="e.g. Bonus for VIP client, Performance reward…"
+            maxLength={500}
+          />
+        </div>
+
+        {/* Warning banner */}
+        <div className="flex items-start gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-4 py-3">
+          <AlertTriangle size={13} className="text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-[10px] text-amber-300/80 leading-relaxed">
+            This action will immediately update the user's balance, earnings history, transaction history,
+            and send them a notification. The automatic profit cron will continue to run independently.
+          </p>
+        </div>
+      </div>
+
+      <div className="px-5 py-4 border-t border-white/5 flex gap-3">
+        <button
+          onClick={handleSubmit}
+          disabled={submitting || loading || investments.length === 0 || !selectedInvestmentId}
+          className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold py-2.5 rounded-xl transition-all shadow-[0_0_16px_rgba(16,185,129,0.20)]"
+        >
+          {submitting ? <Loader2 size={13} className="animate-spin" /> : <DollarSign size={13} />}
+          {submitting ? 'Crediting…' : 'Credit Profit'}
+        </button>
+        <button
+          onClick={onClose}
+          disabled={submitting}
+          className="flex-1 text-xs font-semibold text-muted-foreground hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 py-2.5 rounded-xl transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+
 // ─── Delete Confirm Modal ────────────────────────────────────────────────────
 
 function DeleteModal({
@@ -755,7 +969,12 @@ function DeleteModal({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 type FilterKey = 'All' | 'Active' | 'Suspended' | 'New Users' | 'Investors';
-type ModalMode = { kind: 'view'; user: User } | { kind: 'edit'; user: User } | { kind: 'delete'; user: User } | null;
+type ModalMode =
+  | { kind: 'view'; user: User }
+  | { kind: 'edit'; user: User }
+  | { kind: 'delete'; user: User }
+  | { kind: 'profit'; user: User }
+  | null;
 
 export default function AdminUsers() {
   useAdminAuth(); // ensures admin context is wired
@@ -911,10 +1130,32 @@ export default function AdminUsers() {
           onResetPassword={() => handleResetPassword(modal.user)}
           onToggleStatus={() => handleToggleStatus(modal.user)}
           onDelete={() => setModal({ kind: 'delete', user: modal.user })}
+          onUpdateProfit={() => setModal({ kind: 'profit', user: modal.user })}
         />
       )}
       {modal?.kind === 'edit'   && <EditModal   user={modal.user} onClose={() => setModal(null)} onSave={handleSave} availablePlans={availablePlans} />}
       {modal?.kind === 'delete' && <DeleteModal user={modal.user} onClose={() => setModal(null)} onConfirm={handleDelete} />}
+      {modal?.kind === 'profit' && (
+        <ManualProfitModal
+          user={modal.user}
+          onClose={() => setModal(null)}
+          onSuccess={(creditedAmount) => {
+            // Optimistically update the user's balance in state
+            const credited = parseFloat(creditedAmount) || 0;
+            setUsers((prev) =>
+              prev.map((u) => {
+                if (u.id !== modal.user.id) return u;
+                const newBalance = u.balanceNum + credited;
+                return {
+                  ...u,
+                  balance: money(newBalance),
+                  balanceNum: newBalance,
+                };
+              }),
+            );
+          }}
+        />
+      )}
 
       <div className="space-y-6">
         {/* Header */}

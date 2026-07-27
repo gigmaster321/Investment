@@ -6,3 +6,4 @@
 - [Express SPA production serving](express-spa-production.md) — the public domain is proxied to Express, which serves the root Vite build after preserving API mounts.
 - [Withdrawal system](withdrawal-system.md) — full withdrawal flow: DB table, migration, API routes, frontend API client, and both dashboard/admin pages all wired to PostgreSQL.
 - [Notifications system](notifications-system.md) — real DB-backed notifications; hooks in deposit/withdrawal/earnings/register; cron only notifies for today's credit, not backfill.
+- [Manual Profit System](manual-profit-system.md) — partial unique index on earnings (auto-only); API at /admin/manual-profit; frontend ManualProfitModal in Users.tsx.

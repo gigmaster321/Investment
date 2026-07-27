@@ -1,0 +1,193 @@
+IMPORTANT:
+
+Before writing any code, audit the existing project.
+
+Do NOT duplicate any existing functionality.
+
+Do NOT replace any working financial logic.
+
+Reuse the existing database schema, APIs, notification system, earnings system, transactions system, and authentication.
+
+This project is already working.
+
+Registration, Login, Admin, Deposits, Withdrawals, Notifications, Wallet Management and Automatic Profit System already exist.
+
+Your task is ONLY to implement a production-quality Manual Profit Management System for the Admin Dashboard.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CLIENT REQUIREMENT
+
+The admin must be able to manually update any user's profit whenever needed.
+
+This must work alongside the existing automatic profit cron.
+
+The manual system must NEVER break or interfere with the automatic earnings system.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 1 — AUDIT
+
+First inspect the existing code.
+
+Understand:
+
+- earnings table
+- transactions table
+- notifications
+- investments
+- users balance
+- admin users page
+- admin investments page
+- existing APIs
+
+Then decide the best integration.
+
+Do NOT create duplicate tables if existing tables can be reused.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 2 — IMPLEMENTATION
+
+Build a complete Manual Profit Management feature.
+
+Admin should be able to:
+
+• Open any user
+• View active investments
+• View current balance
+• View total earnings
+• Click "Update Profit"
+
+Open a modal containing:
+
+- User
+- Investment
+- Current Balance
+- Current Earnings
+- Profit Amount to Credit
+- Optional Note
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 3 — DATABASE
+
+When admin submits,
+
+perform EVERYTHING inside ONE database transaction.
+
+The following operations must succeed together:
+
+1. Update user balance
+
+2. Create earnings record
+(mark it as Manual Profit)
+
+3. Create transaction record
+
+Type:
+Manual Profit
+
+Status:
+Completed
+
+4. Create notification
+
+Example:
+
+"Your account has been credited with $150 profit by the administrator."
+
+If ANY operation fails,
+
+ROLLBACK everything.
+
+Never leave partial financial data.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 4 — USER DASHBOARD
+
+Immediately after the manual credit,
+
+the user must see:
+
+✓ Updated balance
+
+✓ Earnings history
+
+✓ Transaction history
+
+✓ Notification
+
+without inconsistencies.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 5 — ADMIN HISTORY
+
+Admin must also be able to see previous manual profit credits.
+
+If an existing page already supports this,
+
+reuse it.
+
+Otherwise integrate it cleanly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 6 — SAFETY
+
+The automatic earnings cron MUST continue working exactly as before.
+
+Manual profit and automatic profit must coexist correctly.
+
+Never create duplicate earnings.
+
+Never duplicate notifications.
+
+Never duplicate transactions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 7 — TESTING
+
+Run a complete end-to-end test.
+
+Create a test user.
+
+Approve a deposit.
+
+Apply a manual profit.
+
+Verify:
+
+✓ Balance updated
+
+✓ Earnings row created
+
+✓ Transaction row created
+
+✓ Notification created
+
+✓ User dashboard updated
+
+✓ Admin dashboard updated
+
+✓ Automatic cron still credits future earnings correctly
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do NOT commit automatically.
+
+Keep both frontend and backend running.
+
+Leave the Preview open.
+
+Final report must include:
+
+- Root design chosen
+- Files modified
+- APIs added or modified
+- Database changes (if any)
+- End-to-end verification
+- Proof that manual and automatic profit systems both work together
