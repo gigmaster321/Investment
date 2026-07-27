@@ -43,6 +43,7 @@ const isDev = process.env["NODE_ENV"] !== "production";
 
 app.use(
   session({
+    name: "qinvest.sid", // must match the cookie name cleared in the logout route
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,

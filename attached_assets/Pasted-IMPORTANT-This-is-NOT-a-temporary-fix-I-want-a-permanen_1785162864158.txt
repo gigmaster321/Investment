@@ -1,0 +1,173 @@
+IMPORTANT:
+
+This is NOT a temporary fix.
+
+I want a permanent production-quality fix.
+
+Current problem:
+
+Registration still fails.
+
+The frontend shows:
+
+"Registration failed. Please try again."
+
+This error must NEVER happen unless there is a real validation error.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+DO NOT guess.
+
+Trace the complete registration flow.
+
+Frontend Form
+
+↓
+
+Frontend validation
+
+↓
+
+API request
+
+↓
+
+Express route
+
+↓
+
+Request validation
+
+↓
+
+Database insert
+
+↓
+
+Session creation
+
+↓
+
+Cookie creation
+
+↓
+
+Response
+
+↓
+
+Frontend success handler
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+Find the EXACT root cause.
+
+Print:
+
+- Request payload
+- HTTP status code
+- Response body
+- Validation errors
+- SQL errors
+- Session errors
+- Cookie errors
+- Server logs
+- Full stack trace
+
+Do not stop at the first error.
+
+Continue until registration succeeds.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+Then verify:
+
+✓ User is inserted into PostgreSQL
+
+✓ Session is created
+
+✓ Cookie is returned
+
+✓ User can immediately log in
+
+✓ GET /api/auth/me returns the user
+
+✓ User appears in Admin Users
+
+✓ Welcome notification is created
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+After registration works,
+
+test LOGIN completely.
+
+Verify:
+
+✓ POST /api/auth/login
+
+✓ Session persistence
+
+✓ Refresh page
+
+✓ User remains logged in
+
+✓ Logout
+
+✓ Login again
+
+No SESSION_ERROR.
+
+No 401.
+
+No 500.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+Check the frontend.
+
+If the frontend is hiding the real backend error,
+
+show the actual backend error while debugging,
+
+then restore a user-friendly production message.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+Run a REAL end-to-end test.
+
+Create a brand new account.
+
+Log into that account.
+
+Refresh.
+
+Open Dashboard.
+
+Log out.
+
+Log in again.
+
+Everything must work.
+
+━━━━━━━━━━━━━━━━━━━━━━
+
+When finished,
+
+start both frontend and backend,
+
+leave Preview running,
+
+and provide a report containing:
+
+1. Root cause
+2. Exact file(s) changed
+3. Exact line(s) changed
+4. Why registration failed
+5. Why login failed (if applicable)
+6. Proof that registration now works
+7. Proof that login now works
+8. Proof that sessions persist after refresh
+9. Confirmation that Preview is running for manual testing.
+
+Do not stop until registration and login both work perfectly without errors.
