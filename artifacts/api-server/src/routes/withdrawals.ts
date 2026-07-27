@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireAuth, requireAdmin } from "../middleware/requireAuth.js";
 import { logger } from "../lib/logger.js";
+import { createNotification } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -195,6 +196,13 @@ router.patch("/:id/approve", requireAdmin, async (req, res) => {
       status: "Completed",
     });
 
+    await createNotification(
+      existing.user_id,
+      "Withdrawal",
+      "Withdrawal Processed",
+      `$${approvedAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} withdrawal sent to your ${existing.crypto} wallet (${walletSnippet}).`,
+    );
+
     res.json(updated);
   } catch (err) {
     logger.error({ err }, "Failed to approve withdrawal");
@@ -242,6 +250,13 @@ router.patch("/:id/reject", requireAdmin, async (req, res) => {
       })
       .where(eq(withdrawalRequestsTable.id, id))
       .returning();
+
+    await createNotification(
+      existing.user_id,
+      "Withdrawal",
+      "Withdrawal Rejected",
+      `Your withdrawal request for $${Number(existing.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} was not approved.`,
+    );
 
     res.json(updated);
   } catch (err) {

@@ -1,0 +1,58 @@
+Continue from the previous implementation. Do NOT restart the investigation or audit. Assume all previous changes are already present and continue only from where the work stopped.
+
+Current progress:
+- Notification database schema has been created.
+- Notification helper/service has been added.
+- Notification API endpoint has been added.
+- Notification route has been registered.
+- Notification hooks have been added for:
+  - Registration
+  - Deposit approval
+  - Withdrawal
+  - Daily earnings cron
+- Frontend notifications page has been rewritten to load notifications from the API instead of hardcoded demo data.
+- Migration has been created.
+- Services were rebuilt and started.
+- Basic API verification was completed.
+- The previous session ended only because the free quota expired.
+
+Your task is to continue from that exact point.
+
+First:
+1. Inspect the repository and determine which of the above changes were successfully written to disk.
+2. Verify every modified file.
+3. Verify the migration exists and is registered.
+4. Verify the notifications table exists in the schema.
+5. Verify all event hooks actually call createNotification().
+6. Verify the frontend no longer contains any hardcoded demo notifications.
+
+Then complete anything that is unfinished.
+
+After that perform a COMPLETE end-to-end verification:
+
+- Register a new user.
+- Verify the notification is inserted into PostgreSQL.
+- Login as that user.
+- Verify the Notifications page loads from the API.
+- If there are no notifications, show the proper empty state instead of fake demo data.
+- Approve a deposit.
+- Verify a Deposit notification appears.
+- Trigger a profit credit.
+- Verify a Profit notification appears.
+- Trigger a withdrawal.
+- Verify a Withdrawal notification appears.
+
+Remove ALL remaining hardcoded notification data from the project.
+
+Do not create fake notifications.
+Everything must come from the database.
+
+Finally provide:
+
+- List of modified files.
+- Any unfinished work.
+- Any bugs found.
+- Whether the feature is production ready.
+- Exact deployment commands required for the VPS after completion.
+
+Do not stop until the entire notification system is fully implemented, verified, and production-ready.

@@ -5,6 +5,7 @@ import {
   loginUser,
   getUserById,
 } from "../services/auth.js";
+import { createNotification } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -69,6 +70,14 @@ router.post("/register", async (req, res) => {
 
   try {
     const user = await registerUser(parsed.data);
+
+    // Non-blocking welcome notification
+    void createNotification(
+      user.id,
+      "System",
+      "Welcome to Quantum Investments",
+      `Hi ${parsed.data.full_name.split(" ")[0]}! Your account is ready. Explore our investment plans to get started.`,
+    );
 
     res.status(201).json({ success: true, userId: user.id });
   } catch (err: any) {

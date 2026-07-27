@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth, requireAdmin } from "../middleware/requireAuth.js";
 import { logger } from "../lib/logger.js";
 import { getInvestmentPlanById, parseCycleDaysFromCycle } from "./plans.js";
+import { createNotification } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -240,6 +241,13 @@ router.patch("/:id/approve", requireAdmin, async (req, res) => {
       status: "Active",
     });
 
+    await createNotification(
+      existing.user_id,
+      "Deposit",
+      "Deposit Confirmed",
+      `$${approvedAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} deposit approved${existing.plan_name ? ` — ${existing.plan_name} Plan` : ""} via ${existing.payment_method}.`,
+    );
+
     res.json(updated);
   } catch (err) {
     logger.error({ err }, "Failed to approve deposit");
@@ -286,6 +294,13 @@ router.patch("/:id/reject", requireAdmin, async (req, res) => {
       })
       .where(eq(depositRequestsTable.id, id))
       .returning();
+
+    await createNotification(
+      existing.user_id,
+      "Deposit",
+      "Deposit Rejected",
+      `Your deposit request for $${Number(existing.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} was not approved.`,
+    );
 
     res.json(updated);
   } catch (err) {

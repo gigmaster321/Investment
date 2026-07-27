@@ -7,3 +7,4 @@ export * from "./withdrawal_requests";
 export * from "./earnings";
 export * from "./investment_plans";
 export * from "./chat";
+export * from "./notifications";

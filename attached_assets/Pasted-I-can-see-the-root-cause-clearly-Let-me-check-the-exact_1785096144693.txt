@@ -1,0 +1,76 @@
+I can see the root cause clearly. Let me check the exact fetch call for the users list to confirm:
+
+
+3 actions
+The main user list fetch has credentials: 'include' on line 772, so it's not missing credentials. The issue must be in how the admin session is set vs what requireAdmin checks. Let me look at the admin auth route and the routes/index.ts:
+
+
+3 actions
+Now I need to check the Vite proxy config — the key question is whether requests hit the API directly or through Vite's dev proxy:
+
+
+3 actions
+The Vite proxy forwards /api to http://localhost:8080 with the full path intact. Let me now check App.tsx for the Wouter routing issue and see the admin auth guard:
+
+
+3 actions
+The admin login is handled by adminAuthRouter mounted at app.use("/api/auth", adminAuthRouter), but the main router ALSO has a /auth sub-router. I need to check if authRouter is swallowing the admin-login request before it reaches adminAuthRouter:
+
+
+3 actions
+Let me check AuthContext.tsx and also verify the exact fetch URL and whether there's a race condition with the user auth session overwriting the admin session:
+
+
+9 actions
+Let me take a screenshot of the admin users page to see the actual state, and simultaneously check the session type declaration and the admin dashboard to understand what API calls it makes:
+
+
+19 actions
+I've found it. The Switch uses element.props.nest for loose matching, so Wouter routing is fine. The real issue is a race condition: admin-auth.ts calls res.json() before the session is written to PostgreSQL. Express-session auto-saves the session asynchronously on the response finish event, but the browser sends the next request immediately after receiving the response — before the DB write completes. Curl works because there's human delay between commands.
+
+There's a second independent bug: adminApiRequest in Users.tsx is missing credentials: 'include', breaking every secondary admin request (notes, plan changes, status changes).
+
+Let me fix both:
+
+
+2 actions
+Now fix the second bug — adminApiRequest missing credentials: 'include':
+
+
+2 actions
+Now rebuild and restart the API server, then verify end-to-end:
+
+
+2 actions
+Both services are up. Let me verify the fix end-to-end: register a new user, log in as admin, and confirm the user appears:
+
+
+5 actions
+The fix works: admin login → 200, users endpoint → 200, Alice Tester appears immediately. Let me take a screenshot of the admin users page to confirm the visual state:
+
+
+2 actions
+The screenshot shows the login page because the screenshot tool has no session — that's AdminGuard working correctly. The API-level verification already confirmed the fix end-to-end. The 401s in the browser console on the login page are expected (unauthenticated auth-check requests on mount).
+
+Root Cause
+A session-persistence race condition in admin-auth.ts.
+
+express-session auto-saves the session by wiring into the response's finish event — meaning the PostgreSQL write starts only after the response has been flushed to the network. The browser receives the Set-Cookie header (with the new session ID) and immediately fires the next request (e.g. /api/admin/users). That next request arrives at Express before the DB write completes, so connect-pg-simple finds no row for that session ID and returns an empty session. requireAdmin sees neither isAdmin nor userId and returns 401.
+
+curl never hit this because there's human latency between the two commands, giving the DB write time to finish.
+
+There was a second independent bug: adminApiRequest in Users.tsx spread ...init without defaulting credentials: 'include', so every secondary admin request (profile notes, plan changes, status changes) omitted the session cookie entirely and always got 401.
+
+What Was Fixed
+artifacts/api-server/src/routes/admin-auth.ts
+Added an explicit req.session.save() call before res.json(). The response is now only sent after the session row is confirmed written to PostgreSQL, eliminating the race.
+
+artifacts/quantum-investments/src/pages/admin/Users.tsx
+Added credentials: 'include' as a fixed default in adminApiRequest, before the ...init spread, so all secondary admin API calls correctly send the session cookie.
+
+Verified
+POST /api/auth/register    → 201  (Alice Tester created)
+POST /api/auth/admin-login → 200  (session saved to DB before response)
+GET  /api/admin/users      → 200  [{"id":"#U-2","name":"Alice Tester",...}]
+
+Alice Tester appears in the admin users response immediately after registration, with no delay.

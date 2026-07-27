@@ -10,7 +10,7 @@
  * idempotent: concurrent or repeated runs never double-credit.
  */
 
-import { db, earningsTable, investmentsTable, transactionsTable, usersTable } from "@workspace/db";
+import { db, earningsTable, investmentsTable, transactionsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
 
@@ -114,6 +114,21 @@ async function creditEarningsForInvestment(investment: {
             sql`UPDATE investments SET total_profit = COALESCE(total_profit, 0) + ${amountStr}::numeric, updated_at = NOW() WHERE id = ${investment.id}`,
           );
         });
+
+        // 5. Notify user — only for today's credit so backfilled days stay silent
+        if (dateStr === toDateStr(new Date())) {
+          try {
+            await db.insert(notificationsTable).values({
+              user_id: investment.user_id,
+              type: "Investment",
+              title: "Profit Credited",
+              description: `+$${Number(amountStr).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} daily profit credited from ${investment.plan_name}.`,
+              read: false,
+            });
+          } catch (_notifErr) {
+            // Non-fatal — earnings are already recorded
+          }
+        }
       } catch (err: unknown) {
         // Unique-constraint race on concurrent runs — safe to ignore
         const msg = err instanceof Error ? err.message : String(err);
