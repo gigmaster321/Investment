@@ -29,3 +29,4 @@ externalPort = 5173
 
 [userenv.shared]
 BASE_PATH = "/"
+LOG_LEVEL = "info"

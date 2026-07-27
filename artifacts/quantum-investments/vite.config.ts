@@ -47,9 +47,7 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-    // Output to the repository root `dist/` so Vercel's default output
-    // directory resolution works regardless of rootDirectory settings.
-    outDir: path.resolve(import.meta.dirname, '..', '..', 'dist'),
+    outDir: path.resolve(import.meta.dirname, 'dist', 'public'),
     emptyOutDir: true,
   },
   server: {
