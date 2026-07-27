@@ -1,0 +1,212 @@
+IMPORTANT:
+
+Do NOT refactor the project.
+Do NOT redesign anything.
+Do NOT add new features.
+Do NOT remove existing functionality.
+
+The project has already been implemented previously. Your only goal is to make the current project run exactly as intended and fix any startup/runtime/database issues.
+
+Work in this order.
+
+==========================
+PHASE 1 — START THE PROJECT
+==========================
+
+1. Start both frontend and backend.
+2. Make sure the Preview opens successfully.
+3. Verify all required environment variables exist.
+4. Verify database connection.
+5. Verify all migrations are applied.
+6. Verify every API server starts without errors.
+7. Fix ONLY startup/runtime issues if they exist.
+
+==========================
+PHASE 2 — VERIFY DATABASE
+==========================
+
+Check every required table exists.
+
+Verify:
+
+- users
+- deposits
+- withdrawals
+- investments
+- investment_plans
+- earnings
+- transactions
+- notifications
+- deposit_wallets
+- chat
+- sessions
+- every other required table
+
+If any table is missing:
+
+- create it using the existing migration system
+- DO NOT create duplicate schemas
+- DO NOT rewrite existing migrations
+
+==========================
+PHASE 3 — AUTHENTICATION
+==========================
+
+Fully test:
+
+- user registration
+- user login
+- admin login
+- session persistence
+
+Registration MUST create a real user in PostgreSQL.
+
+Verify:
+
+Frontend
+↓
+
+API
+
+↓
+
+Database
+
+↓
+
+Admin Users page
+
+If registration fails, find the exact root cause and fix it.
+
+==========================
+PHASE 4 — VERIFY EXISTING FEATURES
+==========================
+
+Do NOT rebuild anything.
+
+Only verify and fix broken connections.
+
+Verify:
+
+✔ Notifications
+✔ Deposit Wallet Management
+✔ Deposit Approval
+✔ Withdrawal Approval
+✔ Investment creation
+✔ Profit cron
+✔ Earnings
+✔ Transactions
+✔ Admin Users
+✔ Plans
+✔ Dashboard
+✔ Live Chat
+
+If something already exists,
+DO NOT rewrite it.
+
+Only repair broken APIs, imports, database queries or routing.
+
+==========================
+PHASE 5 — END TO END TEST
+==========================
+
+Actually perform these tests.
+
+1. Register new user
+
+2. Login
+
+3. Admin login
+
+4. Verify user appears in Admin Users
+
+5. Create deposit
+
+6. Approve deposit
+
+7. Verify:
+
+- balance updated
+- investment created
+- transaction created
+- notification created
+
+8. Run profit cron
+
+Verify:
+
+- earnings created
+- balance updated
+- notification created
+
+9. Create withdrawal
+
+10. Approve withdrawal
+
+Verify:
+
+- balance deducted
+- transaction created
+- notification created
+
+11. Open Notifications page
+
+Verify:
+
+- mark one read
+- mark all read
+
+12. Open Deposit page
+
+Verify:
+
+- wallet addresses load from database
+- QR codes generate correctly
+
+13. Open every Admin page and User page.
+
+Fix only broken pages.
+
+==========================
+RULES
+==========================
+
+Never remove existing functionality.
+
+Never overwrite working code.
+
+Never create duplicate implementations.
+
+Always reuse existing code.
+
+Always preserve previous client requirements.
+
+==========================
+FINAL REPORT
+==========================
+
+When finished provide:
+
+1. Every bug fixed
+
+2. Every file modified
+
+3. Every API tested
+
+4. Every database table verified
+
+5. Every page verified
+
+6. Confirm Preview is running.
+
+7. Confirm registration works.
+
+8. Confirm admin works.
+
+9. Confirm notifications work.
+
+10. Confirm deposit wallets work.
+
+11. Confirm automatic profit system works.
+
+Do NOT stop until Preview is fully working and all critical flows pass.

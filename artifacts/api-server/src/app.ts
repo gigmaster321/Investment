@@ -49,8 +49,8 @@ app.use(
     store: process.env["DATABASE_URL"]
       ? new PgStore({
           conString: process.env["DATABASE_URL"],
-          tableName: "user_sessions",
-          createTableIfMissing: true,
+          tableName: "session",
+          createTableIfMissing: false,
         })
       : undefined,
     cookie: {
