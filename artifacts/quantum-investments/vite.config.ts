@@ -3,14 +3,12 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
-const isReplitDev =
-  process.env.NODE_ENV !== 'production' && process.env.REPL_ID !== undefined;
+import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
 const rawPort = process.env.PORT;
-const port =
-  rawPort && !Number.isNaN(Number(rawPort)) && Number(rawPort) > 0
-    ? Number(rawPort)
-    : 5173;
+const port = rawPort && !Number.isNaN(Number(rawPort)) && Number(rawPort) > 0
+  ? Number(rawPort)
+  : 5173;
 
 const basePath = process.env.BASE_PATH || '/';
 
@@ -19,9 +17,10 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    ...(isReplitDev
+    runtimeErrorOverlay(),
+    ...(process.env.NODE_ENV !== 'production' &&
+    process.env.REPL_ID !== undefined
       ? [
-          (await import('@replit/vite-plugin-runtime-error-modal')).default(),
           await import('@replit/vite-plugin-cartographer').then((m) =>
             m.cartographer({
               root: path.resolve(import.meta.dirname, '..'),
@@ -47,7 +46,7 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
-    outDir: path.resolve(import.meta.dirname, 'dist', 'public'),
+    outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
   },
   server: {
@@ -55,14 +54,8 @@ export default defineConfig({
     strictPort: true,
     host: '0.0.0.0',
     allowedHosts: true,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-    },
     fs: {
-      strict: false,
+      strict: true,
     },
   },
   preview: {
