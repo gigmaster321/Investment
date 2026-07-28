@@ -143,18 +143,26 @@ async function ensureDatabase(): Promise<void> {
        'Based on historical backtesting and volatility-adjusted strategy modeling.',
        'Designed for new investors seeking structured exposure to innovation-focused equities with automated risk controls.',
        ARRAY['Automated trade execution','Risk-adjusted capital deployment','Portfolio rebalancing','Monthly performance reporting'],
-       'Active',1,1842,284100),
+       'Active',1,0,0),
       ('growth-ai','Growth AI',10000,100000,350,'350% – 550%','3 Days',
        'Advanced signal detection with volatility-aware execution framework.',
        'Enhanced AI signal modeling focused on high-growth innovation sectors and dynamic capital rotation.',
        ARRAY['High-frequency signal detection','Sector rotation strategy','Volatility hedging logic','Weekly analytics dashboard'],
-       'Active',2,1203,3600000),
+       'Active',2,0,0),
       ('elite-ai','Elite AI',100000,NULL,700,'+700%','5 Days',
        'Multi-layered AI execution across diversified innovation assets.',
        'Designed for large capital deployment with structured downside protection and dynamic reallocation systems.',
        ARRAY['Cross-sector AI allocation engine','Downside risk containment protocol','Real-time capital rebalancing','Dedicated strategy oversight'],
-       'Active',3,614,18200000)
+       'Active',3,0,0)
     ON CONFLICT (id) DO NOTHING;
+  `);
+
+  // Reset the now-unused investors/total_deposited columns that were seeded
+  // with fake demo values. Stats are computed live from the investments table.
+  await pool.query(`
+    UPDATE investment_plans SET investors = 0, total_deposited = 0
+    WHERE id IN ('starter-ai', 'growth-ai', 'elite-ai')
+      AND (investors != 0 OR total_deposited != 0);
   `);
 
   // ── 3. Withdrawals, earnings, notifications, wallets ───────────────────────

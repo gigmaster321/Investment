@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Award, Check, ChevronDown, CreditCard, Edit3, Eye, Gem,
@@ -341,15 +341,29 @@ type ModalMode =
   | { kind: 'create' }
   | null;
 
+const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`;
+
+interface PlanStats {
+  totalPlans: number;
+  totalInvestors: number;
+  averageRoi: number;
+  totalAum: number;
+}
+
+const ZERO_STATS: PlanStats = { totalPlans: 0, totalInvestors: 0, averageRoi: 0, totalAum: 0 };
+
 export default function AdminPlans() {
   const { plans, loading, error, createPlan, updatePlan, setPlanStatus, deletePlan } = useInvestmentPlans();
   const [modal, setModal] = useState<ModalMode>(null);
+  const [stats, setStats] = useState<PlanStats>(ZERO_STATS);
   const activePlans = plans.filter((plan) => plan.status === 'Active');
-  const summary = useMemo(() => ({
-    investors: plans.reduce((total, plan) => total + plan.investors, 0),
-    averageRoi: plans.length ? plans.reduce((total, plan) => total + plan.profitPercentage, 0) / plans.length : 0,
-    aum: plans.reduce((total, plan) => total + plan.totalDeposited, 0),
-  }), [plans]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/plans/stats`, { credentials: 'include' })
+      .then((r) => r.ok ? r.json() as Promise<PlanStats> : Promise.resolve(ZERO_STATS))
+      .then(setStats)
+      .catch(() => setStats(ZERO_STATS));
+  }, [plans]); // re-fetch whenever plans change (create/delete/update)
 
   async function handleCreate(input: PlanInput) {
     try {
@@ -414,10 +428,10 @@ export default function AdminPlans() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total Plans', value: String(plans.length), icon: CreditCard },
-            { label: 'Total Investors', value: summary.investors.toLocaleString(), icon: ShieldCheck },
-            { label: 'Avg ROI', value: `${summary.averageRoi.toFixed(2)}%`, icon: Gem },
-            { label: 'Total AUM', value: money(summary.aum), icon: TrendingUpIcon },
+            { label: 'Total Plans', value: String(stats.totalPlans), icon: CreditCard },
+            { label: 'Total Investors', value: stats.totalInvestors.toLocaleString(), icon: ShieldCheck },
+            { label: 'Avg ROI', value: `${stats.averageRoi.toFixed(2)}%`, icon: Gem },
+            { label: 'Total AUM', value: money(stats.totalAum), icon: TrendingUpIcon },
           ].map((stat) => (
             <div key={stat.label} className="bg-card/40 border border-white/5 rounded-xl p-4 flex items-center gap-3">
               <div className="bg-primary/15 p-2 rounded-lg shrink-0"><stat.icon size={16} className="text-accent" /></div>

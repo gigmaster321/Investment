@@ -143,6 +143,37 @@ async function generateId(name: string): Promise<string> {
 
 const router: IRouter = Router();
 
+// GET /api/admin/plans/stats — real stats computed from the investments table
+// NOTE: mounted at /api/plans but access-gated by requireAdmin; must appear
+// before "/:planId" so Express doesn't match the literal string "stats" as an id.
+router.get("/stats", requireAdmin, async (_req, res) => {
+  try {
+    const { pool } = await import("@workspace/db");
+    const result = await pool.query<{
+      total_plans: number;
+      total_investors: number;
+      average_roi: string;
+      total_aum: string;
+    }>(`
+      SELECT
+        (SELECT COUNT(*)::int           FROM investment_plans)                                AS total_plans,
+        (SELECT COUNT(DISTINCT user_id)::int FROM investments WHERE status = 'Active')       AS total_investors,
+        (SELECT COALESCE(AVG(profit_percentage), 0) FROM investment_plans)                   AS average_roi,
+        (SELECT COALESCE(SUM(investment_amount), 0) FROM investments WHERE status = 'Active') AS total_aum
+    `);
+    const row = result.rows[0];
+    res.json({
+      totalPlans:      row.total_plans,
+      totalInvestors:  row.total_investors,
+      averageRoi:      Number(row.average_roi),
+      totalAum:        Number(row.total_aum),
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to get plan stats");
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
 // GET /api/plans
 router.get("/", async (_req, res) => {
   try {
