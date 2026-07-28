@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearch } from 'wouter';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Copy, Check, ArrowRight, ArrowDownToLine, Clock, FileText,
-  QrCode, AlertCircle, Upload, X, ChevronDown,
+  QrCode, AlertCircle, Upload, X, ChevronDown, Info,
 } from 'lucide-react';
 import { FaBitcoin, FaEthereum } from 'react-icons/fa';
 import { SiTether } from 'react-icons/si';
@@ -333,7 +334,13 @@ function SubmitForm({ prefillAmount, selectedMethod, onSuccess, onBack }: Submit
 
 export default function Deposits() {
   const { user, refreshUser } = useAuth();
-  const [amount,    setAmount]    = useState('');
+  const search = useSearch();
+  const searchParams = new URLSearchParams(search);
+  const minAmountParam = searchParams.get('minAmount');
+  const planNameParam = searchParams.get('planName');
+  const redirectedFromInvest = minAmountParam !== null;
+
+  const [amount,    setAmount]    = useState(minAmountParam ?? '');
   const [method,    setMethod]    = useState<Method>({ ...PAYMENT_METHODS_BASE[0], address: '' });
   const [copied,    setCopied]    = useState(false);
   const [step,      setStep]      = useState<'form' | 'submit' | 'success'>('form');
@@ -450,6 +457,27 @@ export default function Deposits() {
         <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Deposits</h1>
         <p className="text-muted-foreground">Add capital to your Quantum Investments account.</p>
       </header>
+
+      {/* Insufficient balance banner — shown when redirected from Invest flow */}
+      {redirectedFromInvest && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-start gap-3 bg-amber-500/10 border border-amber-500/25 rounded-xl p-4"
+        >
+          <Info size={18} className="text-amber-400 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-amber-300 font-semibold text-sm">
+              Your wallet balance is insufficient.
+            </p>
+            <p className="text-amber-400/80 text-sm mt-0.5">
+              Please deposit at least the minimum amount required
+              {planNameParam ? ` for the ${planNameParam} Plan` : ''}.
+              {minAmountParam ? ` Minimum: $${Number(minAmountParam).toLocaleString()}.` : ''}
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

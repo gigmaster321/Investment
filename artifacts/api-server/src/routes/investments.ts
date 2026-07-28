@@ -250,8 +250,8 @@ router.get("/:investmentId", async (req, res) => {
   }
 });
 
-// POST /api/investments — create investment (admin-initiated or direct)
-router.post("/", async (req, res) => {
+// POST /api/investments — create investment (user-initiated, balance-gated)
+router.post("/", requireAuth, async (req, res) => {
   const { planId, amount } = req.body ?? {};
   if (!planId || typeof planId !== "string" || !amount || typeof amount !== "number" || amount <= 0) {
     res.status(400).json({ title: "Invalid investment", detail: "Provide a valid planId and investment amount." });
@@ -273,30 +273,67 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const { db, investmentsTable } = await getDb();
+    const { db, investmentsTable, usersTable } = await getDb();
+    const { eq, sql } = await import("drizzle-orm");
 
+    const userId = req.session.userId!;
+    const userEmail = req.session.userEmail ?? "";
+
+    // ── Balance check ────────────────────────────────────────────────────────
+    const [userRow] = await db
+      .select({ balance: usersTable.balance })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+
+    if (!userRow) {
+      res.status(404).json({ error: "USER_NOT_FOUND" });
+      return;
+    }
+
+    const balance = Number(userRow.balance);
+    if (balance < amount) {
+      res.status(400).json({
+        error: "INSUFFICIENT_BALANCE",
+        title: "Insufficient balance",
+        detail: `Your wallet balance ($${balance.toFixed(2)}) is less than the investment amount. Please deposit at least $${(amount - balance).toFixed(2)} more.`,
+        balance,
+        required: amount,
+      });
+      return;
+    }
+
+    // ── Deduct balance & create investment atomically ────────────────────────
     const cycleDays = parseCycleDays(plan.executionCycle);
     const startDate = new Date();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + cycleDays);
 
-    const userId = req.session.userId!;
-    const userEmail = req.session.userEmail ?? "";
+    const amountStr = amount.toFixed(2);
 
-    const [row] = await db
-      .insert(investmentsTable)
-      .values({
-        user_id: userId,
-        plan_id: plan.id,
-        plan_name: plan.name,
-        plan_execution_cycle: plan.executionCycle,
-        investment_amount: amount.toFixed(2),
-        profit_percentage: String(plan.profitPercentage),
-        start_date: startDate,
-        end_date: endDate,
-        status: "Active",
-      })
-      .returning();
+    const [row] = await db.transaction(async (tx) => {
+      // 1. Deduct from wallet
+      await tx
+        .update(usersTable)
+        .set({ balance: sql`${usersTable.balance} - ${amountStr}::numeric` })
+        .where(eq(usersTable.id, userId));
+
+      // 2. Create investment record
+      return tx
+        .insert(investmentsTable)
+        .values({
+          user_id: userId,
+          plan_id: plan.id,
+          plan_name: plan.name,
+          plan_execution_cycle: plan.executionCycle,
+          investment_amount: amountStr,
+          profit_percentage: String(plan.profitPercentage),
+          start_date: startDate,
+          end_date: endDate,
+          status: "Active",
+        })
+        .returning();
+    });
 
     res.status(201).json(
       toInvestmentResponse(row, {

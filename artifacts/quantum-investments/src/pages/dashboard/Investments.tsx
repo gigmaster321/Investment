@@ -1,26 +1,31 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, TrendingUp, Clock, ShieldCheck, X, DollarSign, Calendar } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { formatInvestmentAmount, useInvestmentPlans, type InvestmentPlan } from '@/lib/investment-plans';
 import { formatInvestmentDate, formatRemainingTime, useInvestments, type Investment } from '@/lib/investments';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BuyPlanModalProps {
   plan: InvestmentPlan;
+  userBalance: number;
   onClose: () => void;
   onCreate: (amount: number) => Promise<Investment>;
 }
 
-function BuyPlanModal({ plan, onClose, onCreate }: BuyPlanModalProps) {
+function BuyPlanModal({ plan, userBalance, onClose, onCreate }: BuyPlanModalProps) {
   const [amount, setAmount] = useState('');
   const [reviewing, setReviewing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<Investment | null>(null);
 
   const amountNum = Number(amount);
-  const isValid = amount !== '' && Number.isFinite(amountNum) && amountNum >= plan.minInvestment &&
+  const withinPlanRange = amount !== '' && Number.isFinite(amountNum) && amountNum >= plan.minInvestment &&
     (plan.maxInvestment === null || amountNum <= plan.maxInvestment);
-  const estimatedProfit = isValid ? (amountNum * plan.profitPercentage / 100).toFixed(2) : '0.00';
+  const withinBalance = amountNum <= userBalance;
+  const isValid = withinPlanRange && withinBalance;
+  const estimatedProfit = withinPlanRange ? (amountNum * plan.profitPercentage / 100).toFixed(2) : '0.00';
 
   async function confirmInvestment() {
     if (!isValid) return;
@@ -97,7 +102,18 @@ function BuyPlanModal({ plan, onClose, onCreate }: BuyPlanModalProps) {
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">$</span>
           <input type="number" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder={`Min. ${formatInvestmentAmount(plan.minInvestment)}`} min={plan.minInvestment} max={plan.maxInvestment ?? undefined} className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-8 pr-4 text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
         </div>
-        {amount !== '' && !isValid && <p className="text-xs text-red-400 mt-1.5">{amountNum < plan.minInvestment ? `Minimum investment is ${formatInvestmentAmount(plan.minInvestment)}` : `Maximum investment is ${formatInvestmentAmount(plan.maxInvestment)}`}</p>}
+        {amount !== '' && !withinPlanRange && (
+          <p className="text-xs text-red-400 mt-1.5">
+            {amountNum < plan.minInvestment
+              ? `Minimum investment is ${formatInvestmentAmount(plan.minInvestment)}`
+              : `Maximum investment is ${formatInvestmentAmount(plan.maxInvestment)}`}
+          </p>
+        )}
+        {amount !== '' && withinPlanRange && !withinBalance && (
+          <p className="text-xs text-amber-400 mt-1.5">
+            Amount exceeds your wallet balance of {formatInvestmentAmount(userBalance)}. Please deposit more funds first.
+          </p>
+        )}
       </div>
 
       {isValid && (
@@ -129,9 +145,12 @@ function statusClass(status: string) {
 export default function Investments() {
   const [activeTab, setActiveTab] = useState('Active');
   const [selectedPlan, setSelectedPlan] = useState<InvestmentPlan | null>(null);
+  const { user, refreshUser } = useAuth();
+  const [, navigate] = useLocation();
   const { plans, loading } = useInvestmentPlans();
   const { investments, loading: investmentsLoading, create } = useInvestments();
   const activePlans = plans.filter((plan) => plan.status === 'Active');
+  const userBalance = Number(user?.balance ?? 0);
 
   // Active: only fully Active investments from DB (approved by admin)
   const activeInvestments = investments.filter((investment) => investment.displayStatus === 'Active');
@@ -142,7 +161,23 @@ export default function Investments() {
 
   async function createUserInvestment(amount: number) {
     if (!selectedPlan) throw new Error('Select an investment plan first.');
-    return create({ planId: selectedPlan.id, amount });
+    const investment = await create({ planId: selectedPlan.id, amount });
+    // Refresh session so balance reflects the deduction
+    void refreshUser();
+    return investment;
+  }
+
+  function handleInvestNow(plan: InvestmentPlan) {
+    if (userBalance < plan.minInvestment) {
+      // Insufficient balance — redirect to Deposits with context
+      toast({
+        title: 'Insufficient wallet balance',
+        description: `Your wallet balance is insufficient. Please deposit at least the minimum amount required for this plan.`,
+      });
+      navigate(`/dashboard/deposits?minAmount=${plan.minInvestment}&planName=${encodeURIComponent(plan.name)}`);
+      return;
+    }
+    setSelectedPlan(plan);
   }
 
   return (
@@ -284,7 +319,7 @@ export default function Investments() {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Duration</span><span className="text-white font-medium">{plan.executionCycle}</span></div>
               </div>
             </div>
-            <button onClick={() => setSelectedPlan(plan)} className={`mt-auto w-full py-3 rounded-xl font-semibold transition-all ${index === 1 ? 'bg-white/10 text-white' : 'bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(21,101,232,0.3)]'}`}>Invest Now</button>
+            <button onClick={() => handleInvestNow(plan)} className={`mt-auto w-full py-3 rounded-xl font-semibold transition-all ${index === 1 ? 'bg-white/10 text-white' : 'bg-primary hover:bg-primary/90 text-white shadow-[0_0_20px_rgba(21,101,232,0.3)]'}`}>Invest Now</button>
           </motion.div>)}
           {!loading && activePlans.length === 0 && <p className="col-span-full text-center text-sm text-muted-foreground">No active investment plans are available.</p>}
         </div>
@@ -294,7 +329,7 @@ export default function Investments() {
         {selectedPlan && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(event) => { if (event.target === event.currentTarget) setSelectedPlan(null); }}>
           <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }} transition={{ duration: 0.2 }} className="bg-[hsl(221,70%,13%)] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between mb-5"><h2 className="text-lg font-bold text-white">Invest in {selectedPlan.name} Plan</h2><button onClick={() => setSelectedPlan(null)} className="text-muted-foreground hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5"><X size={20} /></button></div>
-            <BuyPlanModal plan={selectedPlan} onClose={() => setSelectedPlan(null)} onCreate={createUserInvestment} />
+            <BuyPlanModal plan={selectedPlan} userBalance={userBalance} onClose={() => setSelectedPlan(null)} onCreate={createUserInvestment} />
           </motion.div>
         </motion.div>}
       </AnimatePresence>
