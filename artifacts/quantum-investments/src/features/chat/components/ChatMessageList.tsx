@@ -98,7 +98,7 @@ export default function ChatMessageList({ messages, showTyping, isLoading, myRol
             >
               <ChatBubble
                 message={item.msg}
-                isMine={item.msg.sender_type === 'user'}
+                isMine={item.msg.sender_type === myRole}
               />
             </motion.div>
           ),
