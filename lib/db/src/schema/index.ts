@@ -10,3 +10,4 @@ export * from "./notifications";
 export * from "./chat";
 export * from "./email_otps";
 export * from "./admin_config";
+export * from "./admin_notifications";

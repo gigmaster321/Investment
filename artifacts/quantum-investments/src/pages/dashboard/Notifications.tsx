@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, ArrowDownLeft, ArrowUpRight, TrendingUp, ShieldAlert, CheckCircle2, Loader2 } from 'lucide-react';
+import { useNotificationCount } from '@/contexts/NotificationContext';
 
 type NotificationType = 'Investment' | 'Deposit' | 'Withdrawal' | 'System';
 
@@ -42,6 +43,7 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const { refresh: refreshBadge } = useNotificationCount();
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -64,8 +66,8 @@ export default function Notifications() {
   const filtered = notifications.filter(n => filter === 'All' || n.type === filter);
 
   const markAllRead = async () => {
-    // Optimistic update
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    refreshBadge();
     try {
       await fetch(`${API_BASE}/notifications/read-all`, {
         method: 'PATCH',
@@ -78,8 +80,8 @@ export default function Notifications() {
 
   const markRead = async (id: number) => {
     if (notifications.find(n => n.id === id)?.read) return;
-    // Optimistic update
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    refreshBadge();
     try {
       await fetch(`${API_BASE}/notifications/${id}/read`, {
         method: 'PATCH',

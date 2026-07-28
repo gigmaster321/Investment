@@ -3,10 +3,12 @@ import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Users, ArrowDownCircle, TrendingUp,
   BarChart2, Settings, LogOut, X, Shield,
-  CreditCard, DollarSign, Wallet, MessageSquare,
+  CreditCard, DollarSign, Wallet, MessageSquare, Bell,
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { chatApiService } from '@/features/chat/services/chatApi';
+
+const ADMIN_API = import.meta.env.BASE_URL.replace(/\/$/, '') + '/api';
 
 function useChatUnreadCount() {
   const [count, setCount] = useState(0);
@@ -21,6 +23,26 @@ function useChatUnreadCount() {
     const t = setInterval(fetch, 5_000);
     return () => clearInterval(t);
   }, [fetch]);
+  return count;
+}
+
+function useAdminNotifCount() {
+  const [count, setCount] = useState(0);
+  const fetch_ = useCallback(async () => {
+    try {
+      const res = await window.fetch(`${ADMIN_API}/admin/notifications/unread-count`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return;
+      const { count: c } = await res.json();
+      setCount(c ?? 0);
+    } catch { /* silent */ }
+  }, []);
+  useEffect(() => {
+    fetch_();
+    const t = setInterval(fetch_, 15_000);
+    return () => clearInterval(t);
+  }, [fetch_]);
   return count;
 }
 
@@ -75,6 +97,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { logout } = useAdminAuth();
   const chatUnread = useChatUnreadCount();
+  const notifUnread = useAdminNotifCount();
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? location === href : location.startsWith(href);
@@ -143,16 +166,19 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
           </div>
         ))}
 
-        {/* Support — Chat with dynamic unread badge */}
+        {/* Support — Chat + Notifications with dynamic unread badges */}
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 px-3 mb-2">
             Support
           </p>
           <div className="flex flex-col gap-0.5">
-            {(() => {
-              const active = isActive('/wp-admin/chat');
+            {([
+              { href: '/wp-admin/notifications', label: 'Notifications', icon: Bell, badge: notifUnread },
+              { href: '/wp-admin/chat', label: 'Live Chat', icon: MessageSquare, badge: chatUnread },
+            ] as const).map((item) => {
+              const active = isActive(item.href);
               return (
-                <Link href="/wp-admin/chat">
+                <Link key={item.href} href={item.href}>
                   <div
                     onClick={() => onClose?.()}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 cursor-pointer text-sm font-medium ${
@@ -161,17 +187,17 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
                         : 'text-muted-foreground hover:text-white hover:bg-white/5'
                     }`}
                   >
-                    <MessageSquare size={17} className={active ? 'text-accent' : ''} />
-                    <span className="flex-1">Live Chat</span>
-                    {chatUnread > 0 && (
+                    <item.icon size={17} className={active ? 'text-accent' : ''} />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge > 0 && (
                       <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-[10px] font-bold text-white flex items-center justify-center">
-                        {chatUnread > 99 ? '99+' : chatUnread}
+                        {item.badge > 99 ? '99+' : item.badge}
                       </span>
                     )}
                   </div>
                 </Link>
               );
-            })()}
+            })}
           </div>
         </div>
       </nav>

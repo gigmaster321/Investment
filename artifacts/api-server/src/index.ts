@@ -266,6 +266,24 @@ async function ensureDatabase(): Promise<void> {
       "updated_at" timestamp NOT NULL DEFAULT now()
     );
   `);
+
+  // ── 7. Admin notifications table ───────────────────────────────────────────
+  // Global (not user-scoped) alerts for the admin: new deposits, withdrawals,
+  // registrations. A separate table keeps admin and user concern cleanly apart.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "admin_notifications" (
+      "id"          serial    PRIMARY KEY NOT NULL,
+      "type"        text      NOT NULL,
+      "title"       text      NOT NULL,
+      "description" text      NOT NULL,
+      "read"        boolean   DEFAULT false NOT NULL,
+      "created_at"  timestamp DEFAULT now() NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS "admin_notifications_read_idx"
+      ON "admin_notifications"("read");
+    CREATE INDEX IF NOT EXISTS "admin_notifications_created_idx"
+      ON "admin_notifications"("created_at" DESC);
+  `);
 }
 
 ensureDatabase()

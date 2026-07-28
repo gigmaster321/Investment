@@ -8,6 +8,30 @@ async function getDb() {
   return import("@workspace/db");
 }
 
+// GET /api/notifications/unread-count — badge count for the sidebar
+router.get("/unread-count", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.userId!;
+    const { db, notificationsTable } = await getDb();
+    const { eq, and, sql } = await import("drizzle-orm");
+
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.user_id, userId),
+          eq(notificationsTable.read, false),
+        ),
+      );
+
+    res.json({ count: row?.count ?? 0 });
+  } catch (err) {
+    logger.error({ err }, "Failed to get notification unread count");
+    res.status(500).json({ error: "SERVER_ERROR" });
+  }
+});
+
 // GET /api/notifications — all notifications for the current user, newest first
 router.get("/", requireAuth, async (req, res) => {
   try {

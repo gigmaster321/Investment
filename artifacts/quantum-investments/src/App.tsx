@@ -10,6 +10,7 @@ import { Route, Switch, Router as WouterRouter, useLocation, Redirect } from 'wo
 
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import DashboardOverview from '@/pages/dashboard/index';
@@ -38,6 +39,7 @@ import { InvestmentsProvider } from '@/lib/investments';
 import AdminInvestments from '@/pages/admin/Investments';
 import AdminWallets from '@/pages/admin/Wallets';
 import AdminChatPage from '@/features/chat/pages/AdminChatPage';
+import AdminNotifications from '@/pages/admin/Notifications';
 
 const queryClient = new QueryClient();
 
@@ -155,6 +157,9 @@ function Router() {
       <Route path="/wp-admin/chat">
         <AdminLayout><AdminChatPage /></AdminLayout>
       </Route>
+      <Route path="/wp-admin/notifications">
+        <AdminLayout><AdminNotifications /></AdminLayout>
+      </Route>
 
       <Route component={NotFound} />
     </Switch>
@@ -165,6 +170,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <NotificationProvider>
         <AdminAuthProvider>
           <InvestmentPlansProvider>
             <InvestmentsProvider>
@@ -178,6 +184,7 @@ function App() {
             </InvestmentsProvider>
           </InvestmentPlansProvider>
         </AdminAuthProvider>
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

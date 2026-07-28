@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth, requireAdmin } from "../middleware/requireAuth.js";
 import { logger } from "../lib/logger.js";
 import { createNotification } from "../lib/notifications.js";
+import { createAdminNotification } from "../lib/admin-notifications.js";
 
 const router = Router();
 
@@ -64,6 +65,13 @@ router.post("/", requireAuth, async (req, res) => {
         status: "Pending",
       })
       .returning();
+
+    // Non-blocking admin alert — fires once at submission, not on approve/reject
+    void createAdminNotification(
+      "Withdrawal",
+      "New Withdrawal Request",
+      `$${numericAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} withdrawal requested via ${crypto.trim().toUpperCase()} to ${wallet_address.trim().slice(0, 12)}…`,
+    );
 
     res.status(201).json(withdrawal);
   } catch (err) {

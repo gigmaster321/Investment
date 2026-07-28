@@ -3,6 +3,7 @@ import { requireAuth, requireAdmin } from "../middleware/requireAuth.js";
 import { logger } from "../lib/logger.js";
 import { getInvestmentPlanById, parseCycleDaysFromCycle } from "./plans.js";
 import { createNotification } from "../lib/notifications.js";
+import { createAdminNotification } from "../lib/admin-notifications.js";
 
 const router = Router();
 
@@ -36,6 +37,13 @@ router.post("/", requireAuth, async (req, res) => {
         status: "Pending",
       })
       .returning();
+
+    // Non-blocking admin alert — fires once at submission, not on approve/reject
+    void createAdminNotification(
+      "Deposit",
+      "New Deposit Request",
+      `$${numericAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })} deposit submitted${plan_name ? ` for ${plan_name}` : ""} via ${payment_method ?? "BTC"}.`,
+    );
 
     res.status(201).json(deposit);
   } catch (err) {
