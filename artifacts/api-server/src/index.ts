@@ -188,8 +188,7 @@ async function ensureDatabase(): Promise<void> {
       "investment_id" integer NOT NULL REFERENCES "investments"("id") ON DELETE CASCADE,
       "amount"        numeric(15,2) NOT NULL,
       "credit_date"   date    NOT NULL,
-      "created_at"    timestamp DEFAULT now() NOT NULL,
-      CONSTRAINT "earnings_investment_date_uniq" UNIQUE("investment_id","credit_date")
+      "created_at"    timestamp DEFAULT now() NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS "notifications" (
@@ -214,6 +213,31 @@ async function ensureDatabase(): Promise<void> {
       "is_active"  boolean   NOT NULL DEFAULT true,
       "updated_at" timestamp NOT NULL DEFAULT now()
     );
+  `);
+
+  // ── 3b. Earnings table migrations ─────────────────────────────────────────
+  //
+  // The original CREATE TABLE was missing the `source` column and used a full
+  // unique constraint instead of the required partial index. These idempotent
+  // ALTER statements bring any existing database up to the correct shape:
+  //   • Add `source` column (DEFAULT 'auto' so existing rows stay valid)
+  //   • Drop the old full unique constraint if it still exists
+  //   • Create the correct partial unique index (only for source = 'auto')
+  //     so the auto-cron is idempotent while admin manual credits are unrestricted.
+  await pool.query(`
+    ALTER TABLE "earnings"
+      ADD COLUMN IF NOT EXISTS "source" text NOT NULL DEFAULT 'auto';
+
+    -- Drop old full unique constraint (may be a constraint or an index)
+    ALTER TABLE "earnings"
+      DROP CONSTRAINT IF EXISTS "earnings_investment_date_uniq";
+
+    DROP INDEX IF EXISTS "earnings_investment_date_uniq";
+
+    -- Partial unique index: only one auto credit per (investment, date)
+    CREATE UNIQUE INDEX IF NOT EXISTS "earnings_investment_date_uniq"
+      ON "earnings" ("investment_id", "credit_date")
+      WHERE source = 'auto';
   `);
 
   // ── 4. Session table ───────────────────────────────────────────────────────

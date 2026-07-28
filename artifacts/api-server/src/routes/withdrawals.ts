@@ -164,6 +164,25 @@ router.patch("/:id/approve", requireAdmin, async (req, res) => {
       return;
     }
 
+    // Re-read current balance at approval time to prevent over-withdrawal when
+    // multiple requests are pending simultaneously. If the user's live balance
+    // is now below the approved amount we reject rather than silently under-deduct
+    // (which would corrupt total_withdrawal).
+    const [userRow] = await db
+      .select({ balance: usersTable.balance })
+      .from(usersTable)
+      .where(eq(usersTable.id, existing.user_id))
+      .limit(1);
+
+    const currentBalance = Number(userRow?.balance ?? 0);
+    if (currentBalance < approvedAmount) {
+      res.status(400).json({
+        error: "INSUFFICIENT_BALANCE",
+        message: `User's current balance ($${currentBalance.toFixed(2)}) is less than the approved withdrawal amount ($${approvedAmount.toFixed(2)}). Reduce the approved amount or reject this request.`,
+      });
+      return;
+    }
+
     const adminName = req.session.userEmail ?? "Admin";
 
     // 1. Mark withdrawal approved
@@ -179,11 +198,12 @@ router.patch("/:id/approve", requireAdmin, async (req, res) => {
       .where(eq(withdrawalRequestsTable.id, id))
       .returning();
 
-    // 2. Deduct approved amount from balance; increment total_withdrawal
+    // 2. Deduct exact approved amount from balance; increment total_withdrawal.
+    //    Balance was verified above so the subtraction is always safe.
     await db
       .update(usersTable)
       .set({
-        balance: sql`GREATEST(0, ${usersTable.balance} - ${approvedAmount})`,
+        balance: sql`${usersTable.balance} - ${approvedAmount}`,
         total_withdrawal: sql`${usersTable.total_withdrawal} + ${approvedAmount}`,
         updated_at: new Date(),
       })

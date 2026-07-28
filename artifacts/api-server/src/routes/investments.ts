@@ -311,6 +311,8 @@ router.post("/", requireAuth, async (req, res) => {
 
     const amountStr = amount.toFixed(2);
 
+    const { transactionsTable } = await getDb();
+
     const [row] = await db.transaction(async (tx) => {
       // 1. Deduct from wallet
       await tx
@@ -319,7 +321,7 @@ router.post("/", requireAuth, async (req, res) => {
         .where(eq(usersTable.id, userId));
 
       // 2. Create investment record
-      return tx
+      const [inv] = await tx
         .insert(investmentsTable)
         .values({
           user_id: userId,
@@ -333,6 +335,19 @@ router.post("/", requireAuth, async (req, res) => {
           status: "Active",
         })
         .returning();
+
+      // 3. Write a transaction record so the balance deduction is visible
+      //    in the user's transaction history.
+      await tx.insert(transactionsTable).values({
+        user_id: userId,
+        type: "Investment",
+        amount: amountStr,
+        description: `Investment placed — ${plan.name} Plan`,
+        reference_id: `INV-${inv.id}`,
+        status: "Completed",
+      });
+
+      return [inv];
     });
 
     res.status(201).json(
