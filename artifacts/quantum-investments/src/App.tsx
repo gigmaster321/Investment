@@ -6,7 +6,7 @@ import NotFound from '@/pages/not-found';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
-import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -41,6 +41,21 @@ import AdminChat from '@/pages/admin/Chat';
 import AdminWallets from '@/pages/admin/Wallets';
 
 const queryClient = new QueryClient();
+
+/**
+ * Route-aware controller — renders LiveNotifications with the correct mode:
+ *   /admin/*  → nothing (admin never sees popups)
+ *   /dashboard/* → 'dashboard' mode (one popup every 5 minutes)
+ *   everything else → 'landing' mode (rotating public activity feed)
+ *
+ * Must live inside <WouterRouter> so useLocation works.
+ */
+function LiveNotificationsController() {
+  const [location] = useLocation();
+  if (location.startsWith('/admin')) return null;
+  if (location.startsWith('/dashboard')) return <LiveNotifications mode="dashboard" />;
+  return <LiveNotifications mode="landing" />;
+}
 
 function Router() {
   return (
@@ -151,9 +166,9 @@ function App() {
               <TooltipProvider>
                 <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
                   <Router />
+                  <LiveNotificationsController />
                 </WouterRouter>
                 <Toaster />
-                <LiveNotifications />
               </TooltipProvider>
             </InvestmentsProvider>
           </InvestmentPlansProvider>

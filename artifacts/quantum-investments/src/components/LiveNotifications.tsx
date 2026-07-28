@@ -51,6 +51,7 @@ interface Notif {
 }
 
 const PLANS = ['Starter AI', 'Growth AI', 'Elite AI'];
+const ALL_KINDS: NotifKind[] = ['withdrawal', 'deposit', 'investor'];
 
 let _id = 0;
 function makeNotif(kind: NotifKind): Notif {
@@ -98,72 +99,120 @@ const KIND_META: Record<
 
 // Auto-dismiss each notification after this many ms
 const AUTO_DISMISS_MS = 5_500;
-// Max notifications shown at once
-const MAX_VISIBLE = 3;
+// Max notifications shown at once in landing mode
+const LANDING_MAX_VISIBLE = 3;
+// Interval between popups in dashboard mode (5 minutes)
+const DASHBOARD_INTERVAL_MS = 300_000;
+
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+export interface LiveNotificationsProps {
+  /**
+   * 'landing'   — public pages (home, login, register).
+   *               Rotates automatically every 8–35 s, up to 3 stacked.
+   *
+   * 'dashboard' — authenticated user dashboard.
+   *               One popup every 5 minutes, never stacked.
+   *               If a popup is already visible, the tick is skipped.
+   */
+  mode: 'landing' | 'dashboard';
+}
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function LiveNotifications() {
+export function LiveNotifications({ mode }: LiveNotificationsProps) {
   const [queue, setQueue] = useState<Notif[]>([]);
+
+  // Timer refs for landing mode (three independent chains)
   const withdrawalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const depositTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const investorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const depositTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const investorTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Interval ref for dashboard mode
+  const dashboardInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dismiss = useCallback((id: number) => {
     setQueue((q) => q.filter((n) => n.id !== id));
   }, []);
 
-  const push = useCallback((kind: NotifKind) => {
-    const notif = makeNotif(kind);
-    setQueue((q) => {
-      // Keep only the most recent MAX_VISIBLE (drop oldest if at cap)
-      const next = [...q, notif];
-      return next.length > MAX_VISIBLE ? next.slice(next.length - MAX_VISIBLE) : next;
-    });
-    // Auto-dismiss
-    setTimeout(() => dismiss(notif.id), AUTO_DISMISS_MS);
-  }, [dismiss]);
-
-  // Schedule the next withdrawal notification (8–12 s)
-  const scheduleWithdrawal = useCallback(() => {
-    withdrawalTimer.current = setTimeout(() => {
-      push('withdrawal');
-      scheduleWithdrawal();
-    }, rand(8_000, 12_000));
-  }, [push]);
-
-  // Schedule the next deposit notification (12–18 s)
-  const scheduleDeposit = useCallback(() => {
-    depositTimer.current = setTimeout(() => {
-      push('deposit');
-      scheduleDeposit();
-    }, rand(12_000, 18_000));
-  }, [push]);
-
-  // Schedule the next investor notification (20–35 s)
-  const scheduleInvestor = useCallback(() => {
-    investorTimer.current = setTimeout(() => {
-      push('investor');
-      scheduleInvestor();
-    }, rand(20_000, 35_000));
-  }, [push]);
-
+  // ── Landing mode — independent rotating chains ──────────────────────────
   useEffect(() => {
+    if (mode !== 'landing') return;
+
+    const push = (kind: NotifKind) => {
+      const notif = makeNotif(kind);
+      setQueue((q) => {
+        const next = [...q, notif];
+        return next.length > LANDING_MAX_VISIBLE
+          ? next.slice(next.length - LANDING_MAX_VISIBLE)
+          : next;
+      });
+      setTimeout(() => dismiss(notif.id), AUTO_DISMISS_MS);
+    };
+
+    const scheduleWithdrawal = () => {
+      withdrawalTimer.current = setTimeout(() => {
+        push('withdrawal');
+        scheduleWithdrawal();
+      }, rand(8_000, 12_000));
+    };
+
+    const scheduleDeposit = () => {
+      depositTimer.current = setTimeout(() => {
+        push('deposit');
+        scheduleDeposit();
+      }, rand(12_000, 18_000));
+    };
+
+    const scheduleInvestor = () => {
+      investorTimer.current = setTimeout(() => {
+        push('investor');
+        scheduleInvestor();
+      }, rand(20_000, 35_000));
+    };
+
     // Stagger the initial fires so they don't all fire at once
-    const t1 = setTimeout(scheduleWithdrawal, rand(3_000, 6_000));
-    const t2 = setTimeout(scheduleDeposit, rand(7_000, 12_000));
-    const t3 = setTimeout(scheduleInvestor, rand(15_000, 22_000));
+    const t1 = setTimeout(scheduleWithdrawal, rand(3_000,  6_000));
+    const t2 = setTimeout(scheduleDeposit,    rand(7_000, 12_000));
+    const t3 = setTimeout(scheduleInvestor,   rand(15_000, 22_000));
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
       if (withdrawalTimer.current) clearTimeout(withdrawalTimer.current);
-      if (depositTimer.current) clearTimeout(depositTimer.current);
-      if (investorTimer.current) clearTimeout(investorTimer.current);
+      if (depositTimer.current)    clearTimeout(depositTimer.current);
+      if (investorTimer.current)   clearTimeout(investorTimer.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // mode is stable after mount; disable exhaustive-deps for the inner fns
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  // ── Dashboard mode — one popup every 5 minutes, never stacked ──────────
+  useEffect(() => {
+    if (mode !== 'dashboard') return;
+
+    dashboardInterval.current = setInterval(() => {
+      setQueue((current) => {
+        // If a popup is still visible, skip this tick — no stacking
+        if (current.length > 0) return current;
+
+        const notif = makeNotif(pick(ALL_KINDS));
+
+        // Schedule auto-dismiss outside setQueue (no async inside updater)
+        setTimeout(() => {
+          setQueue((q) => q.filter((n) => n.id !== notif.id));
+        }, AUTO_DISMISS_MS);
+
+        return [notif];
+      });
+    }, DASHBOARD_INTERVAL_MS);
+
+    return () => {
+      if (dashboardInterval.current) clearInterval(dashboardInterval.current);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   return (
     // Fixed overlay — above navbar (z-50) and sidebar (z-40/z-50), below modal backdrops
