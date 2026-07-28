@@ -20,6 +20,7 @@ import Transactions from '@/pages/dashboard/Transactions';
 import Earnings from '@/pages/dashboard/Earnings';
 import Notifications from '@/pages/dashboard/Notifications';
 import Profile from '@/pages/dashboard/Profile';
+import UserChatPage from '@/features/chat/pages/UserChatPage';
 
 // Admin
 import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
@@ -102,6 +103,12 @@ function Router() {
           <DashboardLayout><Profile /></DashboardLayout>
         </ProtectedRoute>
       </Route>
+      <Route path="/dashboard/chat">
+        <ProtectedRoute>
+          <DashboardLayout><UserChatPage /></DashboardLayout>
+        </ProtectedRoute>
+      </Route>
+
       {/* /admin and /admin/* redirect to homepage — no longer exposes admin */}
       <Route path="/admin/login">
         <Redirect to="/" />
