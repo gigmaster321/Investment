@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Send, MessageCircle, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Send, MessageCircle, Loader2, AlertCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 import { chatApi, ChatMessage, formatChatTime } from '@/lib/chat-api';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
 
 const POLL_INTERVAL = 3000;
 
@@ -13,6 +12,91 @@ function getInitials(name?: string | null): string {
   if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? 'U';
   return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
 }
+
+// ─── Avatar components ────────────────────────────────────────────────────────
+
+function SupportAvatar() {
+  return (
+    <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/35 flex items-center justify-center shrink-0">
+      <ShieldCheck size={15} className="text-emerald-400" />
+    </div>
+  );
+}
+
+function UserAvatar({ initials }: { initials: string }) {
+  return (
+    <div className="w-8 h-8 rounded-full bg-primary/25 border border-primary/40 flex items-center justify-center shrink-0">
+      <span className="text-[11px] font-bold text-white/90">{initials}</span>
+    </div>
+  );
+}
+
+// ─── Message bubble ───────────────────────────────────────────────────────────
+
+interface BubbleProps {
+  msg: ChatMessage;
+  isUser: boolean;
+  senderLabel: string;
+  userInitials: string;
+}
+
+function MessageBubble({ msg, isUser, senderLabel, userInitials }: BubbleProps) {
+  return (
+    <div className={`flex items-end gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+      {/* Avatar */}
+      {isUser ? <UserAvatar initials={userInitials} /> : <SupportAvatar />}
+
+      {/* Bubble + meta */}
+      <div className={`flex flex-col max-w-[68%] ${isUser ? 'items-end' : 'items-start'}`}>
+        {/* Sender label */}
+        <span
+          className={`text-[10px] font-semibold mb-1.5 px-1 ${
+            isUser ? 'text-primary/70' : 'text-emerald-400/80'
+          }`}
+        >
+          {senderLabel}
+        </span>
+
+        {/* Bubble */}
+        <div
+          className={`relative px-4 py-3 text-[13.5px] leading-relaxed break-words ${
+            isUser
+              ? 'bg-primary text-white rounded-2xl rounded-br-[4px] shadow-[0_4px_24px_rgba(21,101,232,0.30)]'
+              : 'bg-[hsl(160_55%_10%/1)] border border-emerald-500/20 text-white/90 rounded-2xl rounded-bl-[4px]'
+          }`}
+        >
+          {msg.message}
+
+          {/* Time + read status */}
+          <div className={`flex items-center gap-1 mt-1.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
+            <span className="text-[10px] opacity-40 tabular-nums">
+              {formatChatTime(msg.created_at)}
+            </span>
+            {isUser && (
+              <span className={`text-[11px] leading-none ${msg.is_read ? 'text-blue-200' : 'opacity-40'}`}>
+                {msg.is_read ? '✓✓' : '✓'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Time separator ───────────────────────────────────────────────────────────
+
+function TimeSeparator({ time }: { time: string }) {
+  return (
+    <div className="flex items-center gap-3 my-4">
+      <div className="flex-1 h-px bg-white/5" />
+      <span className="text-[10px] text-white/25 font-medium tabular-nums shrink-0">{time}</span>
+      <div className="flex-1 h-px bg-white/5" />
+    </div>
+  );
+}
+
+// ─── Main chat page ───────────────────────────────────────────────────────────
 
 export default function Chat() {
   const { user } = useAuth();
@@ -24,89 +108,58 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const initialLoadDoneRef = useRef(false);
-  const maxNotifiedIdRef = useRef(0);
+  const maxSeenIdRef = useRef(0);
 
-  // Smart scroll: only auto-scroll if user is near the bottom
-  const isNearBottom = useCallback(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return true;
-    return el.scrollHeight - el.scrollTop - el.clientHeight < 140;
-  }, []);
-
-  const scrollToBottom = useCallback((force = false) => {
-    if (force || isNearBottom()) {
+  const forceScrollBottom = useCallback(() => {
+    requestAnimationFrame(() => {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [isNearBottom]);
+    });
+  }, []);
 
   const fetchMessages = useCallback(async (convId: number, markRead = false) => {
     try {
       const msgs = await chatApi.getMessages(convId);
-      if (markRead) await chatApi.markRead(convId);
-
-      setMessages((prev) => {
-        // Toast for new admin messages — only after initial load, no duplicates
-        if (initialLoadDoneRef.current) {
-          const knownMaxId = maxNotifiedIdRef.current;
-          const newAdminMsgs = msgs.filter(
-            (m) => m.sender_type === 'admin' && m.id > knownMaxId,
-          );
-          if (newAdminMsgs.length > 0) {
-            const latest = newAdminMsgs[newAdminMsgs.length - 1];
-            toast({
-              title: '💬 New message from Support',
-              description: latest.message.length > 80
-                ? latest.message.slice(0, 77) + '…'
-                : latest.message,
-            });
-          }
-        }
-        const newMax = msgs.reduce((m, msg) => Math.max(m, msg.id), maxNotifiedIdRef.current);
-        maxNotifiedIdRef.current = newMax;
-        return msgs;
-      });
+      if (markRead) chatApi.markRead(convId).catch(() => {});
+      setMessages(msgs);
+      const maxId = msgs.reduce((m, msg) => Math.max(m, msg.id), 0);
+      if (maxId > maxSeenIdRef.current) {
+        maxSeenIdRef.current = maxId;
+        forceScrollBottom();
+      }
     } catch {
       // non-fatal
     }
-  }, []);
+  }, [forceScrollBottom]);
 
-  // Init: get or create conversation
+  // Init
   useEffect(() => {
     (async () => {
       try {
         const conv = await chatApi.getOrCreateConversation();
         setConversationId(conv.id);
-        await fetchMessages(conv.id, true);
-        // Force scroll to bottom on initial load
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
-        initialLoadDoneRef.current = true;
+        const msgs = await chatApi.getMessages(conv.id);
+        await chatApi.markRead(conv.id).catch(() => {});
+        setMessages(msgs);
+        maxSeenIdRef.current = msgs.reduce((m, msg) => Math.max(m, msg.id), 0);
+        // Instant scroll on load
+        requestAnimationFrame(() => {
+          bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+        });
       } catch (err: any) {
         setError(err?.message ?? 'Could not load chat. Please try again.');
       } finally {
         setLoading(false);
       }
     })();
-  }, [fetchMessages]);
-
-  // Smart scroll when messages update
-  useEffect(() => {
-    if (!initialLoadDoneRef.current) return;
-    scrollToBottom(false);
-  }, [messages, scrollToBottom]);
+  }, []);
 
   // Polling
   useEffect(() => {
     if (!conversationId) return;
-    pollRef.current = setInterval(async () => {
-      await fetchMessages(conversationId, true);
-    }, POLL_INTERVAL);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
+    pollRef.current = setInterval(() => fetchMessages(conversationId, true), POLL_INTERVAL);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [conversationId, fetchMessages]);
 
   const handleSend = async () => {
@@ -115,17 +168,19 @@ export default function Chat() {
 
     setSending(true);
     setInputText('');
+    // Reset textarea height
+    if (inputRef.current) inputRef.current.style.height = '48px';
+
     try {
       const msg = await chatApi.sendMessage(conversationId, text);
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
-        maxNotifiedIdRef.current = Math.max(maxNotifiedIdRef.current, msg.id);
+        maxSeenIdRef.current = Math.max(maxSeenIdRef.current, msg.id);
         return [...prev, msg];
       });
-      // Always scroll after sending own message
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
+      forceScrollBottom();
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to send message.');
+      setError('Failed to send. Try again.');
       setInputText(text);
     } finally {
       setSending(false);
@@ -141,7 +196,9 @@ export default function Chat() {
   };
 
   const userInitials = getInitials(user?.full_name ?? user?.username);
+  const userName = user?.full_name ?? user?.username ?? 'You';
 
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -157,155 +214,143 @@ export default function Chat() {
         <p className="text-muted-foreground text-sm max-w-sm">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="text-accent hover:text-accent/70 text-sm font-medium"
+          className="flex items-center gap-1.5 text-accent hover:text-accent/70 text-sm font-medium"
         >
-          Retry
+          <RefreshCw size={14} /> Retry
         </button>
       </div>
     );
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Page header */}
       <header>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Live Chat Support</h1>
-        <p className="text-muted-foreground">Chat with our support team — we typically reply within minutes.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-white">Live Chat Support</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Chat with our support team — we typically reply within minutes.
+        </p>
       </header>
 
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="bg-card/40 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden flex flex-col"
-        style={{ height: 'calc(100vh - 280px)', minHeight: '480px' }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col rounded-2xl overflow-hidden border border-white/[0.07]"
+        style={{
+          background: 'hsl(224 70% 7% / 0.6)',
+          backdropFilter: 'blur(20px)',
+          height: 'calc(100vh - 240px)',
+          minHeight: '520px',
+        }}
       >
-        {/* Chat header */}
-        <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5 shrink-0">
-          <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-            <ShieldCheck size={18} className="text-emerald-400" />
+        {/* ── Chat header ───────────────────────────────────────────────── */}
+        <div
+          className="flex items-center gap-3 px-5 py-4 shrink-0 border-b border-white/[0.07]"
+          style={{ background: 'hsl(224 70% 6% / 0.8)' }}
+        >
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+              <ShieldCheck size={20} className="text-emerald-400" />
+            </div>
+            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-[hsl(224,70%,6%)]" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">Support Team</p>
-            <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-              <p className="text-xs text-muted-foreground">Online</p>
-            </div>
+            <p className="text-sm font-semibold text-white">Quantum Support</p>
+            <p className="text-xs text-emerald-400/80 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+              Online — typically replies in minutes
+            </p>
           </div>
         </div>
 
-        {/* Messages */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+        {/* ── Messages ──────────────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-1">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-              <MessageCircle size={40} className="text-white/10" />
-              <p className="text-muted-foreground text-sm">No messages yet. Start the conversation!</p>
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-center select-none">
+              <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center">
+                <MessageCircle size={24} className="text-white/20" />
+              </div>
+              <div>
+                <p className="text-white/40 text-sm font-medium">No messages yet</p>
+                <p className="text-white/20 text-xs mt-0.5">Start the conversation below</p>
+              </div>
             </div>
           )}
 
           {messages.map((msg, i) => {
             const isUser = msg.sender_type === 'user';
-            const showTime =
+            const showSep =
               i === 0 ||
               new Date(msg.created_at).getTime() -
                 new Date(messages[i - 1].created_at).getTime() >
-                60_000 * 5;
+                5 * 60_000;
 
             return (
               <div key={msg.id}>
-                {showTime && (
-                  <div className="text-center text-[10px] text-muted-foreground/50 my-3">
-                    {formatChatTime(msg.created_at)}
-                  </div>
-                )}
-
-                {/* Admin message — left aligned */}
-                {!isUser && (
-                  <div className="flex items-end gap-2.5 justify-start">
-                    {/* Admin avatar */}
-                    <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 mb-0.5">
-                      <ShieldCheck size={13} className="text-emerald-400" />
-                    </div>
-                    <div className="flex flex-col items-start max-w-[72%]">
-                      <span className="text-[10px] text-emerald-400/80 font-medium mb-1 ml-1">Admin</span>
-                      <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm text-sm leading-relaxed bg-emerald-500/10 border border-emerald-500/20 text-white/90">
-                        {msg.message}
-                        <div className="flex items-center gap-1 mt-1 justify-start">
-                          <span className="text-[10px] opacity-50">
-                            {formatChatTime(msg.created_at)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* User message — right aligned */}
-                {isUser && (
-                  <div className="flex items-end gap-2.5 justify-end">
-                    <div className="flex flex-col items-end max-w-[72%]">
-                      <span className="text-[10px] text-primary/80 font-medium mb-1 mr-1">You</span>
-                      <div className="px-4 py-2.5 rounded-2xl rounded-br-sm text-sm leading-relaxed bg-primary text-white shadow-[0_0_20px_rgba(21,101,232,0.25)]">
-                        {msg.message}
-                        <div className="flex items-center gap-1 mt-1 justify-end">
-                          <span className="text-[10px] opacity-60">
-                            {formatChatTime(msg.created_at)}
-                          </span>
-                          <span className={`text-[11px] leading-none ${msg.is_read ? 'text-accent/90' : 'opacity-60'}`}>
-                            {msg.is_read ? '✓✓' : '✓'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* User avatar */}
-                    <div className="w-7 h-7 rounded-full bg-primary/30 border border-primary/40 flex items-center justify-center shrink-0 mb-0.5">
-                      <span className="text-[10px] font-bold text-white/80">{userInitials}</span>
-                    </div>
-                  </div>
-                )}
+                {showSep && <TimeSeparator time={formatChatTime(msg.created_at)} />}
+                <div className="py-0.5">
+                  <MessageBubble
+                    msg={msg}
+                    isUser={isUser}
+                    senderLabel={isUser ? userName : 'Support Team'}
+                    userInitials={userInitials}
+                  />
+                </div>
               </div>
             );
           })}
-          <div ref={bottomRef} />
+          <div ref={bottomRef} className="h-1" />
         </div>
 
-        {/* Error banner */}
+        {/* ── Error banner ──────────────────────────────────────────────── */}
         {error && conversationId && (
-          <div className="mx-6 mb-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400">
+          <div className="mx-5 mb-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-center gap-2">
+            <AlertCircle size={13} />
             {error}
+            <button onClick={() => setError(null)} className="ml-auto text-red-400/60 hover:text-red-400">
+              <RefreshCw size={12} />
+            </button>
           </div>
         )}
 
-        {/* Input */}
-        <div className="px-6 py-4 border-t border-white/5 shrink-0">
+        {/* ── Input area ────────────────────────────────────────────────── */}
+        <div
+          className="px-5 py-4 shrink-0 border-t border-white/[0.07]"
+          style={{ background: 'hsl(224 70% 6% / 0.8)' }}
+        >
           <div className="flex gap-3 items-end">
-            <textarea
-              ref={inputRef}
-              rows={1}
-              value={inputText}
-              onChange={(e) => {
-                setInputText(e.target.value);
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a message… (Enter to send)"
-              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none overflow-hidden"
-              style={{ minHeight: '48px' }}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!inputText.trim() || sending}
-              className="shrink-0 w-12 h-12 bg-primary hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-all shadow-[0_0_20px_rgba(21,101,232,0.3)]"
-            >
-              {sending ? (
-                <Loader2 size={18} className="animate-spin text-white" />
-              ) : (
-                <Send size={18} className="text-white" />
-              )}
-            </button>
+            <UserAvatar initials={userInitials} />
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                rows={1}
+                value={inputText}
+                onChange={(e) => {
+                  setInputText(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message…"
+                className="w-full bg-white/[0.06] border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-primary/60 focus:bg-white/[0.08] transition-all resize-none overflow-hidden"
+                style={{ minHeight: '48px' }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!inputText.trim() || sending}
+                className="absolute right-2 bottom-2 w-8 h-8 bg-primary hover:bg-primary/90 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition-all"
+              >
+                {sending
+                  ? <Loader2 size={14} className="animate-spin text-white" />
+                  : <Send size={14} className="text-white" />
+                }
+              </button>
+            </div>
           </div>
-          <p className="text-[10px] text-muted-foreground/40 mt-2 text-center">
-            Press Enter to send · Shift+Enter for new line
+          <p className="text-[10px] text-white/15 mt-2 ml-11">
+            Enter to send · Shift+Enter for new line
           </p>
         </div>
       </motion.div>
