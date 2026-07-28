@@ -8,6 +8,8 @@ interface Props {
   messages: ChatMessage[];
   showTyping: boolean;
   isLoading: boolean;
+  /** Which sender_type is "mine" (right-aligned). Defaults to 'user'. */
+  myRole?: 'user' | 'admin';
 }
 
 /** Group consecutive messages into date buckets for date-separator display. */
@@ -22,7 +24,7 @@ function getDateLabel(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export default function ChatMessageList({ messages, showTyping, isLoading }: Props) {
+export default function ChatMessageList({ messages, showTyping, isLoading, myRole = 'user' }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom whenever messages or typing state changes

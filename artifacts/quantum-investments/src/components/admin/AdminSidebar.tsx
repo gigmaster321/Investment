@@ -1,11 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
   LayoutDashboard, Users, ArrowDownCircle, TrendingUp,
   BarChart2, Settings, LogOut, X, Shield,
-  CreditCard, DollarSign, Wallet,
+  CreditCard, DollarSign, Wallet, MessageSquare,
 } from 'lucide-react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { chatApiService } from '@/features/chat/services/chatApi';
+
+function useChatUnreadCount() {
+  const [count, setCount] = useState(0);
+  const fetch = useCallback(async () => {
+    try {
+      const { count } = await chatApiService.getUnreadCount();
+      setCount(count);
+    } catch { /* silent */ }
+  }, []);
+  useEffect(() => {
+    fetch();
+    const t = setInterval(fetch, 5_000);
+    return () => clearInterval(t);
+  }, [fetch]);
+  return count;
+}
 
 // @ts-ignore
 import logoPath from '@assets/Quantum_Investment_1784716537861.jpeg';
@@ -57,6 +74,7 @@ const BASE_NAV_SECTIONS: NavSection[] = [
 export function AdminSidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
   const { logout } = useAdminAuth();
+  const chatUnread = useChatUnreadCount();
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? location === href : location.startsWith(href);
@@ -124,6 +142,38 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             </div>
           </div>
         ))}
+
+        {/* Support — Chat with dynamic unread badge */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 px-3 mb-2">
+            Support
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {(() => {
+              const active = isActive('/wp-admin/chat');
+              return (
+                <Link href="/wp-admin/chat">
+                  <div
+                    onClick={() => onClose?.()}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 cursor-pointer text-sm font-medium ${
+                      active
+                        ? 'bg-primary/20 text-accent border border-primary/30 shadow-[0_0_15px_rgba(30,167,255,0.12)]'
+                        : 'text-muted-foreground hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <MessageSquare size={17} className={active ? 'text-accent' : ''} />
+                    <span className="flex-1">Live Chat</span>
+                    {chatUnread > 0 && (
+                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-[10px] font-bold text-white flex items-center justify-center">
+                        {chatUnread > 99 ? '99+' : chatUnread}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              );
+            })()}
+          </div>
+        </div>
       </nav>
 
       {/* Logout */}

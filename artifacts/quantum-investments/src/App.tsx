@@ -37,6 +37,7 @@ import { InvestmentPlansProvider } from '@/lib/investment-plans';
 import { InvestmentsProvider } from '@/lib/investments';
 import AdminInvestments from '@/pages/admin/Investments';
 import AdminWallets from '@/pages/admin/Wallets';
+import AdminChatPage from '@/features/chat/pages/AdminChatPage';
 
 const queryClient = new QueryClient();
 
@@ -150,6 +151,9 @@ function Router() {
       </Route>
       <Route path="/wp-admin/wallets">
         <AdminLayout><AdminWallets /></AdminLayout>
+      </Route>
+      <Route path="/wp-admin/chat">
+        <AdminLayout><AdminChatPage /></AdminLayout>
       </Route>
 
       <Route component={NotFound} />

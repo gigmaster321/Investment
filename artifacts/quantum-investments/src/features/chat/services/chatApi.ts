@@ -39,4 +39,20 @@ export const chatApiService = {
   /** Unread message count for sidebar badge. */
   getUnreadCount: (): Promise<{ count: number }> =>
     req('/unread-count'),
+
+  /** Admin only: all conversations with user info, unread counts, last message. */
+  getAllConversations: (): Promise<AdminConversation[]> =>
+    req('/conversations'),
 };
+
+export interface AdminConversation {
+  id: number;
+  user_id: number;
+  user_full_name?: string;
+  user_email?: string;
+  user_username?: string;
+  created_at: string;
+  updated_at: string;
+  unread_count: number;
+  last_message?: { message: string; created_at: string; sender_type: string } | null;
+}
