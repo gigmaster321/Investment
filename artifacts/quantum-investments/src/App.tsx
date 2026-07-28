@@ -18,7 +18,6 @@ import Deposits from '@/pages/dashboard/Deposits';
 import Withdrawals from '@/pages/dashboard/Withdrawals';
 import Transactions from '@/pages/dashboard/Transactions';
 import Earnings from '@/pages/dashboard/Earnings';
-import Referral from '@/pages/dashboard/Referral';
 import Notifications from '@/pages/dashboard/Notifications';
 import Profile from '@/pages/dashboard/Profile';
 import Chat from '@/pages/dashboard/Chat';
@@ -93,11 +92,6 @@ function Router() {
       <Route path="/dashboard/earnings">
         <ProtectedRoute>
           <DashboardLayout><Earnings /></DashboardLayout>
-        </ProtectedRoute>
-      </Route>
-      <Route path="/dashboard/referral">
-        <ProtectedRoute>
-          <DashboardLayout><Referral /></DashboardLayout>
         </ProtectedRoute>
       </Route>
       <Route path="/dashboard/notifications">

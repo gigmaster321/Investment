@@ -90,7 +90,6 @@ interface UserActivity {
   withdrawals: WithdrawalRecord[];
   transactions: TransactionRecord[];
   activeInvestments: number;
-  referralEarnings: string;
 }
 
 // No seed data — only real registered users are shown
@@ -151,7 +150,6 @@ function activityForUser(user: User): UserActivity {
   const deposits = amountNumber(user.totalDeposits);
   const profit = amountNumber(user.totalProfit);
   const withdrawals = amountNumber(user.totalWithdrawals);
-  const referral = Math.round(deposits * 0.015);
   const coin = 'BTC';
   const activeInvestments = user.status === 'Active' && user.plan !== 'None' ? 1 : 0;
 
@@ -179,10 +177,8 @@ function activityForUser(user: User): UserActivity {
       { type: 'Deposits', amount: user.totalDeposits, status: 'Completed', date: user.registeredDate },
       { type: 'Withdrawals', amount: user.totalWithdrawals, status: withdrawals > 0 ? 'Completed' : 'Pending', date: user.registeredDate },
       { type: 'Profits', amount: user.totalProfit, status: profit > 0 ? 'Completed' : 'Pending', date: user.registeredDate },
-      { type: 'Bonuses', amount: money(referral), status: referral > 0 ? 'Completed' : 'Pending', date: user.registeredDate },
     ],
     activeInvestments,
-    referralEarnings: money(referral),
   };
 }
 
@@ -441,7 +437,6 @@ function ViewModal({
             <ProfileStat icon={ArrowUpRight} label="Total Withdrawals" value={user.totalWithdrawals} />
             <ProfileStat icon={Wallet} label="Current Balance" value={user.balance} accent />
             <ProfileStat icon={Activity} label="Active Investments" value={String(activity.activeInvestments)} />
-            <ProfileStat icon={Users} label="Referral Earnings" value={activity.referralEarnings} />
             <ProfileStat icon={TrendingUp} label="Profit Earned" value={user.totalProfit} />
           </div>
         </div>

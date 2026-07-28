@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Users, Bell, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Bell, MessageCircle } from 'lucide-react';
 import { chatApi } from '@/lib/chat-api';
 
 const POLL_INTERVAL = 10_000;
@@ -35,7 +35,6 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { href: '/dashboard/withdrawals', label: 'Withdrawals', icon: Upload, badge: 0 },
     { href: '/dashboard/earnings', label: 'Earnings', icon: DollarSign, badge: 0 },
     { href: '/dashboard/transactions', label: 'Transactions', icon: Clock, badge: 0 },
-    { href: '/dashboard/referral', label: 'Referral', icon: Users, badge: 0 },
     { href: '/dashboard/notifications', label: 'Notifications', icon: Bell, badge: 0 },
     { href: '/dashboard/chat', label: 'Live Chat', icon: MessageCircle, badge: chatUnread },
     { href: '/dashboard/profile', label: 'Profile', icon: User, badge: 0 },
