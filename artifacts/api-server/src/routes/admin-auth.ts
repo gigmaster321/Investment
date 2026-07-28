@@ -1,9 +1,21 @@
 import { Router } from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { db, adminConfigTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { requireAdmin } from "../middleware/requireAuth";
+import { requireAdmin } from "../middleware/requireAuth.js";
+
+/**
+ * Lazy DB loader — mirrors the pattern in auth.ts so the server starts cleanly
+ * without DATABASE_URL (e.g. no-DB dev path) instead of crashing on import.
+ */
+async function getDb() {
+  try {
+    return await import("@workspace/db");
+  } catch {
+    const err = new Error("Database not configured. Set DATABASE_URL.");
+    (err as any).code = "DB_UNAVAILABLE";
+    throw err;
+  }
+}
 
 const router = Router();
 
@@ -16,6 +28,9 @@ const PASSWORD_CONFIG_KEY = "admin_password_hash";
  * On first call (no row yet) it hashes the default password, persists it, and returns it.
  */
 async function getAdminPasswordHash(): Promise<string> {
+  const { db, adminConfigTable } = await getDb();
+  const { eq } = await import("drizzle-orm");
+
   const rows = await db
     .select()
     .from(adminConfigTable)
@@ -63,6 +78,9 @@ router.post("/admin-login", async (req, res) => {
     // Look up the admin user row so we can stamp userId on the session.
     // This ensures routes that read req.session.userId (e.g. chat sender_id)
     // receive a real value instead of undefined.
+    const { db, usersTable } = await getDb();
+    const { eq } = await import("drizzle-orm");
+
     const [adminUser] = await db
       .select({ id: usersTable.id })
       .from(usersTable)
@@ -104,11 +122,19 @@ router.get("/admin-me", (req, res) => {
 
 /**
  * POST /api/auth/admin-logout
- * Clears the admin session flag.
+ * Destroys the entire session (removes it from the DB store) and clears the
+ * browser cookie. Previously only cleared req.session.isAdmin while leaving
+ * req.session.userId intact — that let the same cookie bypass requireAuth and
+ * return the admin user via /api/auth/me even after logout.
  */
 router.post("/admin-logout", (req, res) => {
-  req.session.isAdmin = undefined;
-  req.session.save(() => {
+  req.session.destroy((err) => {
+    if (err) {
+      // Even on error, clear the cookie so the browser drops it.
+      res.clearCookie("qinvest.sid");
+      res.status(500).json({ error: "SESSION_ERROR", message: "Logout failed." });
+      return;
+    }
     res.clearCookie("qinvest.sid");
     res.json({ success: true });
   });
@@ -147,6 +173,7 @@ router.post("/admin-change-password", requireAdmin, async (req, res) => {
       return;
     }
 
+    const { db, adminConfigTable } = await getDb();
     const newHash = await bcrypt.hash(newPassword, 12);
     await db
       .insert(adminConfigTable)
