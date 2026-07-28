@@ -4,6 +4,8 @@ import pinoHttp from "pino-http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -70,5 +72,22 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Production: serve the built React frontend and provide SPA fallback.
+// This block is intentionally skipped in development — Vite's dev server
+// handles the frontend on its own port in that environment.
+if (process.env["NODE_ENV"] === "production") {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  // Compiled output lives at  artifacts/api-server/dist/app.mjs
+  // Frontend dist lives at    artifacts/quantum-investments/dist/public
+  const frontendDir = path.resolve(__dirname, "../../quantum-investments/dist/public");
+
+  app.use(express.static(frontendDir));
+
+  // SPA fallback: every non-API GET returns index.html so client-side routing works.
+  app.get("*", (_req, res) => {
+    res.sendFile(path.resolve(frontendDir, "index.html"));
+  });
+}
 
 export default app;
