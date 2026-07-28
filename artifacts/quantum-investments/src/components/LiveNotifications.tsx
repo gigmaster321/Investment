@@ -99,21 +99,22 @@ const KIND_META: Record<
 
 // Auto-dismiss each notification after this many ms
 const AUTO_DISMISS_MS = 5_500;
-// Max notifications shown at once in landing mode
-const LANDING_MAX_VISIBLE = 3;
-// Interval between popups in dashboard mode (5 minutes)
-const DASHBOARD_INTERVAL_MS = 300_000;
+// Interval between popups — 5 minutes on every page
+const POPUP_INTERVAL_MS = 300_000;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export interface LiveNotificationsProps {
   /**
    * 'landing'   — public pages (home, login, register).
-   *               Rotates automatically every 8–35 s, up to 3 stacked.
+   *               One popup every 5 minutes, never stacked.
    *
    * 'dashboard' — authenticated user dashboard.
    *               One popup every 5 minutes, never stacked.
-   *               If a popup is already visible, the tick is skipped.
+   *
+   * Both modes use identical timer logic. The difference is only
+   * which pages render this component (LiveNotificationsController
+   * in App.tsx returns null for all /admin/* routes).
    */
   mode: 'landing' | 'dashboard';
 }
@@ -123,76 +124,19 @@ export interface LiveNotificationsProps {
 export function LiveNotifications({ mode }: LiveNotificationsProps) {
   const [queue, setQueue] = useState<Notif[]>([]);
 
-  // Timer refs for landing mode (three independent chains)
-  const withdrawalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const depositTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const investorTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Interval ref for dashboard mode
-  const dashboardInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Single interval ref — one 5-minute timer for both landing and dashboard
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dismiss = useCallback((id: number) => {
     setQueue((q) => q.filter((n) => n.id !== id));
   }, []);
 
-  // ── Landing mode — independent rotating chains ──────────────────────────
+  // ── Single unified timer — one popup every 5 minutes, never stacked ────
+  // Applies to both 'landing' and 'dashboard' modes. The only difference
+  // between modes is handled upstream (LiveNotificationsController in App.tsx
+  // returns null for admin routes).
   useEffect(() => {
-    if (mode !== 'landing') return;
-
-    const push = (kind: NotifKind) => {
-      const notif = makeNotif(kind);
-      setQueue((q) => {
-        const next = [...q, notif];
-        return next.length > LANDING_MAX_VISIBLE
-          ? next.slice(next.length - LANDING_MAX_VISIBLE)
-          : next;
-      });
-      setTimeout(() => dismiss(notif.id), AUTO_DISMISS_MS);
-    };
-
-    const scheduleWithdrawal = () => {
-      withdrawalTimer.current = setTimeout(() => {
-        push('withdrawal');
-        scheduleWithdrawal();
-      }, rand(8_000, 12_000));
-    };
-
-    const scheduleDeposit = () => {
-      depositTimer.current = setTimeout(() => {
-        push('deposit');
-        scheduleDeposit();
-      }, rand(12_000, 18_000));
-    };
-
-    const scheduleInvestor = () => {
-      investorTimer.current = setTimeout(() => {
-        push('investor');
-        scheduleInvestor();
-      }, rand(20_000, 35_000));
-    };
-
-    // Stagger the initial fires so they don't all fire at once
-    const t1 = setTimeout(scheduleWithdrawal, rand(3_000,  6_000));
-    const t2 = setTimeout(scheduleDeposit,    rand(7_000, 12_000));
-    const t3 = setTimeout(scheduleInvestor,   rand(15_000, 22_000));
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      if (withdrawalTimer.current) clearTimeout(withdrawalTimer.current);
-      if (depositTimer.current)    clearTimeout(depositTimer.current);
-      if (investorTimer.current)   clearTimeout(investorTimer.current);
-    };
-  // mode is stable after mount; disable exhaustive-deps for the inner fns
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
-
-  // ── Dashboard mode — one popup every 5 minutes, never stacked ──────────
-  useEffect(() => {
-    if (mode !== 'dashboard') return;
-
-    dashboardInterval.current = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setQueue((current) => {
         // If a popup is still visible, skip this tick — no stacking
         if (current.length > 0) return current;
@@ -206,13 +150,13 @@ export function LiveNotifications({ mode }: LiveNotificationsProps) {
 
         return [notif];
       });
-    }, DASHBOARD_INTERVAL_MS);
+    }, POPUP_INTERVAL_MS);
 
     return () => {
-      if (dashboardInterval.current) clearInterval(dashboardInterval.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, []);
 
   return (
     // Fixed overlay — above navbar (z-50) and sidebar (z-40/z-50), below modal backdrops
