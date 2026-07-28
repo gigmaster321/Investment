@@ -20,7 +20,6 @@ import Transactions from '@/pages/dashboard/Transactions';
 import Earnings from '@/pages/dashboard/Earnings';
 import Notifications from '@/pages/dashboard/Notifications';
 import Profile from '@/pages/dashboard/Profile';
-import Chat from '@/pages/dashboard/Chat';
 
 // Admin
 import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
@@ -36,7 +35,6 @@ import AdminDeposits from '@/pages/admin/Deposits';
 import { InvestmentPlansProvider } from '@/lib/investment-plans';
 import { InvestmentsProvider } from '@/lib/investments';
 import AdminInvestments from '@/pages/admin/Investments';
-import AdminChat from '@/pages/admin/Chat';
 import AdminWallets from '@/pages/admin/Wallets';
 
 const queryClient = new QueryClient();
@@ -104,12 +102,6 @@ function Router() {
           <DashboardLayout><Profile /></DashboardLayout>
         </ProtectedRoute>
       </Route>
-      <Route path="/dashboard/chat">
-        <ProtectedRoute>
-          <DashboardLayout><Chat /></DashboardLayout>
-        </ProtectedRoute>
-      </Route>
-
       {/* /admin and /admin/* redirect to homepage — no longer exposes admin */}
       <Route path="/admin/login">
         <Redirect to="/" />
@@ -148,9 +140,6 @@ function Router() {
       </Route>
       <Route path="/wp-admin/settings">
         <AdminLayout><AdminSettings /></AdminLayout>
-      </Route>
-      <Route path="/wp-admin/chat">
-        <AdminLayout><AdminChat /></AdminLayout>
       </Route>
       <Route path="/wp-admin/wallets">
         <AdminLayout><AdminWallets /></AdminLayout>

@@ -3,7 +3,6 @@ import { AdminSidebar } from './AdminSidebar';
 import { AdminGuard } from './AdminGuard';
 import { Menu, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AdminChatNotifications } from '@/components/chat/AdminChatNotifications';
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -59,7 +58,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
-        <AdminChatNotifications />
       </div>
     </AdminGuard>
   );

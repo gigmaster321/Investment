@@ -1,32 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Bell, MessageCircle } from 'lucide-react';
-import { chatApi } from '@/lib/chat-api';
-
-const POLL_INTERVAL = 10_000;
+import { LayoutDashboard, TrendingUp, Download, Upload, Clock, User, LogOut, X, DollarSign, Bell } from 'lucide-react';
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
   const [location] = useLocation();
-  const [chatUnread, setChatUnread] = useState(0);
-
-  // Poll unread count every 10 seconds
-  useEffect(() => {
-    let mounted = true;
-    const fetch = async () => {
-      try {
-        const { count } = await chatApi.getUnreadCount();
-        if (mounted) setChatUnread(count);
-      } catch {
-        // silently ignore — sidebar badge is non-critical
-      }
-    };
-    fetch();
-    const timer = setInterval(fetch, POLL_INTERVAL);
-    return () => {
-      mounted = false;
-      clearInterval(timer);
-    };
-  }, []);
 
   const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
@@ -36,7 +13,6 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
     { href: '/dashboard/earnings', label: 'Earnings', icon: DollarSign, badge: 0 },
     { href: '/dashboard/transactions', label: 'Transactions', icon: Clock, badge: 0 },
     { href: '/dashboard/notifications', label: 'Notifications', icon: Bell, badge: 0 },
-    { href: '/dashboard/chat', label: 'Live Chat', icon: MessageCircle, badge: chatUnread },
     { href: '/dashboard/profile', label: 'Profile', icon: User, badge: 0 },
   ];
 
