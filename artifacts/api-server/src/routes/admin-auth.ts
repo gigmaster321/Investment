@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { db, adminConfigTable } from "@workspace/db";
+import { db, adminConfigTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "../middleware/requireAuth";
 
@@ -60,7 +60,17 @@ router.post("/admin-login", async (req, res) => {
       return;
     }
 
+    // Look up the admin user row so we can stamp userId on the session.
+    // This ensures routes that read req.session.userId (e.g. chat sender_id)
+    // receive a real value instead of undefined.
+    const [adminUser] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.role, "admin"))
+      .limit(1);
+
     req.session.isAdmin = true;
+    if (adminUser) req.session.userId = adminUser.id;
     // Persistent session: 30 days
     req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
 
