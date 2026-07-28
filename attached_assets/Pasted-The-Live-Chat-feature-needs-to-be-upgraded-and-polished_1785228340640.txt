@@ -1,0 +1,136 @@
+The Live Chat feature needs to be upgraded and polished.
+
+Do NOT rewrite the chat system from scratch.
+
+Keep the existing database, APIs, and chat architecture.
+
+Only improve and fix the current implementation.
+
+Current Problems:
+
+1. Admin cannot easily tell which messages are from the user.
+2. User cannot easily tell which messages are from the admin.
+3. There is no proper real-time indication when a new message arrives.
+4. The UX is confusing.
+
+Tasks:
+
+1. Clearly distinguish sender roles.
+
+For every message display:
+
+- Admin avatar + "Admin"
+- User avatar + user's name
+
+Use different message alignment:
+
+User messages:
+- Left aligned
+- Different bubble color
+
+Admin messages:
+- Right aligned
+- Different bubble color
+
+Do not allow both sides to look identical.
+
+2. Real-time updates
+
+When a user sends a message:
+
+- Admin should receive it automatically without refreshing.
+- Conversation list should move to the top.
+- Show unread badge.
+- Play notification sound (optional if already available).
+
+When admin replies:
+
+- User should receive the reply automatically.
+- User should immediately see the new message.
+- Show unread indicator until chat is opened.
+
+Use the existing realtime/polling mechanism if available.
+Do NOT introduce unnecessary architecture changes.
+
+3. Read Status
+
+Implement proper message states:
+
+✓ Sent
+
+✓✓ Delivered
+
+✓✓ Read
+
+Mark messages as read automatically when the receiver opens the conversation.
+
+4. Conversation List
+
+Show:
+
+- User name
+- Last message
+- Last message time
+- Unread count badge
+
+Newest conversation should always appear first.
+
+5. Auto Scroll
+
+Whenever a new message arrives:
+
+- Scroll to latest message automatically.
+
+Do not jump while user is reading older messages.
+
+6. Notifications
+
+Admin:
+
+When a new user message arrives:
+
+- Show a toast notification.
+- Increase unread counter.
+- Do NOT show duplicate notifications.
+
+User:
+
+When admin replies:
+
+- Show a toast notification.
+- Increase unread counter.
+
+7. Verify
+
+Test completely:
+
+User → Admin
+
+Admin → User
+
+Multiple messages
+
+Unread count
+
+Read status
+
+Auto scrolling
+
+Real-time updates
+
+Conversation ordering
+
+No duplicate messages
+
+No refresh required.
+
+Do not modify unrelated features.
+
+Keep Preview running after completion.
+
+Finally provide:
+
+- Files changed
+- Root cause of the previous issues
+- Verification report
+- Confirmation that real-time messaging works in both directions.

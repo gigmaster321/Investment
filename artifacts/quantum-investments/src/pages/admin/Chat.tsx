@@ -1,11 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  MessageCircle, Send, Loader2, ArrowLeft, Users, Clock,
+  MessageCircle, Send, Loader2, ArrowLeft, Users, Clock, ShieldCheck,
 } from 'lucide-react';
 import { chatApi, Conversation, ChatMessage, formatChatTime } from '@/lib/chat-api';
+import { toast } from '@/hooks/use-toast';
 
 const POLL_INTERVAL = 3000;
+
+function getInitials(name?: string | null): string {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? 'U';
+  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
+}
 
 // ─── Conversation list ────────────────────────────────────────────────────────
 
@@ -42,6 +50,7 @@ function ConversationList({
       {conversations.map((conv) => {
         const isSelected = conv.id === selectedId;
         const hasUnread = (conv.unread_count ?? 0) > 0;
+        const initials = getInitials(conv.user_full_name ?? conv.user_username);
 
         return (
           <button
@@ -51,11 +60,16 @@ function ConversationList({
               isSelected ? 'bg-primary/10 border-r-2 border-accent' : 'hover:bg-white/[0.03]'
             }`}
           >
-            <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mt-0.5">
-              <span className="text-xs font-bold text-white/60">
-                {(conv.user_full_name ?? conv.user_username ?? 'U')[0]?.toUpperCase()}
-              </span>
+            {/* User avatar */}
+            <div className="relative shrink-0 mt-0.5">
+              <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                <span className="text-xs font-bold text-white/60">{initials}</span>
+              </div>
+              {hasUnread && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-accent border-2 border-card" />
+              )}
             </div>
+
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
                 <p className={`text-sm font-medium truncate ${isSelected ? 'text-accent' : 'text-white'}`}>
@@ -69,7 +83,7 @@ function ConversationList({
               </div>
               <div className="flex items-center justify-between mt-0.5">
                 {conv.last_message ? (
-                  <p className="text-xs text-muted-foreground truncate max-w-[160px]">
+                  <p className={`text-xs truncate max-w-[160px] ${hasUnread ? 'text-white/70 font-medium' : 'text-muted-foreground'}`}>
                     {conv.last_message.sender_type === 'admin' ? 'You: ' : ''}
                     {conv.last_message.message}
                   </p>
@@ -104,32 +118,76 @@ function MessageThread({
   const [inputText, setInputText] = useState('');
   const [sending, setSending] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(true);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const initialLoadDoneRef = useRef(false);
+  const maxNotifiedIdRef = useRef(0);
 
-  const scrollToBottom = useCallback((smooth = true) => {
-    bottomRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  const isNearBottom = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 140;
   }, []);
+
+  const scrollToBottom = useCallback((force = false) => {
+    if (force || isNearBottom()) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isNearBottom]);
 
   const fetchMessages = useCallback(async (markRead = false) => {
     try {
       const msgs = await chatApi.getMessages(conversation.id);
-      setMessages(msgs);
       if (markRead) await chatApi.markRead(conversation.id);
+
+      setMessages(() => {
+        // Toast for new user messages in this thread — only after initial load
+        if (initialLoadDoneRef.current) {
+          const knownMaxId = maxNotifiedIdRef.current;
+          const newUserMsgs = msgs.filter(
+            (m) => m.sender_type === 'user' && m.id > knownMaxId,
+          );
+          if (newUserMsgs.length > 0) {
+            const latest = newUserMsgs[newUserMsgs.length - 1];
+            const displayName = conversation.user_full_name ?? conversation.user_username ?? `User #${conversation.user_id}`;
+            toast({
+              title: `💬 New message from ${displayName}`,
+              description: latest.message.length > 80
+                ? latest.message.slice(0, 77) + '…'
+                : latest.message,
+            });
+          }
+        }
+        const newMax = msgs.reduce((m, msg) => Math.max(m, msg.id), maxNotifiedIdRef.current);
+        maxNotifiedIdRef.current = newMax;
+        return msgs;
+      });
     } catch {
       // non-fatal
     }
-  }, [conversation.id]);
+  }, [conversation.id, conversation.user_full_name, conversation.user_username, conversation.user_id]);
 
   useEffect(() => {
+    initialLoadDoneRef.current = false;
+    maxNotifiedIdRef.current = 0;
     setLoadingMsgs(true);
     setMessages([]);
-    fetchMessages(true).finally(() => setLoadingMsgs(false));
+    fetchMessages(true).finally(() => {
+      setLoadingMsgs(false);
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+        initialLoadDoneRef.current = true;
+      }, 50);
+    });
   }, [conversation.id, fetchMessages]);
 
+  // Smart scroll when messages update
   useEffect(() => {
-    scrollToBottom(messages.length <= 20);
+    if (!initialLoadDoneRef.current) return;
+    scrollToBottom(false);
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
@@ -149,8 +207,10 @@ function MessageThread({
       const msg = await chatApi.sendMessage(conversation.id, text);
       setMessages((prev) => {
         if (prev.some((m) => m.id === msg.id)) return prev;
+        maxNotifiedIdRef.current = Math.max(maxNotifiedIdRef.current, msg.id);
         return [...prev, msg];
       });
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
     } catch {
       setInputText(text);
     } finally {
@@ -166,6 +226,9 @@ function MessageThread({
     }
   };
 
+  const userDisplayName = conversation.user_full_name ?? conversation.user_username ?? `User #${conversation.user_id}`;
+  const userInitials = getInitials(conversation.user_full_name ?? conversation.user_username);
+
   return (
     <div className="flex flex-col h-full">
       {/* Thread header */}
@@ -177,20 +240,16 @@ function MessageThread({
           <ArrowLeft size={18} />
         </button>
         <div className="w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-          <span className="text-sm font-bold text-white/60">
-            {(conversation.user_full_name ?? conversation.user_username ?? 'U')[0]?.toUpperCase()}
-          </span>
+          <span className="text-sm font-bold text-white/60">{userInitials}</span>
         </div>
         <div>
-          <p className="text-sm font-semibold text-white">
-            {conversation.user_full_name ?? conversation.user_username ?? `User #${conversation.user_id}`}
-          </p>
+          <p className="text-sm font-semibold text-white">{userDisplayName}</p>
           <p className="text-xs text-muted-foreground">{conversation.user_email}</p>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
         {loadingMsgs ? (
           <div className="flex items-center justify-center h-32">
             <Loader2 className="animate-spin text-accent" size={24} />
@@ -212,35 +271,55 @@ function MessageThread({
             return (
               <div key={msg.id}>
                 {showTime && (
-                  <div className="text-center text-[10px] text-muted-foreground/50 my-2">
+                  <div className="text-center text-[10px] text-muted-foreground/50 my-3">
                     {formatChatTime(msg.created_at)}
                   </div>
                 )}
-                <div className={`flex ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      isAdmin
-                        ? 'bg-primary text-white rounded-br-sm shadow-[0_0_20px_rgba(21,101,232,0.25)]'
-                        : 'bg-white/5 border border-white/10 text-white/90 rounded-bl-sm'
-                    }`}
-                  >
-                    {msg.message}
-                    <div
-                      className={`flex items-center gap-1 mt-1 ${
-                        isAdmin ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <span className="text-[10px] opacity-50">
-                        {formatChatTime(msg.created_at)}
-                      </span>
-                      {isAdmin && (
-                        <span className={`text-[10px] ${msg.is_read ? 'text-accent/70' : 'opacity-50'}`}>
-                          {msg.is_read ? '✓✓' : '✓'}
-                        </span>
-                      )}
+
+                {/* User message — left aligned */}
+                {!isAdmin && (
+                  <div className="flex items-end gap-2.5 justify-start">
+                    {/* User avatar */}
+                    <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 mb-0.5">
+                      <span className="text-[10px] font-bold text-white/60">{userInitials}</span>
+                    </div>
+                    <div className="flex flex-col items-start max-w-[72%]">
+                      <span className="text-[10px] text-white/50 font-medium mb-1 ml-1">{userDisplayName}</span>
+                      <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm text-sm leading-relaxed bg-white/5 border border-white/10 text-white/90">
+                        {msg.message}
+                        <div className="flex items-center gap-1 mt-1 justify-start">
+                          <span className="text-[10px] opacity-50">
+                            {formatChatTime(msg.created_at)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Admin message — right aligned */}
+                {isAdmin && (
+                  <div className="flex items-end gap-2.5 justify-end">
+                    <div className="flex flex-col items-end max-w-[72%]">
+                      <span className="text-[10px] text-accent/80 font-medium mb-1 mr-1">You (Admin)</span>
+                      <div className="px-4 py-2.5 rounded-2xl rounded-br-sm text-sm leading-relaxed bg-primary text-white shadow-[0_0_20px_rgba(21,101,232,0.25)]">
+                        {msg.message}
+                        <div className="flex items-center gap-1 mt-1 justify-end">
+                          <span className="text-[10px] opacity-60">
+                            {formatChatTime(msg.created_at)}
+                          </span>
+                          <span className={`text-[11px] leading-none ${msg.is_read ? 'text-accent/90' : 'opacity-60'}`}>
+                            {msg.is_read ? '✓✓' : '✓'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Admin avatar */}
+                    <div className="w-7 h-7 rounded-full bg-primary/30 border border-primary/40 flex items-center justify-center shrink-0 mb-0.5">
+                      <ShieldCheck size={13} className="text-accent" />
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })
@@ -293,18 +372,50 @@ export default function AdminChat() {
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [showThread, setShowThread] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevUnreadMapRef = useRef<Record<number, number>>({});
+  const convListInitDoneRef = useRef(false);
 
   const fetchConversations = useCallback(async () => {
     try {
       const data = await chatApi.getAllConversations();
+
+      // Toast for unread increases on non-selected conversations (after initial load)
+      if (convListInitDoneRef.current) {
+        for (const conv of data) {
+          const prevUnread = prevUnreadMapRef.current[conv.id] ?? 0;
+          const currUnread = conv.unread_count ?? 0;
+          if (currUnread > prevUnread && conv.id !== (selected?.id ?? -1)) {
+            const displayName = conv.user_full_name ?? conv.user_username ?? `User #${conv.user_id}`;
+            const lastMsg = conv.last_message;
+            toast({
+              title: `💬 New message from ${displayName}`,
+              description: lastMsg
+                ? (lastMsg.message.length > 80 ? lastMsg.message.slice(0, 77) + '…' : lastMsg.message)
+                : undefined,
+            });
+            break; // one toast per poll cycle to avoid flooding
+          }
+        }
+      }
+
+      // Update unread map
+      const newMap: Record<number, number> = {};
+      for (const conv of data) {
+        newMap[conv.id] = conv.unread_count ?? 0;
+      }
+      prevUnreadMapRef.current = newMap;
+
       setConversations(data);
     } catch {
       // non-fatal
     }
-  }, []);
+  }, [selected?.id]);
 
   useEffect(() => {
-    fetchConversations().finally(() => setLoadingConvs(false));
+    fetchConversations().finally(() => {
+      setLoadingConvs(false);
+      convListInitDoneRef.current = true;
+    });
     pollRef.current = setInterval(fetchConversations, POLL_INTERVAL);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -318,6 +429,7 @@ export default function AdminChat() {
     setConversations((prev) =>
       prev.map((c) => (c.id === conv.id ? { ...c, unread_count: 0 } : c)),
     );
+    prevUnreadMapRef.current[conv.id] = 0;
   };
 
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count ?? 0), 0);

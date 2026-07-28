@@ -1,10 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Send, MessageCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Send, MessageCircle, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { chatApi, ChatMessage, formatChatTime } from '@/lib/chat-api';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
-const POLL_INTERVAL = 3000; // 3 seconds
+const POLL_INTERVAL = 3000;
+
+function getInitials(name?: string | null): string {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? 'U';
+  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
+}
 
 export default function Chat() {
   const { user } = useAuth();
@@ -14,19 +22,53 @@ export default function Chat() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const initialLoadDoneRef = useRef(false);
+  const maxNotifiedIdRef = useRef(0);
 
-  const scrollToBottom = useCallback((smooth = true) => {
-    bottomRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
+  // Smart scroll: only auto-scroll if user is near the bottom
+  const isNearBottom = useCallback(() => {
+    const el = scrollContainerRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 140;
   }, []);
+
+  const scrollToBottom = useCallback((force = false) => {
+    if (force || isNearBottom()) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isNearBottom]);
 
   const fetchMessages = useCallback(async (convId: number, markRead = false) => {
     try {
       const msgs = await chatApi.getMessages(convId);
-      setMessages(msgs);
       if (markRead) await chatApi.markRead(convId);
+
+      setMessages((prev) => {
+        // Toast for new admin messages — only after initial load, no duplicates
+        if (initialLoadDoneRef.current) {
+          const knownMaxId = maxNotifiedIdRef.current;
+          const newAdminMsgs = msgs.filter(
+            (m) => m.sender_type === 'admin' && m.id > knownMaxId,
+          );
+          if (newAdminMsgs.length > 0) {
+            const latest = newAdminMsgs[newAdminMsgs.length - 1];
+            toast({
+              title: '💬 New message from Support',
+              description: latest.message.length > 80
+                ? latest.message.slice(0, 77) + '…'
+                : latest.message,
+            });
+          }
+        }
+        const newMax = msgs.reduce((m, msg) => Math.max(m, msg.id), maxNotifiedIdRef.current);
+        maxNotifiedIdRef.current = newMax;
+        return msgs;
+      });
     } catch {
       // non-fatal
     }
@@ -39,6 +81,9 @@ export default function Chat() {
         const conv = await chatApi.getOrCreateConversation();
         setConversationId(conv.id);
         await fetchMessages(conv.id, true);
+        // Force scroll to bottom on initial load
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'auto' }), 50);
+        initialLoadDoneRef.current = true;
       } catch (err: any) {
         setError(err?.message ?? 'Could not load chat. Please try again.');
       } finally {
@@ -47,12 +92,13 @@ export default function Chat() {
     })();
   }, [fetchMessages]);
 
-  // Scroll to bottom on new messages
+  // Smart scroll when messages update
   useEffect(() => {
-    scrollToBottom(messages.length <= 20);
+    if (!initialLoadDoneRef.current) return;
+    scrollToBottom(false);
   }, [messages, scrollToBottom]);
 
-  // Polling for new messages
+  // Polling
   useEffect(() => {
     if (!conversationId) return;
     pollRef.current = setInterval(async () => {
@@ -72,13 +118,15 @@ export default function Chat() {
     try {
       const msg = await chatApi.sendMessage(conversationId, text);
       setMessages((prev) => {
-        // prevent duplicate if polling already picked it up
         if (prev.some((m) => m.id === msg.id)) return prev;
+        maxNotifiedIdRef.current = Math.max(maxNotifiedIdRef.current, msg.id);
         return [...prev, msg];
       });
+      // Always scroll after sending own message
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 30);
     } catch (err: any) {
       setError(err?.message ?? 'Failed to send message.');
-      setInputText(text); // restore on error
+      setInputText(text);
     } finally {
       setSending(false);
       inputRef.current?.focus();
@@ -91,6 +139,8 @@ export default function Chat() {
       handleSend();
     }
   };
+
+  const userInitials = getInitials(user?.full_name ?? user?.username);
 
   if (loading) {
     return (
@@ -117,13 +167,11 @@ export default function Chat() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <header>
         <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Live Chat Support</h1>
         <p className="text-muted-foreground">Chat with our support team — we typically reply within minutes.</p>
       </header>
 
-      {/* Chat container */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -133,8 +181,8 @@ export default function Chat() {
       >
         {/* Chat header */}
         <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5 shrink-0">
-          <div className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-            <MessageCircle size={18} className="text-accent" />
+          <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+            <ShieldCheck size={18} className="text-emerald-400" />
           </div>
           <div>
             <p className="text-sm font-semibold text-white">Support Team</p>
@@ -146,7 +194,7 @@ export default function Chat() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
               <MessageCircle size={40} className="text-white/10" />
@@ -165,35 +213,55 @@ export default function Chat() {
             return (
               <div key={msg.id}>
                 {showTime && (
-                  <div className="text-center text-[10px] text-muted-foreground/50 my-2">
+                  <div className="text-center text-[10px] text-muted-foreground/50 my-3">
                     {formatChatTime(msg.created_at)}
                   </div>
                 )}
-                <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      isUser
-                        ? 'bg-primary text-white rounded-br-sm shadow-[0_0_20px_rgba(21,101,232,0.25)]'
-                        : 'bg-white/5 border border-white/10 text-white/90 rounded-bl-sm'
-                    }`}
-                  >
-                    {msg.message}
-                    <div
-                      className={`flex items-center gap-1 mt-1 ${
-                        isUser ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <span className="text-[10px] opacity-50">
-                        {formatChatTime(msg.created_at)}
-                      </span>
-                      {isUser && (
-                        <span className={`text-[10px] ${msg.is_read ? 'text-accent/70' : 'opacity-50'}`}>
-                          {msg.is_read ? '✓✓' : '✓'}
-                        </span>
-                      )}
+
+                {/* Admin message — left aligned */}
+                {!isUser && (
+                  <div className="flex items-end gap-2.5 justify-start">
+                    {/* Admin avatar */}
+                    <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 mb-0.5">
+                      <ShieldCheck size={13} className="text-emerald-400" />
+                    </div>
+                    <div className="flex flex-col items-start max-w-[72%]">
+                      <span className="text-[10px] text-emerald-400/80 font-medium mb-1 ml-1">Admin</span>
+                      <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm text-sm leading-relaxed bg-emerald-500/10 border border-emerald-500/20 text-white/90">
+                        {msg.message}
+                        <div className="flex items-center gap-1 mt-1 justify-start">
+                          <span className="text-[10px] opacity-50">
+                            {formatChatTime(msg.created_at)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* User message — right aligned */}
+                {isUser && (
+                  <div className="flex items-end gap-2.5 justify-end">
+                    <div className="flex flex-col items-end max-w-[72%]">
+                      <span className="text-[10px] text-primary/80 font-medium mb-1 mr-1">You</span>
+                      <div className="px-4 py-2.5 rounded-2xl rounded-br-sm text-sm leading-relaxed bg-primary text-white shadow-[0_0_20px_rgba(21,101,232,0.25)]">
+                        {msg.message}
+                        <div className="flex items-center gap-1 mt-1 justify-end">
+                          <span className="text-[10px] opacity-60">
+                            {formatChatTime(msg.created_at)}
+                          </span>
+                          <span className={`text-[11px] leading-none ${msg.is_read ? 'text-accent/90' : 'opacity-60'}`}>
+                            {msg.is_read ? '✓✓' : '✓'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* User avatar */}
+                    <div className="w-7 h-7 rounded-full bg-primary/30 border border-primary/40 flex items-center justify-center shrink-0 mb-0.5">
+                      <span className="text-[10px] font-bold text-white/80">{userInitials}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -216,7 +284,6 @@ export default function Chat() {
               value={inputText}
               onChange={(e) => {
                 setInputText(e.target.value);
-                // Auto-grow
                 e.target.style.height = 'auto';
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
               }}
