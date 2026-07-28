@@ -198,7 +198,7 @@ export default function Withdrawals() {
     <div className="space-y-8">
       {/* Page header */}
       <header>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Withdrawals</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Withdrawals</h1>
         <p className="text-muted-foreground">Transfer profits to your external wallet securely.</p>
       </header>
 

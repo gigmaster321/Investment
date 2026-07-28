@@ -65,7 +65,7 @@ export default function Transactions() {
     <div className="space-y-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Transaction History</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Transaction History</h1>
           <p className="text-muted-foreground">Complete record of your deposits, withdrawals, and profits.</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
@@ -99,13 +99,15 @@ export default function Transactions() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <span className="text-sm text-muted-foreground">Date:</span>
-            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-              className="bg-background border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:outline-none focus:border-primary" />
-            <span className="text-muted-foreground">–</span>
-            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-              className="bg-background border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:outline-none focus:border-primary" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
+            <span className="text-sm text-muted-foreground shrink-0">Date:</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
+                className="flex-1 min-w-0 bg-background border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:outline-none focus:border-primary" />
+              <span className="text-muted-foreground shrink-0">–</span>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
+                className="flex-1 min-w-0 bg-background border border-white/10 rounded-lg py-1.5 px-3 text-sm text-white focus:outline-none focus:border-primary" />
+            </div>
           </div>
         </div>
 

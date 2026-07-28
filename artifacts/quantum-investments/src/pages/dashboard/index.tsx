@@ -39,7 +39,7 @@ export default function DashboardOverview() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Portfolio Overview</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Portfolio Overview</h1>
         <p className="text-muted-foreground">Welcome back. Here is your current balance and activity.</p>
       </header>
 
@@ -59,7 +59,7 @@ export default function DashboardOverview() {
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-white">Performance History</h2>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <span className="px-3 py-1 bg-white/5 rounded-full text-xs font-medium text-muted-foreground cursor-pointer hover:text-white transition-colors">1W</span>
               <span className="px-3 py-1 bg-primary/20 border border-primary/30 rounded-full text-xs font-medium text-accent cursor-pointer">1M</span>
               <span className="px-3 py-1 bg-white/5 rounded-full text-xs font-medium text-muted-foreground cursor-pointer hover:text-white transition-colors">1Y</span>

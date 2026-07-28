@@ -371,7 +371,7 @@ export default function AdminWithdrawals() {
                 placeholder="Search user, email, ID…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 h-8 w-56 bg-muted/40 border-white/10 text-white placeholder:text-white/25 text-xs"
+                className="pl-9 h-8 w-full sm:w-56 bg-muted/40 border-white/10 text-white placeholder:text-white/25 text-xs"
               />
             </div>
 

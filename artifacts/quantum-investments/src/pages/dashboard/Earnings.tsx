@@ -46,7 +46,7 @@ export default function Earnings() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Earnings Report</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Earnings Report</h1>
         <p className="text-muted-foreground">Detailed breakdown of your generated profits.</p>
       </header>
 

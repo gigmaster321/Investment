@@ -54,7 +54,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 md:ml-72 pt-14 md:pt-0 min-h-screen relative overflow-x-hidden">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/15 rounded-full blur-[130px] -z-10 pointer-events-none opacity-40" />
           <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-accent/8 rounded-full blur-[100px] -z-10 pointer-events-none opacity-25" />
-          <div className="p-5 md:p-8 max-w-7xl mx-auto">
+          <div className="p-4 md:p-8 max-w-7xl mx-auto">
             {children}
           </div>
         </main>

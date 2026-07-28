@@ -1,0 +1,99 @@
+Do NOT redesign the website.
+
+Your task is ONLY to make the entire website fully responsive while keeping the existing UI, colors, theme, components, and functionality exactly the same.
+
+Requirements:
+
+1. Audit every page and component.
+2. Make the website responsive for:
+   - 320px
+   - 360px
+   - 375px
+   - 390px
+   - 414px
+   - 768px
+   - 820px
+   - 1024px
+   - 1280px
+   - 1440px
+   - 1920px
+
+3. Check and fix every page:
+   - Landing Page
+   - Login
+   - Register
+   - User Dashboard
+   - Admin Dashboard
+   - Investments
+   - Deposits
+   - Withdrawals
+   - Earnings
+   - Transactions
+   - Notifications
+   - Live Chat
+   - Profile
+   - Settings
+   - Every modal
+   - Every popup
+   - Every form
+   - Every table
+
+4. Fix all responsive issues:
+   - No horizontal scrolling
+   - No content overflow
+   - No broken layouts
+   - No overlapping elements
+   - Proper spacing
+   - Proper padding and margins
+   - Responsive typography
+   - Responsive cards
+   - Responsive grids
+   - Responsive images
+   - Responsive charts
+   - Responsive tables
+   - Responsive modals
+   - Responsive forms
+   - Responsive buttons
+   - Responsive navigation
+   - Responsive sidebars
+
+5. Tables should become mobile-friendly using horizontal scroll where necessary without breaking the layout.
+
+6. The sidebar must work perfectly on mobile:
+   - Collapse into a drawer
+   - Smooth open/close animation
+   - No layout shift
+   - Content should always remain visible
+
+7. Ensure touch-friendly UI:
+   - Buttons at least 44px high
+   - Proper spacing between clickable elements
+   - Forms easy to use on mobile
+
+8. Use proper Tailwind responsive breakpoints:
+   sm
+   md
+   lg
+   xl
+   2xl
+
+9. Keep the desktop layout exactly as it is.
+
+10. Do not change:
+    - Business logic
+    - Backend
+    - API
+    - Database
+    - Routing
+    - Existing functionality
+
+11. Only improve responsiveness and layout.
+
+12. Test every page after implementing the changes. Fix every responsive issue before finishing.
+
+When finished, provide:
+- Pages tested
+- Responsive issues fixed
+- Remaining issues (if any)
+
+The website should feel like a professional SaaS application on every device.

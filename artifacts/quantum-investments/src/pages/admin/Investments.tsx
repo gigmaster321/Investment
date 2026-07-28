@@ -149,7 +149,7 @@ export default function AdminInvestments() {
         <div className="flex flex-col md:flex-row md:items-center gap-3 px-5 py-4 border-b border-white/5">
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search user, plan, ID…" className="h-8 w-60 pl-8 pr-3 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-accent/40" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search user, plan, ID…" className="h-8 w-full sm:w-60 pl-8 pr-3 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-accent/40" />
           </div>
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-8 md:ml-auto rounded-lg bg-[hsl(221,70%,12%)] border border-white/10 text-xs text-white px-3 focus:outline-none">
             {['All', 'Pending', 'Active', 'Paused', 'Completed', 'Cancelled'].map((status) => <option key={status} value={status}>{status}</option>)}

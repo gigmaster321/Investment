@@ -50,7 +50,7 @@ export function HeroSection() {
             <span className="text-xs font-semibold text-white tracking-wide uppercase">Trusted Investment Platform</span>
           </div>
           
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] tracking-tight mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.1] tracking-tight mb-6">
             Build Wealth <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-white">With Confidence</span>
           </h1>

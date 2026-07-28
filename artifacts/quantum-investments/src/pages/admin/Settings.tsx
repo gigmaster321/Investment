@@ -93,7 +93,7 @@ export default function AdminSettings() {
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar nav */}
-        <div className="lg:w-56 shrink-0 flex flex-col gap-1">
+        <div className="lg:w-56 shrink-0 flex flex-row flex-wrap lg:flex-col gap-1">
           {SECTIONS.map((s) => (
             <button
               key={s.key}
@@ -109,7 +109,7 @@ export default function AdminSettings() {
             </button>
           ))}
 
-          <div className="mt-3 pt-3 border-t border-white/5">
+          <div className="w-full mt-3 pt-3 border-t border-white/5">
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"

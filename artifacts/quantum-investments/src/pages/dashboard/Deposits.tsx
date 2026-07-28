@@ -433,7 +433,7 @@ export default function Deposits() {
     return (
       <div className="space-y-8">
         <header>
-          <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Deposits</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Deposits</h1>
           <p className="text-muted-foreground">Add capital to your Quantum Investments account.</p>
         </header>
         <div className="max-w-lg">

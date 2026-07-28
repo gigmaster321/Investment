@@ -52,7 +52,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] -z-10 pointer-events-none opacity-50" />
         <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-accent/10 rounded-full blur-[100px] -z-10 pointer-events-none opacity-30" />
         
-        <div className="p-6 md:p-8 lg:p-12 max-w-7xl mx-auto h-full">
+        <div className="p-4 sm:p-6 md:p-8 lg:p-10 max-w-7xl mx-auto h-full">
           {children}
         </div>
       </main>

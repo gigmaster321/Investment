@@ -89,7 +89,7 @@ function BuyPlanModal({ plan, userBalance, onClose, onCreate }: BuyPlanModalProp
           <h4 className="font-bold text-white text-lg">{plan.name} Plan</h4>
           <span className="text-accent font-bold text-xl">{plan.profitPercentage}%<span className="text-sm text-muted-foreground font-normal"> target</span></span>
         </div>
-        <div className="grid grid-cols-3 gap-3 text-sm">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 text-sm">
           <div><p className="text-muted-foreground text-xs mb-1 flex items-center gap-1"><Clock size={11} /> Duration</p><p className="text-white font-medium">{plan.executionCycle}</p></div>
           <div><p className="text-muted-foreground text-xs mb-1">Min. Deposit</p><p className="text-white font-medium">{formatInvestmentAmount(plan.minInvestment)}</p></div>
           <div><p className="text-muted-foreground text-xs mb-1">Max. Deposit</p><p className="text-white font-medium">{formatInvestmentAmount(plan.maxInvestment)}</p></div>
@@ -182,9 +182,9 @@ export default function Investments() {
 
   return (
     <div className="space-y-8">
-      <header><h1 className="text-3xl font-bold tracking-tight text-white mb-2">Investments</h1><p className="text-muted-foreground">Monitor your current plans and daily yields.</p></header>
+      <header><h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">Investments</h1><p className="text-muted-foreground">Monitor your current plans and daily yields.</p></header>
 
-      <div className="flex bg-white/5 p-1 rounded-lg w-fit">
+      <div className="flex bg-white/5 p-1 rounded-lg w-full sm:w-fit overflow-x-auto">
         {['Active', 'History', 'Plans'].map((tab) => <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${activeTab === tab ? 'bg-primary/20 text-accent shadow-sm' : 'text-muted-foreground hover:text-white'}`}>{tab}</button>)}
       </div>
 
@@ -200,10 +200,10 @@ export default function Investments() {
                     <span className="px-3 py-1 bg-accent/20 text-accent border border-accent/30 rounded-full text-xs font-bold uppercase tracking-wider">{investment.plan.name} Plan</span>
                     <span className="flex items-center gap-1 text-xs font-medium text-emerald-400"><CheckCircle2 size={14} /> Active</span>
                   </div>
-                  <h2 className="text-4xl font-bold text-white mt-4">{money(investment.investmentAmount)}</h2>
+                  <h2 className="text-2xl sm:text-4xl font-bold text-white mt-4">{money(investment.investmentAmount)}</h2>
                   <p className="text-muted-foreground mt-1">Approved Investment Amount</p>
                 </div>
-                <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-x-10 sm:gap-y-6">
                   <div><p className="text-sm text-muted-foreground mb-1 flex items-center gap-2"><TrendingUp size={16} /> Profit Percentage</p><p className="text-xl font-semibold text-white">{investment.profitPercentage}%</p></div>
                   <div><p className="text-sm text-muted-foreground mb-1 flex items-center gap-2"><Clock size={16} /> Execution Cycle</p><p className="text-xl font-semibold text-white">{investment.plan.executionCycle}</p></div>
                   <div><p className="text-sm text-muted-foreground mb-1 flex items-center gap-2"><Calendar size={14} /> Start Date</p><p className="text-sm font-semibold text-white">{formatInvestmentDate(investment.investmentDate)}</p></div>
@@ -327,9 +327,9 @@ export default function Investments() {
 
       <AnimatePresence>
         {selectedPlan && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={(event) => { if (event.target === event.currentTarget) setSelectedPlan(null); }}>
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }} transition={{ duration: 0.2 }} className="bg-[hsl(221,70%,13%)] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between mb-5"><h2 className="text-lg font-bold text-white">Invest in {selectedPlan.name} Plan</h2><button onClick={() => setSelectedPlan(null)} className="text-muted-foreground hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5"><X size={20} /></button></div>
-            <BuyPlanModal plan={selectedPlan} userBalance={userBalance} onClose={() => setSelectedPlan(null)} onCreate={createUserInvestment} />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 16 }} transition={{ duration: 0.2 }} className="bg-[hsl(221,70%,13%)] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl max-h-[92vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-6 pb-0 shrink-0"><h2 className="text-lg font-bold text-white">Invest in {selectedPlan.name} Plan</h2><button onClick={() => setSelectedPlan(null)} className="text-muted-foreground hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5"><X size={20} /></button></div>
+            <div className="p-6 overflow-y-auto flex-1"><BuyPlanModal plan={selectedPlan} userBalance={userBalance} onClose={() => setSelectedPlan(null)} onCreate={createUserInvestment} /></div>
           </motion.div>
         </motion.div>}
       </AnimatePresence>
