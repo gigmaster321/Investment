@@ -6,7 +6,7 @@ import NotFound from '@/pages/not-found';
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
-import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
+import { Route, Switch, Router as WouterRouter, useLocation, Redirect } from 'wouter';
 
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -43,7 +43,7 @@ const queryClient = new QueryClient();
 
 /**
  * Route-aware controller — renders LiveNotifications with the correct mode:
- *   /admin/*  → nothing (admin never sees popups)
+ *   /wp-admin/*  → nothing (admin never sees popups)
  *   /dashboard/* → 'dashboard' mode (one popup every 5 minutes)
  *   everything else → 'landing' mode (rotating public activity feed)
  *
@@ -51,7 +51,7 @@ const queryClient = new QueryClient();
  */
 function LiveNotificationsController() {
   const [location] = useLocation();
-  if (location.startsWith('/admin')) return null;
+  if (location.startsWith('/wp-admin')) return null;
   if (location.startsWith('/dashboard')) return <LiveNotifications mode="dashboard" />;
   return <LiveNotifications mode="landing" />;
 }
@@ -110,38 +110,49 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      {/* /admin and /admin/* redirect to homepage — no longer exposes admin */}
+      <Route path="/admin/login">
+        <Redirect to="/" />
+      </Route>
+      <Route path="/admin/:rest*">
+        <Redirect to="/" />
+      </Route>
+      <Route path="/admin">
+        <Redirect to="/" />
+      </Route>
+
       {/* Admin panel — public login page */}
-      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/wp-admin/login" component={AdminLogin} />
 
       {/* Admin panel — protected routes (AdminGuard handles auth + role checks) */}
-      <Route path="/admin">
+      <Route path="/wp-admin">
         <AdminLayout><AdminDashboard /></AdminLayout>
       </Route>
-      <Route path="/admin/users">
+      <Route path="/wp-admin/users">
         <AdminLayout><AdminUsers /></AdminLayout>
       </Route>
-      <Route path="/admin/withdrawals">
+      <Route path="/wp-admin/withdrawals">
         <AdminLayout><AdminWithdrawals /></AdminLayout>
       </Route>
-      <Route path="/admin/plans">
+      <Route path="/wp-admin/plans">
         <AdminLayout><AdminPlans /></AdminLayout>
       </Route>
-      <Route path="/admin/analytics">
+      <Route path="/wp-admin/analytics">
         <AdminLayout><AdminAnalytics /></AdminLayout>
       </Route>
-      <Route path="/admin/deposits">
+      <Route path="/wp-admin/deposits">
         <AdminLayout><AdminDeposits /></AdminLayout>
       </Route>
-      <Route path="/admin/investments">
+      <Route path="/wp-admin/investments">
         <AdminLayout><AdminInvestments /></AdminLayout>
       </Route>
-      <Route path="/admin/settings">
+      <Route path="/wp-admin/settings">
         <AdminLayout><AdminSettings /></AdminLayout>
       </Route>
-      <Route path="/admin/chat">
+      <Route path="/wp-admin/chat">
         <AdminLayout><AdminChat /></AdminLayout>
       </Route>
-      <Route path="/admin/wallets">
+      <Route path="/wp-admin/wallets">
         <AdminLayout><AdminWallets /></AdminLayout>
       </Route>
 

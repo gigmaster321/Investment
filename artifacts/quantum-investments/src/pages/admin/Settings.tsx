@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Lock, LogOut, Shield, Bell, Globe, Save, Eye, EyeOff, Camera } from 'lucide-react';
+import { User, Lock, LogOut, Shield, Bell, Globe, Save, Eye, EyeOff, Camera, CheckCircle, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -25,16 +25,62 @@ export default function AdminSettings() {
   const { logout } = useAdminAuth();
   const [, setLocation] = useLocation();
 
+  // Change password form state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState('');
+  const [pwError, setPwError] = useState('');
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwError('');
+    setPwSuccess('');
+
+    if (newPassword.length < 8) {
+      setPwError('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError('New password and confirmation do not match.');
+      return;
+    }
+
+    setPwLoading(true);
+    try {
+      const res = await fetch('/api/auth/admin-change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPwError(data.message ?? 'Failed to update password.');
+      } else {
+        setPwSuccess('Password updated successfully. Your session remains active.');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch {
+      setPwError('Network error. Please try again.');
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
   const handleLogout = () => {
     if (confirm('Sign out of the admin panel?')) {
       logout();
-      setLocation('/admin/login');
+      setLocation('/wp-admin/login');
     }
   };
 
@@ -143,50 +189,138 @@ export default function AdminSettings() {
           )}
 
           {active === 'password' && (
-            <form onSubmit={handleSave} className="space-y-6">
+            <form onSubmit={handleChangePassword} className="space-y-6">
               <div>
                 <h2 className="text-base font-semibold text-white">Change Password</h2>
                 <p className="text-muted-foreground text-xs mt-0.5">Use a strong, unique password to protect the admin panel.</p>
               </div>
 
-              {[
-                { label: 'Current Password', show: showCurrent, toggle: () => setShowCurrent(!showCurrent) },
-                { label: 'New Password', show: showNew, toggle: () => setShowNew(!showNew) },
-                { label: 'Confirm New Password', show: showConfirm, toggle: () => setShowConfirm(!showConfirm) },
-              ].map((f) => (
-                <div key={f.label} className="space-y-1.5">
-                  <Label className="text-white/60 text-[10px] uppercase tracking-widest font-semibold">{f.label}</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
-                    <Input
-                      type={f.show ? 'text' : 'password'}
-                      placeholder="••••••••••"
-                      required
-                      className="pl-10 pr-10 h-10 bg-muted/40 border-white/10 text-white placeholder:text-white/20"
-                    />
-                    <button
-                      type="button"
-                      onClick={f.toggle}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                    >
-                      {f.show ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
+              {/* Success message */}
+              {pwSuccess && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs rounded-lg px-3 py-2.5"
+                >
+                  <CheckCircle size={14} className="shrink-0" />
+                  {pwSuccess}
+                </motion.div>
+              )}
+
+              {/* Error message */}
+              {pwError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 bg-destructive/15 border border-destructive/30 text-red-400 text-xs rounded-lg px-3 py-2.5"
+                >
+                  <AlertCircle size={14} className="shrink-0" />
+                  {pwError}
+                </motion.div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-white/60 text-[10px] uppercase tracking-widest font-semibold">Current Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+                  <Input
+                    type={showCurrent ? 'text' : 'password'}
+                    placeholder="••••••••••"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="pl-10 pr-10 h-10 bg-muted/40 border-white/10 text-white placeholder:text-white/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    {showCurrent ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
                 </div>
-              ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-white/60 text-[10px] uppercase tracking-widest font-semibold">New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+                  <Input
+                    type={showNew ? 'text' : 'password'}
+                    placeholder="••••••••••"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="pl-10 pr-10 h-10 bg-muted/40 border-white/10 text-white placeholder:text-white/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNew(!showNew)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    {showNew ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-white/60 text-[10px] uppercase tracking-widest font-semibold">Confirm New Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25" />
+                  <Input
+                    type={showConfirm ? 'text' : 'password'}
+                    placeholder="••••••••••"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="pl-10 pr-10 h-10 bg-muted/40 border-white/10 text-white placeholder:text-white/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  >
+                    {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+              </div>
 
               {/* Password requirements */}
               <div className="bg-white/3 border border-white/8 rounded-lg p-4 space-y-1.5">
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Password requirements</p>
-                {['At least 12 characters', 'One uppercase letter', 'One number', 'One special character'].map((req) => (
-                  <div key={req} className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <div className="w-1 h-1 rounded-full bg-muted-foreground/40" />
-                    {req}
+                {[
+                  { text: 'At least 8 characters', met: newPassword.length >= 8 },
+                  { text: 'Passwords match', met: newPassword.length > 0 && newPassword === confirmPassword },
+                ].map((req) => (
+                  <div key={req.text} className="flex items-center gap-2 text-xs">
+                    <div className={`w-1.5 h-1.5 rounded-full ${req.met ? 'bg-emerald-400' : 'bg-muted-foreground/40'}`} />
+                    <span className={req.met ? 'text-emerald-400' : 'text-muted-foreground'}>{req.text}</span>
                   </div>
                 ))}
               </div>
 
-              <SaveButton saved={saved} label="Update Password" />
+              <div className="flex items-center gap-3 pt-2">
+                <Button
+                  type="submit"
+                  disabled={pwLoading}
+                  className="bg-gradient-to-r from-primary to-accent text-white font-semibold border-0 hover:shadow-[0_0_20px_rgba(30,167,255,0.3)] hover:scale-[1.02] transition-all duration-200 flex items-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
+                >
+                  {pwLoading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Updating…
+                    </span>
+                  ) : (
+                    <>
+                      <Save size={14} />
+                      Update Password
+                    </>
+                  )}
+                </Button>
+              </div>
             </form>
           )}
 

@@ -248,6 +248,16 @@ async function ensureDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS "idx_chat_messages_is_read"
       ON "chat_messages"("is_read");
   `);
+
+  // ── 6. Admin config table ──────────────────────────────────────────────────
+  // Stores runtime-mutable admin settings (e.g. hashed admin password).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "admin_config" (
+      "key"        text      PRIMARY KEY NOT NULL,
+      "value"      text      NOT NULL,
+      "updated_at" timestamp NOT NULL DEFAULT now()
+    );
+  `);
 }
 
 ensureDatabase()

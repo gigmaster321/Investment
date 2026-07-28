@@ -25,7 +25,7 @@ export default function AdminLogin() {
     const ok = await login(password);
     setLoading(false);
     if (ok) {
-      setLocation('/admin');
+      setLocation('/wp-admin');
     } else {
       setError('Invalid password.');
     }

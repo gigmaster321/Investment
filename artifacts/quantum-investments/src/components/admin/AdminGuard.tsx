@@ -16,7 +16,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      setLocation('/admin/login');
+      setLocation('/wp-admin/login');
     }
   }, [isLoading, isAuthenticated, setLocation]);
 

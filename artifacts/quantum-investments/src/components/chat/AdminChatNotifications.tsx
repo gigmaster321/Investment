@@ -18,7 +18,7 @@ export function AdminChatNotifications() {
 
   const poll = useCallback(async () => {
     // Don't show popups when already on the admin chat page
-    if (location === '/admin/chat' || location.startsWith('/admin/chat/')) return;
+    if (location === '/wp-admin/chat' || location.startsWith('/wp-admin/chat/')) return;
 
     try {
       const convs = await chatApi.getAllConversations();
@@ -48,7 +48,7 @@ export function AdminChatNotifications() {
               senderName: displayName,
               senderType: 'user',
               preview,
-              navigateTo: '/admin/chat',
+              navigateTo: '/wp-admin/chat',
             },
             ...prev.slice(0, 2), // keep max 3
           ]);

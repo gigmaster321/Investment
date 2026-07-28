@@ -29,7 +29,7 @@ export default function Login() {
       const user = await login(email, password, remember);
       // Role-based redirect
       if (user.role === 'admin') {
-        setLocation('/admin');
+        setLocation('/wp-admin');
       } else {
         setLocation('/dashboard');
       }

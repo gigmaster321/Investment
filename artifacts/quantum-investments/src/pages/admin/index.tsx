@@ -152,7 +152,7 @@ export default function AdminDashboard() {
         >
           <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
             <h2 className="text-sm font-semibold text-white">Recent Users</h2>
-            <a href="/admin/users" className="text-xs text-accent hover:text-accent/70 transition-colors">View all →</a>
+            <a href="/wp-admin/users" className="text-xs text-accent hover:text-accent/70 transition-colors">View all →</a>
           </div>
 
           {loading ? (
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-6 py-3.5">
                         <a
-                          href="/admin/users"
+                          href="/wp-admin/users"
                           className="text-[10px] font-medium text-muted-foreground hover:text-white border border-white/10 hover:border-white/25 rounded-md px-2.5 py-1 transition-colors"
                         >
                           View
@@ -227,7 +227,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="p-4 flex flex-col gap-3">
-            <a href="/admin/deposits" className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/8 border border-amber-500/15 hover:bg-amber-500/12 transition-colors">
+            <a href="/wp-admin/deposits" className="flex items-center gap-3 p-3.5 rounded-xl bg-amber-500/8 border border-amber-500/15 hover:bg-amber-500/12 transition-colors">
               <div className="p-2 rounded-lg bg-amber-500/15 border border-amber-500/20 shrink-0">
                 <Clock size={15} className="text-amber-400" />
               </div>
@@ -240,7 +240,7 @@ export default function AdminDashboard() {
               </span>
             </a>
 
-            <a href="/admin/deposits" className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-500/8 border border-emerald-500/15 hover:bg-emerald-500/12 transition-colors">
+            <a href="/wp-admin/deposits" className="flex items-center gap-3 p-3.5 rounded-xl bg-emerald-500/8 border border-emerald-500/15 hover:bg-emerald-500/12 transition-colors">
               <div className="p-2 rounded-lg bg-emerald-500/15 border border-emerald-500/20 shrink-0">
                 <CheckCircle size={15} className="text-emerald-400" />
               </div>
@@ -253,7 +253,7 @@ export default function AdminDashboard() {
               </span>
             </a>
 
-            <a href="/admin/deposits" className="flex items-center gap-3 p-3.5 rounded-xl bg-red-500/8 border border-red-500/15 hover:bg-red-500/12 transition-colors">
+            <a href="/wp-admin/deposits" className="flex items-center gap-3 p-3.5 rounded-xl bg-red-500/8 border border-red-500/15 hover:bg-red-500/12 transition-colors">
               <div className="p-2 rounded-lg bg-red-500/15 border border-red-500/20 shrink-0">
                 <XCircle size={15} className="text-red-400" />
               </div>
@@ -268,7 +268,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="px-5 py-3 border-t border-white/5">
-            <a href="/admin/deposits" className="text-xs text-accent hover:text-accent/70 transition-colors">
+            <a href="/wp-admin/deposits" className="text-xs text-accent hover:text-accent/70 transition-colors">
               Manage all deposits →
             </a>
           </div>

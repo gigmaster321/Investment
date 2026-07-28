@@ -29,31 +29,31 @@ const BASE_NAV_SECTIONS: NavSection[] = [
   {
     label: 'Main',
     items: [
-      { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
+      { href: '/wp-admin', label: 'Overview', icon: LayoutDashboard, exact: true },
     ],
   },
   {
     label: 'Management',
     items: [
-      { href: '/admin/users', label: 'User Management', icon: Users },
-      { href: '/admin/deposits', label: 'Deposits', icon: DollarSign },
-      { href: '/admin/withdrawals', label: 'Withdrawals', icon: ArrowDownCircle },
-      { href: '/admin/plans', label: 'Investment Plans', icon: CreditCard },
-      { href: '/admin/investments', label: 'Investment Assignments', icon: TrendingUp },
-      { href: '/admin/wallets', label: 'Deposit Wallets', icon: Wallet },
-      { href: '/admin/chat', label: 'Live Chat', icon: MessageCircle },
+      { href: '/wp-admin/users', label: 'User Management', icon: Users },
+      { href: '/wp-admin/deposits', label: 'Deposits', icon: DollarSign },
+      { href: '/wp-admin/withdrawals', label: 'Withdrawals', icon: ArrowDownCircle },
+      { href: '/wp-admin/plans', label: 'Investment Plans', icon: CreditCard },
+      { href: '/wp-admin/investments', label: 'Investment Assignments', icon: TrendingUp },
+      { href: '/wp-admin/wallets', label: 'Deposit Wallets', icon: Wallet },
+      { href: '/wp-admin/chat', label: 'Live Chat', icon: MessageCircle },
     ],
   },
   {
     label: 'Insights',
     items: [
-      { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+      { href: '/wp-admin/analytics', label: 'Analytics', icon: BarChart2 },
     ],
   },
   {
     label: 'System',
     items: [
-      { href: '/admin/settings', label: 'Settings', icon: Settings },
+      { href: '/wp-admin/settings', label: 'Settings', icon: Settings },
     ],
   },
 ];
@@ -85,7 +85,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
     <div className="h-full flex flex-col bg-[hsl(221,70%,10%)] border-r border-white/5 w-64 md:w-72">
       {/* Logo */}
       <div className="p-5 flex items-center justify-between border-b border-white/5 shrink-0">
-        <Link href="/admin" className="flex items-center gap-3">
+        <Link href="/wp-admin" className="flex items-center gap-3">
           <img src={logoPath} alt="Quantum" className="h-8 w-8 rounded-md object-cover" />
           <div>
             <p className="text-sm font-bold text-white leading-tight">QUANTUM</p>
@@ -125,7 +125,7 @@ export function AdminSidebar({ onClose }: { onClose?: () => void }) {
             <div className="flex flex-col gap-0.5">
               {section.items.map((item) => {
                 const active = isActive(item.href, item.exact);
-                const badge = item.href === '/admin/chat' ? chatUnread : 0;
+                const badge = item.href === '/wp-admin/chat' ? chatUnread : 0;
                 return (
                   <Link key={item.href} href={item.href}>
                     <div

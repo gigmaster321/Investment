@@ -9,3 +9,4 @@ export * from "./transactions";
 export * from "./notifications";
 export * from "./chat";
 export * from "./email_otps";
+export * from "./admin_config";
