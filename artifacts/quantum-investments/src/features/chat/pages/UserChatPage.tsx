@@ -25,6 +25,7 @@ export default function UserChatPage() {
         messages={messages}
         showTyping={showTyping}
         isLoading={isLoading}
+        incomingLabel="QS"
       />
 
       {/* Input */}

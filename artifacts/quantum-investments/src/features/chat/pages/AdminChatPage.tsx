@@ -265,11 +265,13 @@ export default function AdminChatPage() {
                 showTyping={false}
                 isLoading={loadingMessages}
                 myRole="admin"
+                incomingLabel={getInitials(getDisplayName(selectedConv))}
               />
               <ChatInput
                 onSend={sendMessage}
                 onSendImage={sendImage}
                 isSending={isSending}
+                placeholder={`Reply to ${getDisplayName(selectedConv)}…`}
               />
             </motion.div>
           ) : (
