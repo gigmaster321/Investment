@@ -37,11 +37,12 @@ const loginSchema = z.object({
 
 function setSession(
   req: Express.Request,
-  user: { id: number; role: "user" | "admin"; email: string },
+  user: { id: number; role: "user" | "admin"; email: string; full_name?: string },
 ) {
   req.session.userId = user.id;
   req.session.userRole = user.role;
   req.session.userEmail = user.email;
+  if (user.full_name) req.session.userName = user.full_name;
 }
 
 function dbError(res: any, err: any) {
@@ -143,6 +144,106 @@ router.post("/login", async (req, res) => {
       return;
     }
     res.status(500).json({ error: "INTERNAL_ERROR", message: "Login failed. Please try again." });
+  }
+});
+
+/** PATCH /api/auth/profile — update full_name and/or phone for the current user */
+router.patch("/profile", async (req, res) => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "UNAUTHENTICATED" });
+    return;
+  }
+
+  const schema = z.object({
+    full_name: z.string().min(2, "Full name must be at least 2 characters").optional(),
+    phone: z.string().max(30).optional().nullable(),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "VALIDATION_ERROR", details: parsed.error.flatten().fieldErrors });
+    return;
+  }
+
+  const updates: Record<string, unknown> = { updated_at: new Date() };
+  if (parsed.data.full_name !== undefined) updates["full_name"] = parsed.data.full_name.trim();
+  if (parsed.data.phone !== undefined) updates["phone"] = parsed.data.phone ?? null;
+
+  if (Object.keys(updates).length === 1) {
+    res.status(400).json({ error: "NO_FIELDS", message: "Provide at least one field to update." });
+    return;
+  }
+
+  try {
+    const { db, usersTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+
+    await db.update(usersTable).set(updates).where(eq(usersTable.id, req.session.userId));
+
+    const user = await getUserById(req.session.userId);
+    res.json({ user });
+  } catch (err: any) {
+    if (dbError(res, err)) return;
+    res.status(500).json({ error: "INTERNAL_ERROR", message: "Profile update failed." });
+  }
+});
+
+/** POST /api/auth/change-password — change password for the current user */
+router.post("/change-password", async (req, res) => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "UNAUTHENTICATED" });
+    return;
+  }
+
+  const schema = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string().min(8, "New password must be at least 8 characters"),
+    confirmPassword: z.string().min(1),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    const msg = parsed.error.errors[0]?.message ?? "Validation error.";
+    res.status(400).json({ error: "VALIDATION_ERROR", message: msg });
+    return;
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = parsed.data;
+
+  if (newPassword !== confirmPassword) {
+    res.status(400).json({ error: "PASSWORD_MISMATCH", message: "New password and confirmation do not match." });
+    return;
+  }
+
+  try {
+    const { db, usersTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+    const { verifyPassword, hashPassword } = await import("../services/auth.js");
+
+    const [row] = await db
+      .select({ password: usersTable.password })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.session.userId))
+      .limit(1);
+
+    if (!row) {
+      res.status(404).json({ error: "USER_NOT_FOUND" });
+      return;
+    }
+
+    const valid = await verifyPassword(currentPassword, row.password);
+    if (!valid) {
+      res.status(401).json({ error: "INVALID_CURRENT_PASSWORD", message: "Current password is incorrect." });
+      return;
+    }
+
+    const hashed = await hashPassword(newPassword);
+    await db.update(usersTable).set({ password: hashed, updated_at: new Date() }).where(eq(usersTable.id, req.session.userId));
+
+    res.json({ success: true, message: "Password updated successfully." });
+  } catch (err: any) {
+    if (dbError(res, err)) return;
+    res.status(500).json({ error: "INTERNAL_ERROR", message: "Password change failed." });
   }
 });
 

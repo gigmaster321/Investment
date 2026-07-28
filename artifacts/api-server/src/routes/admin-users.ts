@@ -3,9 +3,6 @@ import { requireAdmin } from "../middleware/requireAuth.js";
 
 type UserStatus = "Active" | "Suspended";
 
-// In-memory admin notes (ephemeral per-session — not part of persistent user data)
-const adminNotes = new Map<string, string>();
-
 /** Parse "#U-123" → 123, or return null for invalid format. */
 function parseDbId(userId: string): number | null {
   const match = userId.match(/^#U-(\d+)$/);
@@ -90,14 +87,35 @@ router.get("/", async (_req, res) => {
   }
 });
 
+/** Persistent notes key for the admin_config table. */
+function notesKey(userId: string): string {
+  return `user_notes_${userId}`;
+}
+
+async function getNotesFromDb(userId: string): Promise<string> {
+  try {
+    const { db, adminConfigTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db
+      .select({ value: adminConfigTable.value })
+      .from(adminConfigTable)
+      .where(eq(adminConfigTable.key, notesKey(userId)))
+      .limit(1);
+    return row?.value ?? "";
+  } catch {
+    return "";
+  }
+}
+
 // ─── GET /:userId/profile — profile + notes ───────────────────────────────────
 
 router.get("/:userId/profile", async (req, res) => {
   const userId = String(req.params.userId);
   const dbId = parseDbId(userId);
 
+  const notes = await getNotesFromDb(userId);
+
   if (dbId) {
-    // Fetch live status from DB
     try {
       const { db, usersTable } = await import("@workspace/db");
       const { eq } = await import("drizzle-orm");
@@ -111,7 +129,7 @@ router.get("/:userId/profile", async (req, res) => {
         res.json({
           userId,
           status: toUiStatus(u.account_status),
-          notes: adminNotes.get(userId) ?? "",
+          notes,
           updatedAt: new Date().toISOString(),
         });
         return;
@@ -124,14 +142,14 @@ router.get("/:userId/profile", async (req, res) => {
   res.json({
     userId,
     status: "Active" as UserStatus,
-    notes: adminNotes.get(userId) ?? "",
+    notes,
     updatedAt: new Date(0).toISOString(),
   });
 });
 
-// ─── PUT /:userId/notes — save admin notes (in-memory) ───────────────────────
+// ─── PUT /:userId/notes — save admin notes to DB ─────────────────────────────
 
-router.put("/:userId/notes", (req, res) => {
+router.put("/:userId/notes", async (req, res) => {
   const notes = req.body?.notes;
   if (typeof notes !== "string" || notes.length > 5000) {
     res.status(400).json({
@@ -142,7 +160,19 @@ router.put("/:userId/notes", (req, res) => {
   }
 
   const userId = String(req.params.userId);
-  adminNotes.set(userId, notes);
+
+  try {
+    const { db, adminConfigTable } = await import("@workspace/db");
+    await db
+      .insert(adminConfigTable)
+      .values({ key: notesKey(userId), value: notes })
+      .onConflictDoUpdate({
+        target: adminConfigTable.key,
+        set: { value: notes, updated_at: new Date() },
+      });
+  } catch {
+    // Non-fatal — return success anyway (DB may be unavailable)
+  }
 
   res.json({
     userId,
@@ -181,10 +211,11 @@ router.patch("/:userId/status", async (req, res) => {
       .set({ account_status: toDbStatus(status), updated_at: new Date() })
       .where(eq(usersTable.id, dbId));
 
+    const notes = await getNotesFromDb(userId);
     res.json({
       userId,
       status,
-      notes: adminNotes.get(userId) ?? "",
+      notes,
       updatedAt: new Date().toISOString(),
     });
   } catch (_err) {
@@ -252,7 +283,12 @@ router.delete("/:userId", async (req, res) => {
     const { eq } = await import("drizzle-orm");
 
     await db.delete(usersTable).where(eq(usersTable.id, dbId));
-    adminNotes.delete(userId);
+    // Best-effort cleanup of persisted notes
+    try {
+      const { adminConfigTable: cfg } = await import("@workspace/db");
+      const { eq: eqCfg } = await import("drizzle-orm");
+      await db.delete(cfg).where(eqCfg(cfg.key, notesKey(userId)));
+    } catch { /* non-fatal */ }
 
     res.json({ success: true, message: `User ${userId} deleted.` });
   } catch (_err) {

@@ -100,7 +100,7 @@ export async function loginUser(
     });
 
   if (user.account_status !== "active")
-    throw Object.assign(new Error("ACCOUNT_INACTIVE"), {
+    throw Object.assign(new Error("Your account has been suspended. Please contact support."), {
       code: "ACCOUNT_INACTIVE",
       status: user.account_status,
     });

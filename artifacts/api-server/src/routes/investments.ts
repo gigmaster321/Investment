@@ -172,11 +172,12 @@ router.get("/", async (req, res) => {
         .orderBy(desc(investmentsTable.created_at));
 
       const userEmail = req.session.userEmail ?? "";
+      const userName = req.session.userName ?? userEmail;
       res.json(
         rows.map((row) =>
           toInvestmentResponse(row, {
             id: String(userId),
-            name: userEmail,
+            name: userName,
             email: userEmail,
           }),
         ),
