@@ -346,11 +346,11 @@ const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/api`;
 interface PlanStats {
   totalPlans: number;
   totalInvestors: number;
-  averageRoi: number;
+  activeInvestments: number;
   totalAum: number;
 }
 
-const ZERO_STATS: PlanStats = { totalPlans: 0, totalInvestors: 0, averageRoi: 0, totalAum: 0 };
+const ZERO_STATS: PlanStats = { totalPlans: 0, totalInvestors: 0, activeInvestments: 0, totalAum: 0 };
 
 export default function AdminPlans() {
   const { plans, loading, error, createPlan, updatePlan, setPlanStatus, deletePlan } = useInvestmentPlans();
@@ -430,7 +430,7 @@ export default function AdminPlans() {
           {[
             { label: 'Total Plans', value: String(stats.totalPlans), icon: CreditCard },
             { label: 'Total Investors', value: stats.totalInvestors.toLocaleString(), icon: ShieldCheck },
-            { label: 'Avg ROI', value: `${stats.averageRoi.toFixed(2)}%`, icon: Gem },
+            { label: 'Active Investments', value: stats.activeInvestments.toLocaleString(), icon: Gem },
             { label: 'Total AUM', value: money(stats.totalAum), icon: TrendingUpIcon },
           ].map((stat) => (
             <div key={stat.label} className="bg-card/40 border border-white/5 rounded-xl p-4 flex items-center gap-3">

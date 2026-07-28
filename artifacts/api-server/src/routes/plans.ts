@@ -152,21 +152,21 @@ router.get("/stats", requireAdmin, async (_req, res) => {
     const result = await pool.query<{
       total_plans: number;
       total_investors: number;
-      average_roi: string;
+      active_investments: number;
       total_aum: string;
     }>(`
       SELECT
-        (SELECT COUNT(*)::int           FROM investment_plans)                                AS total_plans,
-        (SELECT COUNT(DISTINCT user_id)::int FROM investments WHERE status = 'Active')       AS total_investors,
-        (SELECT COALESCE(AVG(profit_percentage), 0) FROM investment_plans)                   AS average_roi,
-        (SELECT COALESCE(SUM(investment_amount), 0) FROM investments WHERE status = 'Active') AS total_aum
+        (SELECT COUNT(*)::int                FROM investment_plans)                                AS total_plans,
+        (SELECT COUNT(DISTINCT user_id)::int FROM investments WHERE status = 'Active')            AS total_investors,
+        (SELECT COUNT(*)::int                FROM investments WHERE status = 'Active')             AS active_investments,
+        (SELECT COALESCE(SUM(investment_amount), 0) FROM investments WHERE status = 'Active')     AS total_aum
     `);
     const row = result.rows[0];
     res.json({
-      totalPlans:      row.total_plans,
-      totalInvestors:  row.total_investors,
-      averageRoi:      Number(row.average_roi),
-      totalAum:        Number(row.total_aum),
+      totalPlans:         row.total_plans,
+      totalInvestors:     row.total_investors,
+      activeInvestments:  row.active_investments,
+      totalAum:           Number(row.total_aum),
     });
   } catch (err) {
     logger.error({ err }, "Failed to get plan stats");
