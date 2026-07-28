@@ -85,7 +85,7 @@ if (process.env["NODE_ENV"] === "production") {
   app.use(express.static(frontendDir));
 
   // SPA fallback: every non-API GET returns index.html so client-side routing works.
-  app.get("*", (_req, res) => {
+  app.get("/{*path}", (_req, res) => {
     res.sendFile(path.resolve(frontendDir, "index.html"));
   });
 }
