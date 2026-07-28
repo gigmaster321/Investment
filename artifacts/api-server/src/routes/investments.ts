@@ -341,7 +341,7 @@ router.post("/", requireAuth, async (req, res) => {
       //    in the user's transaction history.
       await tx.insert(transactionsTable).values({
         user_id: userId,
-        type: "Investment",
+        type: "Withdrawal",
         amount: amountStr,
         description: `Investment placed — ${plan.name} Plan`,
         reference_id: `INV-${inv.id}`,
