@@ -110,12 +110,13 @@ router.post("/login", async (req, res) => {
     const user = await loginUser(email, password);
     setSession(req, user);
 
-    // Remember Me: extend cookie to 30 days; otherwise it expires with the browser session
+    // Remember Me: extend cookie to 30 days; otherwise keep the 7-day default
+    // from the session middleware.
+    // NOTE: do NOT set maxAge/expires to undefined here — that turns the cookie
+    // into a browser-session cookie (deleted on tab/window close), which is the
+    // exact failure mode the client reported (forced re-login after refresh).
     if (rememberMe) {
       req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-    } else {
-      req.session.cookie.expires = undefined;
-      req.session.cookie.maxAge = undefined as any;
     }
 
     res.json({ user });

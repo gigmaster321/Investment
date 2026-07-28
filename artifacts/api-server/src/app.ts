@@ -47,6 +47,10 @@ app.use(
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
+    // Extend the session TTL on every request so active users are never
+    // logged out mid-session. The cookie / store record expiry slides
+    // forward by `maxAge` on each authenticated request.
+    rolling: true,
     store: process.env["DATABASE_URL"]
       ? new PgStore({
           conString: process.env["DATABASE_URL"],
@@ -58,7 +62,9 @@ app.use(
       secure: !isDev,
       httpOnly: true,
       sameSite: isDev ? "lax" : "none",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day default
+      // 7-day persistent cookie — survives browser close/reopen.
+      // The login route may extend this to 30 days when rememberMe=true.
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   }),
 );
