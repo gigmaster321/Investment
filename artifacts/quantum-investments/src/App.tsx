@@ -54,9 +54,11 @@ const queryClient = new QueryClient({
 /**
  * Route-aware controller — renders LiveNotifications with the correct mode:
  *   /wp-admin/*  → nothing (admin never sees popups)
- *   /dashboard/* → 'dashboard' mode (one popup every 5 minutes)
+ *   /dashboard/* → 'dashboard' mode
  *   everything else → 'landing' mode (rotating public activity feed)
  *
+ * Sits at the same level as <Router /> so it is never unmounted on page
+ * navigation — the timer chain continues uninterrupted as visitors browse.
  * Must live inside <WouterRouter> so useLocation works.
  */
 function LiveNotificationsController() {
