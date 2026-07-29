@@ -308,6 +308,29 @@ async function ensureDatabase(): Promise<void> {
     CREATE INDEX IF NOT EXISTS "admin_notifications_created_idx"
       ON "admin_notifications"("created_at" DESC);
   `);
+
+  // ── 8. Performance indexes on high-traffic query paths ─────────────────────
+  // All use IF NOT EXISTS — safe to run on an already-indexed database.
+  //
+  // investments: dashboard fetches active investments by user; admin filters by status
+  // transactions: per-user listing ordered by created_at
+  // deposit_requests: per-user listing
+  // earnings: summary aggregation groups by user_id
+  // notifications: unread-count query (WHERE user_id = ? AND read = false) runs every 30 s per session
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS "idx_investments_user_id"
+      ON "investments"("user_id");
+    CREATE INDEX IF NOT EXISTS "idx_investments_user_status"
+      ON "investments"("user_id", "status");
+    CREATE INDEX IF NOT EXISTS "idx_transactions_user_id"
+      ON "transactions"("user_id");
+    CREATE INDEX IF NOT EXISTS "idx_deposit_requests_user_id"
+      ON "deposit_requests"("user_id");
+    CREATE INDEX IF NOT EXISTS "idx_earnings_user_id"
+      ON "earnings"("user_id");
+    CREATE INDEX IF NOT EXISTS "idx_notifications_user_read"
+      ON "notifications"("user_id", "read");
+  `);
 }
 
 ensureDatabase()
