@@ -1,0 +1,69 @@
+This is the final production branding update.
+
+The client reported that when the website link is shared on WhatsApp, the preview still shows:
+
+"Quantum Investments — built on Replit. Update this description to reflect the app."
+
+This is unacceptable for production.
+
+Your task is to completely remove ALL Replit branding from the project.
+
+Requirements:
+
+1. Search the ENTIRE codebase for:
+- Built on Replit
+- Replit
+- Update this description to reflect the app
+- Any placeholder SEO or metadata
+
+2. Update ALL metadata everywhere it exists, including:
+- index.html
+- Vite configuration
+- React Helmet (if used)
+- SEO components
+- Open Graph tags
+- Twitter Card tags
+- manifest.json
+- Any metadata generators
+- Any server-side HTML template
+
+3. Replace with the following production branding:
+
+Title:
+Quantum Investments | Smart Investment Platform
+
+Meta Description:
+Quantum Investments is a secure online investment platform offering transparent investment plans, fast deposits and withdrawals, portfolio tracking, and reliable financial growth.
+
+Open Graph Title:
+Quantum Investments | Smart Investment Platform
+
+Open Graph Description:
+Invest with confidence through Quantum Investments. Secure investment plans, real-time portfolio tracking, fast transactions, and professional financial services.
+
+Twitter Title:
+Quantum Investments | Smart Investment Platform
+
+Twitter Description:
+Invest securely with Quantum Investments. Trusted investment plans, fast transactions, transparent portfolio management, and reliable investment services.
+
+Site Name:
+Quantum Investments
+
+4. Verify that no "Built on Replit" text exists anywhere in the repository.
+
+5. Ensure favicon, OG image and metadata point to the production domain:
+https://quantuminvestments.group
+
+6. Build the application.
+
+7. Verify the generated HTML contains the updated metadata.
+
+8. Commit the changes.
+
+9. Restart the application.
+
+Finally provide:
+- Every file modified.
+- What metadata was changed.
+- Confirmation that there is ZERO remaining Replit branding anywhere in the project.
