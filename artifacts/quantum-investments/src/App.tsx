@@ -41,7 +41,15 @@ import AdminWallets from '@/pages/admin/Wallets';
 import AdminChatPage from '@/features/chat/pages/AdminChatPage';
 import AdminNotifications from '@/pages/admin/Notifications';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,   // don't refetch data younger than 30 s
+      gcTime: 300_000,     // keep unused cache entries for 5 min
+      retry: 1,            // one retry on failure instead of the default 3
+    },
+  },
+});
 
 /**
  * Route-aware controller — renders LiveNotifications with the correct mode:
