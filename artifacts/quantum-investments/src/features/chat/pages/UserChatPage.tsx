@@ -1,11 +1,13 @@
 import { AlertCircle } from 'lucide-react';
 import { useChat } from '../hooks/useChat';
+import { useAuth } from '@/contexts/AuthContext';
 import ChatHeader from '../components/ChatHeader';
 import ChatMessageList from '../components/ChatMessageList';
 import ChatInput from '../components/ChatInput';
 
 export default function UserChatPage() {
   const { messages, isLoading, isSending, showTyping, error, sendMessage, sendImage } = useChat();
+  const { user } = useAuth();
 
   return (
     <div className="-m-6 md:-m-8 lg:-m-12 flex flex-col h-[calc(100dvh-4rem)] md:h-dvh overflow-hidden">
@@ -25,6 +27,7 @@ export default function UserChatPage() {
         messages={messages}
         showTyping={showTyping}
         isLoading={isLoading}
+        currentUserId={user?.id ?? 0}
         incomingLabel="QS"
         incomingName="Quantum Support"
       />

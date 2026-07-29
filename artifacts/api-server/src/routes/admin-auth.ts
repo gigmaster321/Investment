@@ -117,7 +117,7 @@ router.get("/admin-me", (req, res) => {
     res.status(401).json({ error: "UNAUTHENTICATED" });
     return;
   }
-  res.json({ isAdmin: true });
+  res.json({ isAdmin: true, userId: req.session.userId ?? null });
 });
 
 /**

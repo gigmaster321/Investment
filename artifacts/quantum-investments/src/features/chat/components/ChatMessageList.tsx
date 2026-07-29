@@ -9,8 +9,11 @@ interface Props {
   messages: ChatMessage[];
   showTyping: boolean;
   isLoading: boolean;
-  /** Which sender_type is "mine" (right-aligned). Defaults to 'user'. */
-  myRole?: 'user' | 'admin';
+  /**
+   * The authenticated session user's DB id.
+   * isMine is computed as message.sender_id === currentUserId — never from sender_type.
+   */
+  currentUserId: number;
   /** Initials / short label for the incoming party's avatar circle. */
   incomingLabel?: string;
   /** Full display name shown above the first bubble of each incoming group. */
@@ -48,7 +51,7 @@ export default function ChatMessageList({
   messages,
   showTyping,
   isLoading,
-  myRole = 'user',
+  currentUserId,
   incomingLabel,
   incomingName,
 }: Props) {
@@ -150,8 +153,8 @@ export default function ChatMessageList({
     return {
       type: 'msg',
       msg: item.msg,
-      isGroupStart: !prevMsg || prevMsg.sender_type !== item.msg.sender_type,
-      isGroupEnd:   !nextMsg || nextMsg.sender_type !== item.msg.sender_type,
+      isGroupStart: !prevMsg || prevMsg.sender_id !== item.msg.sender_id,
+      isGroupEnd:   !nextMsg || nextMsg.sender_id !== item.msg.sender_id,
     };
   });
 
@@ -182,14 +185,14 @@ export default function ChatMessageList({
               {item.msg.sender_type === 'admin' ? (
                 <AdminMessageBubble
                   message={item.msg}
-                  isMine={myRole === 'admin'}
+                  isMine={item.msg.sender_id === currentUserId}
                   isGroupStart={item.isGroupStart}
                   isGroupEnd={item.isGroupEnd}
                 />
               ) : (
                 <UserMessageBubble
                   message={item.msg}
-                  isMine={myRole === 'user'}
+                  isMine={item.msg.sender_id === currentUserId}
                   isGroupStart={item.isGroupStart}
                   isGroupEnd={item.isGroupEnd}
                   customerInitials={incomingLabel}

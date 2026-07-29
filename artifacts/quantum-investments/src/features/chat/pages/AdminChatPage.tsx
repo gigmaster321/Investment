@@ -4,6 +4,7 @@ import {
   MessageSquare, Search, ArrowLeft, User, Users,
 } from 'lucide-react';
 import { useAdminChat } from '../hooks/useAdminChat';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import type { AdminConversation } from '../hooks/useAdminChat';
 import ChatMessageList from '../components/ChatMessageList';
 import ChatInput from '../components/ChatInput';
@@ -151,6 +152,7 @@ export default function AdminChatPage() {
     sendMessage,
     sendImage,
   } = useAdminChat();
+  const { adminUserId } = useAdminAuth();
 
   const [search, setSearch] = useState('');
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
@@ -264,7 +266,7 @@ export default function AdminChatPage() {
                 messages={messages}
                 showTyping={false}
                 isLoading={loadingMessages}
-                myRole="admin"
+                currentUserId={adminUserId ?? 0}
                 incomingLabel={getInitials(getDisplayName(selectedConv))}
                 incomingName={getDisplayName(selectedConv)}
               />
