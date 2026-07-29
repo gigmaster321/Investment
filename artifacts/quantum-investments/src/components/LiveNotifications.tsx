@@ -97,24 +97,23 @@ const KIND_META: Record<
   },
 };
 
-// Auto-dismiss each notification after this many ms
-const AUTO_DISMISS_MS = 5_500;
-// Interval between popups — 5 minutes on every page
-const POPUP_INTERVAL_MS = 300_000;
+// How long to wait after the page finishes loading before the first popup
+const INITIAL_DELAY_MS = 2_500;
+// How long each popup stays visible
+const VISIBLE_MS = 8_000;
+// How long to wait between one popup disappearing and the next appearing
+const GAP_MS = 10_000;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 export interface LiveNotificationsProps {
   /**
    * 'landing'   — public pages (home, login, register).
-   *               One popup every 5 minutes, never stacked.
-   *
    * 'dashboard' — authenticated user dashboard.
-   *               One popup every 5 minutes, never stacked.
    *
-   * Both modes use identical timer logic. The difference is only
-   * which pages render this component (LiveNotificationsController
-   * in App.tsx returns null for all /admin/* routes).
+   * Both modes share identical timer logic. Admin routes never render
+   * this component (LiveNotificationsController in App.tsx returns null
+   * for all /admin/* routes).
    */
   mode: 'landing' | 'dashboard';
 }
@@ -124,36 +123,49 @@ export interface LiveNotificationsProps {
 export function LiveNotifications({ mode }: LiveNotificationsProps) {
   const [queue, setQueue] = useState<Notif[]>([]);
 
-  // Single interval ref — one 5-minute timer for both landing and dashboard
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Single timeout ref — only ever one pending timer at a time.
+  // The chain is: initial delay → show → visible → dismiss → gap → show → …
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   const dismiss = useCallback((id: number) => {
     setQueue((q) => q.filter((n) => n.id !== id));
   }, []);
 
-  // ── Single unified timer — one popup every 5 minutes, never stacked ────
-  // Applies to both 'landing' and 'dashboard' modes. The only difference
-  // between modes is handled upstream (LiveNotificationsController in App.tsx
-  // returns null for admin routes).
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setQueue((current) => {
-        // If a popup is still visible, skip this tick — no stacking
-        if (current.length > 0) return current;
+    let alive = true; // guard against state updates after unmount
+
+    function scheduleNext(delay: number) {
+      clearTimer();
+      timerRef.current = setTimeout(() => {
+        if (!alive) return;
 
         const notif = makeNotif(pick(ALL_KINDS));
+        setQueue([notif]);
 
-        // Schedule auto-dismiss outside setQueue (no async inside updater)
-        setTimeout(() => {
+        // Auto-dismiss after VISIBLE_MS, then wait GAP_MS before next popup
+        timerRef.current = setTimeout(() => {
+          if (!alive) return;
           setQueue((q) => q.filter((n) => n.id !== notif.id));
-        }, AUTO_DISMISS_MS);
 
-        return [notif];
-      });
-    }, POPUP_INTERVAL_MS);
+          // Schedule the next popup after the gap
+          scheduleNext(GAP_MS);
+        }, VISIBLE_MS);
+      }, delay);
+    }
+
+    // Kick off the chain with the initial delay
+    scheduleNext(INITIAL_DELAY_MS);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      alive = false;
+      clearTimer();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
