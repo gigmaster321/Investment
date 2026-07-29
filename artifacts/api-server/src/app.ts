@@ -1,5 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import compression from "compression";
+import helmet from "helmet";
 import pinoHttp from "pino-http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -34,6 +36,8 @@ app.use(
 );
 
 app.set("trust proxy", 1);
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -82,7 +86,14 @@ if (process.env["NODE_ENV"] === "production") {
   // Frontend dist lives at    artifacts/quantum-investments/dist/public
   const frontendDir = path.resolve(__dirname, "../../quantum-investments/dist/public");
 
-  app.use(express.static(frontendDir));
+  app.use(
+    express.static(frontendDir, {
+      etag: true,
+      // Vite appends a content hash to every JS/CSS filename on build.
+      // 1-year max-age is safe because any file change produces a new URL.
+      maxAge: "1y",
+    }),
+  );
 
   // SPA fallback: every non-API GET returns index.html so client-side routing works.
   app.get("/{*path}", (_req, res) => {
