@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCheck, Check, X, ZoomIn, ShieldCheck } from 'lucide-react';
+import { CheckCheck, Check, X, ZoomIn, ShieldCheck, User } from 'lucide-react';
 import { isImageMessage, getImageSrc } from '../types/chat.types';
 import type { ChatMessage } from '../types/chat.types';
 
@@ -11,8 +11,12 @@ interface Props {
   isGroupStart: boolean;
   /** Last message in a consecutive run from the same sender. */
   isGroupEnd: boolean;
-  /** Initials / short label shown in the incoming-side avatar. */
+  /** Initials shown in the incoming-side avatar circle. */
   avatarLabel?: string;
+  /** Full name/label shown above the first message of an incoming group. */
+  senderLabel?: string;
+  /** When true the incoming sender is the support team (ShieldCheck icon). */
+  isSupport?: boolean;
 }
 
 function formatTime(iso: string): string {
@@ -29,6 +33,8 @@ export default function ChatBubble({
   isGroupStart,
   isGroupEnd,
   avatarLabel,
+  senderLabel,
+  isSupport = false,
 }: Props) {
   const isImage = isImageMessage(message.message);
   const [lightbox, setLightbox] = useState(false);
@@ -59,13 +65,15 @@ export default function ChatBubble({
         {!isMine && (
           <div className="shrink-0 w-7 h-7 mb-0.5">
             {isGroupEnd ? (
-              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/30 to-accent/20 border border-primary/35 flex items-center justify-center shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-zinc-600/60 to-zinc-700/60 border border-white/15 flex items-center justify-center shadow-sm">
                 {avatarLabel ? (
-                  <span className="text-[10px] font-bold text-accent leading-none">
+                  <span className="text-[10px] font-bold text-white/80 leading-none">
                     {avatarLabel.slice(0, 2).toUpperCase()}
                   </span>
-                ) : (
+                ) : isSupport ? (
                   <ShieldCheck size={13} className="text-accent" />
+                ) : (
+                  <User size={12} className="text-white/70" />
                 )}
               </div>
             ) : null}
@@ -77,6 +85,20 @@ export default function ChatBubble({
             isMine ? 'items-end' : 'items-start'
           }`}
         >
+          {/* Sender name label — only on the first bubble of an incoming group */}
+          {!isMine && isGroupStart && senderLabel && (
+            <div className="flex items-center gap-1 mb-1 ml-0.5">
+              {isSupport ? (
+                <ShieldCheck size={11} className="text-accent/70 shrink-0" />
+              ) : (
+                <User size={11} className="text-white/40 shrink-0" />
+              )}
+              <span className="text-[11px] font-semibold text-white/60 leading-none">
+                {senderLabel}
+              </span>
+            </div>
+          )}
+
           {/* Message bubble */}
           <div
             className={[
@@ -84,7 +106,7 @@ export default function ChatBubble({
               bubbleRadius,
               isMine
                 ? 'bg-primary text-white shadow-[0_2px_16px_rgba(30,100,255,0.22)]'
-                : 'bg-[hsl(221,55%,21%)] text-white/92 border border-white/[0.07] shadow-sm',
+                : 'bg-[hsl(220,12%,20%)] text-white/90 border border-white/[0.09] shadow-sm',
               isImage ? 'p-1.5 overflow-hidden' : 'px-3.5 py-2.5',
             ].join(' ')}
           >
@@ -116,24 +138,22 @@ export default function ChatBubble({
             )}
           </div>
 
-          {/* Timestamp + read receipt — only shown on the last message of a group */}
-          {isGroupEnd && (
-            <div
-              className={`flex items-center gap-1 px-0.5 mt-1 ${
-                isMine ? 'flex-row-reverse' : 'flex-row'
-              }`}
-            >
-              <span className="text-[10px] text-muted-foreground/50 leading-none tabular-nums">
-                {formatTime(message.created_at)}
-              </span>
-              {isMine &&
-                (message.is_read ? (
-                  <CheckCheck size={12} className="text-accent shrink-0" />
-                ) : (
-                  <Check size={12} className="text-muted-foreground/40 shrink-0" />
-                ))}
-            </div>
-          )}
+          {/* Timestamp + read receipt — shown under every message */}
+          <div
+            className={`flex items-center gap-1 px-0.5 mt-1 ${
+              isMine ? 'flex-row-reverse' : 'flex-row'
+            }`}
+          >
+            <span className="text-[10px] text-muted-foreground/45 leading-none tabular-nums">
+              {formatTime(message.created_at)}
+            </span>
+            {isMine &&
+              (message.is_read ? (
+                <CheckCheck size={12} className="text-accent shrink-0" />
+              ) : (
+                <Check size={12} className="text-muted-foreground/40 shrink-0" />
+              ))}
+          </div>
         </div>
       </div>
 

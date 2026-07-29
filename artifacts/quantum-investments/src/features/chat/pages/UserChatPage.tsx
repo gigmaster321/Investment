@@ -26,6 +26,7 @@ export default function UserChatPage() {
         showTyping={showTyping}
         isLoading={isLoading}
         incomingLabel="QS"
+        incomingName="Quantum Support"
       />
 
       {/* Input */}

@@ -10,8 +10,10 @@ interface Props {
   isLoading: boolean;
   /** Which sender_type is "mine" (right-aligned). Defaults to 'user'. */
   myRole?: 'user' | 'admin';
-  /** Initials / short label for the incoming party's avatar. */
+  /** Initials / short label for the incoming party's avatar circle. */
   incomingLabel?: string;
+  /** Full display name shown above the first bubble of each incoming group. */
+  incomingName?: string;
 }
 
 function getDateLabel(iso: string): string {
@@ -47,6 +49,7 @@ export default function ChatMessageList({
   isLoading,
   myRole = 'user',
   incomingLabel,
+  incomingName,
 }: Props) {
   const listRef  = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -181,6 +184,8 @@ export default function ChatMessageList({
                 isGroupStart={item.isGroupStart}
                 isGroupEnd={item.isGroupEnd}
                 avatarLabel={incomingLabel}
+                senderLabel={incomingName}
+                isSupport={myRole === 'user'}
               />
             </motion.div>
           ),

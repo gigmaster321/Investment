@@ -266,6 +266,7 @@ export default function AdminChatPage() {
                 isLoading={loadingMessages}
                 myRole="admin"
                 incomingLabel={getInitials(getDisplayName(selectedConv))}
+                incomingName={getDisplayName(selectedConv)}
               />
               <ChatInput
                 onSend={sendMessage}
