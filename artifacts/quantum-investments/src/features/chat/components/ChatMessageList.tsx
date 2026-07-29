@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, ShieldCheck } from 'lucide-react';
-import ChatBubble from './ChatBubble';
+import AdminMessageBubble from './AdminMessageBubble';
+import UserMessageBubble from './UserMessageBubble';
 import type { ChatMessage } from '../types/chat.types';
 
 interface Props {
@@ -178,15 +179,23 @@ export default function ChatMessageList({
               // Larger gap after the last bubble of each group
               className={item.isGroupEnd ? 'mb-3' : 'mb-[3px]'}
             >
-              <ChatBubble
-                message={item.msg}
-                isMine={item.msg.sender_type === myRole}
-                isGroupStart={item.isGroupStart}
-                isGroupEnd={item.isGroupEnd}
-                avatarLabel={incomingLabel}
-                senderLabel={incomingName}
-                isSupport={myRole === 'user'}
-              />
+              {item.msg.sender_type === 'admin' ? (
+                <AdminMessageBubble
+                  message={item.msg}
+                  isMine={myRole === 'admin'}
+                  isGroupStart={item.isGroupStart}
+                  isGroupEnd={item.isGroupEnd}
+                />
+              ) : (
+                <UserMessageBubble
+                  message={item.msg}
+                  isMine={myRole === 'user'}
+                  isGroupStart={item.isGroupStart}
+                  isGroupEnd={item.isGroupEnd}
+                  customerInitials={incomingLabel}
+                  customerName={incomingName}
+                />
+              )}
             </motion.div>
           ),
         )}
